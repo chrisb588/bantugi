@@ -1,9 +1,17 @@
-import { GalleryVerticalEnd } from "lucide-react"
+"use client";
+
 import Image from "next/image";
+import { useEffect } from 'react';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 import { LoginForm } from "@/components/auth/login-form"
 
 export default function LoginPage() {
+  useEffect(() => {
+    AOS.init({ once: true, duration: 800, easing: 'ease-out-cubic' });
+  }, []);
+
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10 overflow-hidden">
       <div className="flex w-full max-w-lg flex-col gap-6">

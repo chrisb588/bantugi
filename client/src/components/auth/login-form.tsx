@@ -25,13 +25,13 @@ export function LoginForm({
   
   return (
     <div className={cn("flex flex-col gap-4", className)} {...props}>
-      <Card>
+      <Card data-aos="fade-up" data-aos-delay="100">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">READY TO SERVE <br /> YOUR COMMUNITY?</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl">READY TO SERVE <br /> YOUR COMMUNITY?</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center">
           <form className="w-full max-w-full">
-            <div className="w-full grid gap-10">
+            <div className="w-full grid gap-6 sm:gap-10">
               <div className="w-full grid gap-3">
                 <div className="grid gap-1">
                   <Label htmlFor="username">Username</Label>
@@ -48,12 +48,12 @@ export function LoginForm({
                   <Input id="password" type="password" required />
                 </div>
               </div>
-              <Button type="submit" className="w-[70%] mx-auto">
+              <Button type="submit" className="w-full sm:w-[70%] mx-auto">
                 Login
               </Button>
             </div>
           </form>
-          <Button variant="outline" className="w-[70%] mx-auto mt-2" onClick={onCreateAccountClick}>
+          <Button variant="outline" className="w-full sm:w-[70%] mx-auto mt-2" onClick={onCreateAccountClick}>
             Create Account
           </Button>
         </CardContent>

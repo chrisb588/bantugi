@@ -10,7 +10,7 @@ export function Navbar() {
       style={{ backgroundColor: 'rgba(36, 5, 2, 0.85)', paddingTop: 'calc(env(safe-area-inset-top) + 2rem)' }}
     >
       <div className="text-3xl font-bold tracking-tight">
-        <Link href="/" className="transition-all duration-200 hover:underline hover:underline-offset-4 saturate-130">
+        <Link href="/" className="transition-all duration-200 hover:underline hover:underline-offset-4">
           <span style={{ color: '#B8180D' }}>ban</span>
           <span style={{ color: '#EA9F41' }}>tugi</span>
         </Link>
@@ -18,8 +18,7 @@ export function Navbar() {
       <div>
         <Link href="/login" passHref>
           <Button
-            style={{ backgroundColor: '#EA9F41', color: '#F5F3E9' }}
-            className="hover:opacity-80 transition-all duration-200 ease-in-out px-5 py-2 text-sm font-medium rounded-md hover:scale-105 hover:shadow-lg"
+            className="px-5 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out hover:scale-105 bg-[#EA9F41] text-white hover:bg-white hover:text-[#EA9F41]"
           >
             Login
           </Button>
