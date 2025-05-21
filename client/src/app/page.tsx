@@ -94,7 +94,7 @@ export default function Home() {
 
       {/* Our Mission Section */}
       <section id="mission" className="w-full h-screen flex flex-col">
-        {/* Image Part with Title (e.g., 60% of screen height) */}
+        {/* Image Part with Title*/}
         <div className="relative w-full h-[60vh]">
           <Image 
             src="/img/hero-section-img-3.png" 
@@ -103,7 +103,7 @@ export default function Home() {
             className="object-cover z-0 select-none pointer-events-none" // Image is base layer
             quality={85}
           />
-          {/* Translucent Red Overlay - ON THE IMAGE */}
+          {/* Translucent Red Overlay*/}
           <div 
             className="absolute inset-0 backdrop-blur-[2px] z-10"
             style={{ backgroundColor: 'rgba(138, 19, 8, 0.32)' }}
@@ -149,7 +149,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Section with Hands and Text */}
+      {/* Database Section with Hands and Text */}
       <section className="w-full flex flex-col items-center">
         <div className="relative w-full h-[20vh] sm:h-[25vh] md:h-[30vh] lg:h-[35vh]">
           <Image 
