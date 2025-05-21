@@ -36,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${Satoshi.variable} ${Nohemi.variable}`}>
+    <html lang="en" className={`${Satoshi.variable} ${Nohemi.variable} scroll-smooth`}>
       <body
         className="font-satoshi antialiased"
       >
