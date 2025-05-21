@@ -37,6 +37,8 @@ export default function Map({
         maxZoom: 36,
       }).addTo(mapInstanceRef.current);
 
+      mapInstanceRef.current.zoomControl.remove();
+
       return () => {
         if (mapInstanceRef.current) {
           mapInstanceRef.current.remove();

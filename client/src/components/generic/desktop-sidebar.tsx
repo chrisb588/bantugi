@@ -1,7 +1,8 @@
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
-
+import { Calendar, Home, Inbox, Search, Settings } from "lucide-react";
+import SearchBar from "@/components/generic/search-bar";
+ 
 import {
-  Sidebar,
+  FloatingSidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
@@ -10,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-
+ 
 // Menu items.
 const items = [
   {
@@ -39,13 +40,14 @@ const items = [
     icon: Settings,
   },
 ]
-
-export function AppSidebar() {
+ 
+export default function DesktopSidebar() {
   return (
-    <Sidebar>
+    <FloatingSidebar className="hidden md:block">
       <SidebarContent>
+        <SearchBar />
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
@@ -62,6 +64,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-    </Sidebar>
+    </FloatingSidebar>
   )
 }

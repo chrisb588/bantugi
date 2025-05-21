@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeftIcon } from "lucide-react"
+import { PanelLeftIcon, PanelLeftOpenIcon, PanelLeftCloseIcon, Menu } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -253,6 +253,87 @@ function Sidebar({
   )
 }
 
+interface FloatingSidebarProps {
+  className?: string;
+  children: React.ReactNode;
+  defaultCollapsed?: boolean;
+}
+
+export function FloatingSidebar({
+  className,
+  children,
+  defaultCollapsed = false,
+}: FloatingSidebarProps) {
+  const [collapsed, setCollapsed] = React.useState(defaultCollapsed);
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  // Handle responsive behavior
+  React.useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768);
+      // Auto-collapse on mobile
+      if (window.innerWidth < 768) {
+        setCollapsed(true);
+      }
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    
+    return () => {
+      window.removeEventListener('resize', checkScreenSize);
+    };
+  }, []);
+
+  return (
+    <div 
+      className={cn(
+        'fixed top-4 left-4 z-50 flex h-[calc(100vh-32px)] flex-col rounded-lg bg-card text-card-foreground shadow-lg transition-all duration-300 ease-in-out',
+        collapsed ? 'w-12' : 'w-64',
+        className
+      )}
+    >
+      {/* Sidebar Header */}
+      <div className="flex py-4 items-center justify-between px-4">
+        {!collapsed && (
+          <h2 className="text-md font-semibold nohemi-font">
+            <span className="text-primary">Ban</span><span className="text-accent">tugi</span>
+          </h2>
+        )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className={cn(
+            "h-8 w-8 rounded-md text-primary hover:text-accent-foreground flex items-center justify-center",
+            collapsed ? "mx-auto" : "ml-auto"
+          )}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? <PanelLeftOpenIcon size={16} /> : <PanelLeftCloseIcon size={16} />}
+        </button>
+      </div>
+
+      {/* Sidebar Content */}
+      <div className={cn(
+        "flex-1 overflow-y-auto p-4",
+        collapsed && "p-2"
+      )}>
+        {!collapsed && children}
+      </div>
+
+      {/* Mobile Toggle Button (Outside sidebar) */}
+      {isMobile && collapsed && (
+        <button
+          onClick={() => setCollapsed(false)}
+          className="fixed bottom-4 left-4 z-50 h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
+          aria-label="Open sidebar"
+        >
+          <Menu size={20} />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function SidebarTrigger({
   className,
   onClick,
@@ -387,7 +468,7 @@ function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="sidebar-group"
       data-sidebar="group"
-      className={cn("relative flex w-full min-w-0 flex-col p-2", className)}
+      className={cn("relative flex w-full min-w-0 flex-col", className)}
       {...props}
     />
   )
@@ -405,7 +486,7 @@ function SidebarGroupLabel({
       data-slot="sidebar-group-label"
       data-sidebar="group-label"
       className={cn(
-        "text-sidebar-foreground/70 ring-sidebar-ring flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-hidden transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "text-sidebar-foreground/70 ring-sidebar-ring flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-bold outline-hidden transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
         className
       )}
