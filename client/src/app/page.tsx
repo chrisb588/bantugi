@@ -128,7 +128,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Text Content Part (e.g., 40% of screen height) */}
+        {/* Mission Description */}
         <div 
           className="bg-[#B8180D] text-white p-6 sm:p-8 md:p-12 lg:p-16 text-center flex-grow flex flex-col pt-8 sm:pt-10 md:pt-12 lg:pt-14"
         >
@@ -179,6 +179,40 @@ export default function Home() {
             className="object-cover blur-[1px] select-none pointer-events-none"
             quality={80}
           />
+        </div>
+      </section>
+
+      {/* Contact Us Section */}
+      <section className="w-full bg-[#240502] text-white py-16 md:py-20 lg:py-24">
+        <div className="container mx-auto px-4 text-center">
+          <h2 
+            className="text-3xl sm:text-3xl md:text-3xl font-black tracking-wider mb-12 md:mb-16 lg:mb-20"
+            data-aos="fade-up"
+          >
+            Contact Us
+          </h2>
+          <div 
+            className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 md:gap-x-10 lg:gap-x-12 gap-y-6 max-w-3xl mx-auto"
+            data-aos="fade-up" data-aos-delay="200"
+          >
+            {[ // team members
+              "Acabal, Harley Van",
+              "Ayuda, Diana Rose",
+              "Brillos, Christian",
+              "Cadampog, Joanalyn",
+              "Mijares, Jimmy Eleazar",
+            ].map((name, index) => (
+              <div 
+                key={index} 
+                className="py-4 border-b border-gray-700 transition-all duration-300 hover:border-gray-500"
+              >
+                <p className="text-l md:text-l font-normal text-gray-200 hover:text-white">{name}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-12 md:mt-16 lg:mt-20 text-lg md:text-xl text-gray-300" data-aos="fade-up" data-aos-delay="400">
+            For inquiries, please reach out to any of our team members.
+          </p>
         </div>
       </section>
 
