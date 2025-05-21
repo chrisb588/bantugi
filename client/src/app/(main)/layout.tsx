@@ -25,7 +25,9 @@ export default function MainLayout({
         <DesktopSidebar />
         <MobileNavbar />
         <Map />
-        {children}
+        <div className="fixed inset-0">
+          {children}
+        </div>
       </SidebarProvider>
     </div>
   );
