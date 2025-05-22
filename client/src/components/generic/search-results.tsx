@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { AlertTriangle, Info, Bookmark, MapPin } from 'lucide-react';
+import { AlertTriangle, CircleAlert, Bookmark, MapPin } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
@@ -84,7 +84,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ onClose: parentOnClose })
       category: 'Flood Alert'
     },
     {
-      icon: <Info size={28} className="text-accent" />,
+      icon: <CircleAlert size={28} className="text-accent" />,
       iconColorClass: 'bg-orange-100',
       title: 'Power Maintenance Scheduled',
       location: 'Banilad Area, Mandaue City',
@@ -100,7 +100,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ onClose: parentOnClose })
       category: 'Geohazard'
     },
     {
-      icon: <Info size={28} className="text-accent" />,
+      icon: <CircleAlert size={28} className="text-accent" />,
       iconColorClass: 'bg-orange-100',
       title: 'Road Closure: Mango Avenue',
       location: 'Mango Avenue (near Fuente Osmeña)',
@@ -116,7 +116,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ onClose: parentOnClose })
       category: 'Geohazard'
     },
     {
-      icon: <Info size={28} className="text-accent" />,
+      icon: <CircleAlert size={28} className="text-accent" />,
       iconColorClass: 'bg-orange-100',
       title: 'Road Closure: Mango Avenue',
       location: 'Mango Avenue (near Fuente Osmeña)',
