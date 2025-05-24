@@ -6,17 +6,19 @@ import { AlertTriangle } from "lucide-react";
 import { ReportView, Report } from "@/components/report/report-view";
 import { MobileNavbar } from "@/components/generic/mobile-navbar";
 
-export default function ReportViewPage() {
-  // Mock data - can be replaced with actual API calls
-  const report: Report = {
-    id: "1",
-    title: "BAHA SA UP",
-    category: "Environmental",
-    location: "Lahug, Cebu City, Cebu",
-    status: "Unresolved",
-    description: "Panabangi mi ngari kay kusog kaayo ang baha diri, abot tuhod ang baha!",
+// janky reportz for now until 'report' data type can be fully 
+// represented in the database
+// report also needs GIS/ latitiude and longitude information for 
+// view in map features
+export default function ReportClient({ reportz }: { reportz: Report }) {
+  if (!reportz) {
+    return <div>Loading failed or data is missing</div>;
+  }
+
+  // Use reportz directly instead of redefining a fake `report`
+  const report = {
+    ...reportz,
     images: ["/img/flood-image.png", "/img/flood-image.png"],
-    datePosted: new Date().toISOString(),
     author: {
       name: "Juan Dela Cruz",
       location: "Jagobiao, Mandaue City, Cebu",
