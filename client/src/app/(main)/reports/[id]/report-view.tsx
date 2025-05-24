@@ -5,19 +5,34 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertTriangle } from "lucide-react";
 import { ReportView, Report } from "@/components/report/report-view";
 import { MobileNavbar } from "@/components/generic/mobile-navbar";
-
-// janky reportz for now until 'report' data type can be fully 
-// represented in the database
+import { useEffect, useState } from "react";
+// using tempreport until everything can be represented in the database
 // report also needs GIS/ latitiude and longitude information for 
 // view in map features
-export default function ReportClient({ reportz }: { reportz: Report }) {
-  if (!reportz) {
-    return <div>Loading failed or data is missing</div>;
-  }
+export default function ReportViewPage({ id }: { id: string }) {
+  const [report, setReport] = useState<Report | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Use reportz directly instead of redefining a fake `report`
-  const report = {
-    ...reportz,
+  useEffect(() => {
+    async function fetchReport() {
+      try {
+        const res = await fetch(`/api/reports/${id}`);
+        if (!res.ok) throw new Error("Failed to fetch report");
+        const data = await res.json();
+        setReport(data);
+      } catch (err) {
+        setError((err as Error).message);
+      }
+    }
+
+    fetchReport();
+  }, [id]);
+
+  if (error) return <div>Error: {error}</div>;
+  if (!report) return <div>Loading report...</div>;
+
+  const tempreport = {
+    ...report,
     images: ["/img/flood-image.png", "/img/flood-image.png"],
     author: {
       name: "Juan Dela Cruz",
@@ -55,12 +70,12 @@ export default function ReportClient({ reportz }: { reportz: Report }) {
             <CardHeader className="flex flex-row items-center gap-2 py-2 px-4 sticky top-0 bg-background z-10">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-7 w-7" style={{ color: redColor }} />
-                <h2 className="text-lg font-bold">{report.title}</h2>
+                <h2 className="text-lg font-bold">{tempreport.title}</h2>
               </div>
             </CardHeader>
             
             {/* Report Content */}
-            <ReportView report={report} onViewMap={handleViewMap} />
+            <ReportView report={tempreport} onViewMap={handleViewMap} />
           </ScrollArea>
         </Card>
         

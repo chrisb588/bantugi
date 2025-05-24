@@ -1,13 +1,6 @@
-import { getReport } from "@/lib/supabase/supabaseService";
-import ReportViewPage from "./ReportClient";
+import ReportViewPage from "./report-view";
 
-interface Props {
-    params: { id: string}
-}
-
-// works by url so something like /reports/1 or /reports/2345
-export default async function ReportClient({params}: Props) {
-    var report = await getReport(params.id)
-    // Needs loading component or Not available component
-    return <ReportViewPage reportz={report} />
+export default async function ReportPage({ params }: { params: { id: string } }) {
+  var args = await params
+  return <ReportViewPage id={args.id} />;
 }
