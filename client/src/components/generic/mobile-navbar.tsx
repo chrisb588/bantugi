@@ -2,6 +2,8 @@ import { MapPin, Bookmark, CopyCheck, Plus } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
 export function MobileNavbar() {
+  const username = 'user';
+  
   const router = useRouter();
   const currentPath = usePathname();
 
@@ -11,8 +13,8 @@ export function MobileNavbar() {
   }
 
   const navigateToSaveReports = () => {
-    if (currentPath === '/saved') return; 
-    router.push('/saved');
+    if (currentPath === `/${username}/saved-reports`) return; 
+    router.push(`/${username}/saved-reports`);
   }
 
   const navigateToCreateReport = () => {
@@ -21,13 +23,13 @@ export function MobileNavbar() {
   }
 
   const navigateToMyReports = () => {
-    if (currentPath === '/my-reports') return;
-    router.push('/my-reports');
+    if (currentPath === `/${username}/my-reports`) return;
+    router.push(`/${username}/my-reports`);
   }
 
   const navigateToAccount = () => {
-    if (currentPath === '/account') return;
-    router.push('/account');
+    if (currentPath === `/${username}/account`) return;
+    router.push(`/${username}/account`);
   }
 
   return (
