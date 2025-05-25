@@ -8,6 +8,7 @@ import 'aos/dist/aos.css';
 import AOS from 'aos';
 import { useEffect } from 'react';
 import { Footer } from '@/components/ui/footer';
+import { useState } from 'react';
 
 export default function Home() {
   useEffect(() => {
@@ -149,6 +150,36 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Feature Section */}
+      <section className="relative w-full py-16 md:py-24 lg:py-32 bg-[#240502] overflow-hidden px-0">
+        <div className="w-full px-0">
+          <div className="flex flex-col lg:flex-row items-stretch justify-between gap-12 lg:gap-20 relative">
+            {/* Text Content */}
+            <div className="flex-1 text-white px-4 sm:px-8 lg:px-16 z-10" data-aos="fade-right">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-6">
+                Pin your reports directly on the map!
+              </h2>
+              <p className="text-lg sm:text-xl md:text-2xl text-gray-300 leading-relaxed">
+                Bantugi helps you share and spot civic issues — from potholes to streetlights — so everyone can see them and take action.
+              </p>
+            </div>
+            {/* Image */}
+            <div className="flex-1 w-full flex items-end relative min-h-[350px] sm:min-h-[500px] md:min-h-[650px] lg:min-h-[800px]">
+              <div className="absolute right-0 top-0 h-full w-full lg:w-[700px]">
+                <Image
+                  src="/img/landing-feature.png?v=1"
+                  alt="Hand holding a phone showing the map feature"
+                  fill
+                  className="object-contain object-right"
+                  quality={90}
+                  priority
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Database Section with Hands and Text */}
       <section className="w-full flex flex-col items-center">
         <div className="relative w-full h-[20vh] sm:h-[25vh] md:h-[30vh] lg:h-[35vh]">
@@ -179,6 +210,14 @@ export default function Home() {
             className="object-cover blur-[1px] select-none pointer-events-none"
             quality={80}
           />
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="w-full bg-[#240502] text-white py-16 md:py-20 lg:py-24">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <h2 className="text-3xl font-black tracking-wider mb-10 text-center">Frequently Asked Questions</h2>
+          <FAQAccordion />
         </div>
       </section>
 
@@ -218,5 +257,51 @@ export default function Home() {
 
       <Footer />
     </main>
+  );
+}
+
+// FAQAccordion component
+function FAQAccordion() {
+  const faqs = [
+    {
+      question: "What is Bantugi?",
+      answer: "Bantugi is a community-driven platform that allows users to report and view civic issues in their area, helping local governments and communities take action more efficiently."
+    },
+    {
+      question: "How do I submit a report?",
+      answer: "Simply create an account, log in, and use the 'Create Report' feature to pin your issue on the map, add details, and upload photos."
+    },
+    {
+      question: "Who can see my reports?",
+      answer: "All reports are visible to the public and local government units, ensuring transparency and encouraging community involvement."
+    },
+    {
+      question: "Is Bantugi free to use?",
+      answer: "Yes, Bantugi is completely free for all users. Our goal is to empower communities and improve civic engagement."
+    }
+  ];
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  return (
+    <div className="space-y-4">
+      {faqs.map((faq, idx) => (
+        <div key={idx} className="border border-gray-700 rounded-lg overflow-hidden bg-[#2d0a07]">
+          <button
+            className="w-full text-left px-6 py-4 focus:outline-none flex justify-between items-center text-lg font-semibold hover:bg-[#38100b] transition-colors"
+            onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
+            aria-expanded={openIndex === idx}
+            aria-controls={`faq-panel-${idx}`}
+          >
+            {faq.question}
+            <span className={`ml-4 transition-transform ${openIndex === idx ? 'rotate-180' : ''}`}>▼</span>
+          </button>
+          {openIndex === idx && (
+            <div id={`faq-panel-${idx}`} className="px-6 pb-4 text-base text-gray-200 transition-opacity duration-300 opacity-100">
+              {faq.answer}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
