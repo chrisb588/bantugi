@@ -78,9 +78,8 @@ const ReportList: React.FC<ReportListProps> = ({
             {sampleResults.map((result, index) => (
               <ReportItem
                 key={index}
-                icon={result.icon}
-                iconColorClass={result.iconColorClass}
                 title={result.title}
+                urgency={result.urgency}
                 location={result.location}
                 description={result.description}
                 category={result.category}
