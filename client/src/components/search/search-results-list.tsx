@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { AlertTriangle, CircleAlert } from 'lucide-react';
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import ReportItem from "@/components/report/report-item";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Report from '@/interfaces/report';
 
 interface SearchResultsListProps {
   title: string;
@@ -44,55 +44,79 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
     }, 300);
   };
 
-  const sampleResults = [
+  const sampleResults: Report[] = [
     {
-      icon: <AlertTriangle size={18} className="text-primary" />,
-      iconColorClass: 'bg-red-100',
+      id: 1,
       title: 'MAJOR FLOODING DOWNTOWN',
-      location: 'Main St & Central Ave, Cebu City',
+      category: 'Flood Alert',
+      urgency: "High" as const,
+      status: "Unresolved",
+      location: {
+        address: {
+          id: 1,
+          barangay: 'Main St & Central Ave',
+          city: 'Cebu City',
+          province: 'Cebu',
+        },
+        coordinates: { lat: 10, lng: 123 }
+      },
       description: 'Severe flooding reported, roads impassable. Avoid area. Emergency services dispatched.',
-      category: 'Flood Alert'
+      createdAt: new Date('2023-10-01T08:00:00Z'),
     },
     {
-      icon: <CircleAlert size={18} className="text-accent" />,
-      iconColorClass: 'bg-orange-100',
+      id: 2,
       title: 'Power Maintenance Scheduled',
-      location: 'Banilad Area, Mandaue City',
+      category: 'Utility Work',
+      urgency: "Medium" as const,
+      status: "Unresolved",
+      location: {
+        address: {
+          id: 1,
+          barangay: 'Banilad Area',
+          city: 'Mandaue City',
+          province: 'Cebu',
+        },
+        coordinates: { lat: 10, lng: 123 }
+      },
       description: 'Power outage expected from 1 PM to 5 PM today for urgent maintenance work. Please prepare accordingly.',
-      category: 'Utility Work'
+      createdAt: new Date('2023-10-01T08:00:00Z'),
     },
     {
-      icon: <AlertTriangle size={18} className="text-primary" />,
-      iconColorClass: 'bg-red-100',
+      id: 3,
       title: 'Landslide Warning: Mountain View',
-      location: 'Busay Hills, Cebu Transcentral Hwy',
+      category: 'Geohazard',
+      urgency: "High" as const,
+      status: "Unresolved",
+      location: {
+        address: {
+          id: 1,
+          barangay: 'Busay Hills',
+          city: 'Cebu City',
+          province: 'Cebu',
+        },
+        coordinates: { lat: 10, lng: 123 }
+      },
       description: 'Risk of landslides due to heavy rains. Residents advised to evacuate to safer ground immediately.',
-      category: 'Geohazard'
+      createdAt: new Date('2023-10-01T08:00:00Z'),
     },
     {
-      icon: <CircleAlert size={18} className="text-accent" />,
-      iconColorClass: 'bg-orange-100',
+      id: 4,
       title: 'Road Closure: Mango Avenue',
-      location: 'Mango Avenue (near Fuente Osmeña)',
+      category: 'Traffic',
+      urgency: "Low" as const,
+      status: "Unresolved",
+      location: {
+        address: {
+          id: 1,
+          barangay: 'Mango Avenue',
+          city: 'Cebu City',
+          province: 'Cebu',
+        },
+        coordinates: { lat: 10, lng: 123 }
+      },
       description: 'Street festival today, Mango Avenue closed to traffic until 10 PM. Plan alternate routes to avoid congestion.',
-      category: 'Traffic'
-    },
-    {
-      icon: <AlertTriangle size={18} className="text-primary" />,
-      iconColorClass: 'bg-red-100',
-      title: 'Landslide Warning: Mountain View',
-      location: 'Busay Hills, Cebu Transcentral Hwy',
-      description: 'Risk of landslides due to heavy rains. Residents advised to evacuate to safer ground immediately.',
-      category: 'Geohazard'
-    },
-    {
-      icon: <CircleAlert size={18} className="text-accent" />,
-      iconColorClass: 'bg-orange-100',
-      title: 'Road Closure: Mango Avenue',
-      location: 'Mango Avenue (near Fuente Osmeña)',
-      description: 'Street festival today, Mango Avenue closed to traffic until 10 PM. Plan alternate routes to avoid congestion.',
-      category: 'Traffic'
-    },
+      createdAt: new Date('2023-10-01T08:00:00Z'),
+    }
   ];
 
   return (
@@ -105,18 +129,19 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
         className
       )} {...props}
     >
-      <Card className="h-[80vh] min-h-[400px] max-h-[800px]"> {/* Set fixed height here */}
-        <ScrollArea className="h-full"> {/* Make ScrollArea full height of card */}
+      <Card className="h-[80vh] min-h-[400px] max-h-[800px]">
+        <ScrollArea className="h-full">
+          <CardHeader className="text-left sticky top-0 bg-background z-10">
+            <CardTitle className="text-2xl">{title}</CardTitle>
+          </CardHeader>
+          <div className="px-6">
+            <Separator />
+          </div>
           <CardContent className="flex flex-col items-center py-4">
             {sampleResults.map((result, index) => (
               <ReportItem
                 key={index}
-                icon={result.icon}
-                iconColorClass={result.iconColorClass}
-                title={result.title}
-                location={result.location}
-                description={result.description}
-                category={result.category}
+                report={result}
               />
             ))}
           </CardContent>
@@ -124,41 +149,6 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
       </Card>
     </div>
   );
-
-  // return (
-  //   <div
-  //     ref={resultsContainerRef}
-  //     className={cn(
-  //       "flex flex-col rounded-xl shadow-lg overflow-hidden",
-  //       "transition-all duration-300 ease-out",
-  //       isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-8"
-  //     )}
-  //     style={{ background: '#FAF9F5' }} // Lighter than bg-background
-  //   >
-  //     {/* Sticky Header */}
-  //     <div className="sticky top-0 backdrop-blur-md z-10 px-6 pt-6 pb-2 flex items-center justify-between"
-  //          style={{ background: 'rgba(250, 249, 245, 0.95)' }}> {/* Lighter with transparency */}
-  //       <h2 className="font-bold text-xl text-primary">{title}</h2>
-  //     </div>
-  //     <div className="px-8 -mt-1">
-  //       <Separator className="bg-accent h-[2px]" />
-  //     </div>
-
-  //     <ScrollArea className="flex-1 min-h-0 pt-2">
-  //       {sampleResults.map((result, index) => (
-  //         <ReportItem
-  //           key={index}
-  //           icon={result.icon}
-  //           iconColorClass={result.iconColorClass}
-  //           title={result.title}
-  //           location={result.location}
-  //           description={result.description}
-  //           category={result.category}
-  //         />
-  //       ))}
-  //     </ScrollArea>
-  //   </div>
-  // );
 };
 
 export default SearchResultsList; 

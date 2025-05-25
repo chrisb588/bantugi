@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils"
 import Image from "next/image";
-import { MapPin, Settings2, Trash, ArrowLeftFromLine } from "lucide-react";
+import { MapPin, Settings2, Trash, ArrowLeftFromLine, Pencil } from "lucide-react";
 
 import {
   Card,
@@ -14,6 +14,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"; // Make sure to import the proper ScrollArea
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 interface ProfileCardProps extends React.ComponentProps<"div"> {
   edit?: boolean;
@@ -31,7 +32,7 @@ export default function ProfileCard({
   };
 
   const handleDeleteAccount = () => {
-    alert('Delete Account clicked');
+    alert('Account delete clicked'); //just put the delete logic here
   };
 
   const handleLogout = () => {
@@ -65,12 +66,26 @@ export default function ProfileCard({
               />
             </div>
             <div className="flex flex-col items-center">
-              <div className="font-bold text-lg text-foreground">username</div>
+              {edit ? (
+                <div className="flex items-center gap-2">
+                  <div className="font-bold text-lg text-foreground">username</div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Pencil size={14} />
+                  </Button>
+                </div>
+              ) : (
+                <div className="font-bold text-lg text-foreground">username</div>
+              )}
               <div className="flex items-center gap-1 text-foreground">
-                  <MapPin size={16} />
-                <div className="font-bold text-sm ">
+                <MapPin size={16} />
+                <div className="font-bold text-sm">
                   Jagobiao, Mandaue City, Cebu
                 </div>
+                {edit && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6 ml-1">
+                    <Pencil size={14} />
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -82,14 +97,21 @@ export default function ProfileCard({
           <CardContent className="flex flex-col items-center py-4 gap-2">
             {edit ? (
               <div className="flex flex-col items-center gap-2">
-                <Button variant="ghost" onClick={handleDeleteAccount}>
-                  <div className="flex items-center gap-1 text-primary mt-4">
-                    <Trash size={16} />
-                    <div className="font-bold text-sm">
-                      Delete Account
-                    </div>
-                  </div>
-                </Button>
+                <DeleteConfirmationDialog
+                  trigger={
+                    <Button variant="ghost">
+                      <div className="flex items-center gap-1 text-primary mt-4">
+                        <Trash size={16} />
+                        <div className="font-bold text-sm">
+                          Delete Account
+                        </div>
+                      </div>
+                    </Button>
+                  }
+                  title="Are you sure you want to delete your account?"
+                  description="This action is irreversible."
+                  onConfirm={handleDeleteAccount}
+                />
                 <Button variant="ghost" onClick={handleLogout}>
                   <div className="flex items-center gap-1 text-accent mt-4">
                     <ArrowLeftFromLine size={16} />
