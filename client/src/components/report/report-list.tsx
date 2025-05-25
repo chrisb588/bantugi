@@ -1,12 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { AlertTriangle, CircleAlert } from 'lucide-react';
+import React from 'react';
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import ReportItem from "@/components/report/report-item";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Report from '@/interfaces/report';
 import { sampleResults } from '@/test'; // Assuming you have a sample data file
 
 interface ReportListProps {
@@ -37,6 +35,7 @@ const ReportList: React.FC<ReportListProps> = ({
                 key={index}
                 report={result}
                 deletable={isMyReportsView} // only allow deletion of own reports in my reports page
+                editable={isMyReportsView} // only allow editing of own reports in my reports page
               />
             ))}
           </CardContent>

@@ -1,17 +1,29 @@
-import { Trash2, Bookmark, MapPin, CircleAlert, AlertTriangle } from 'lucide-react';
+import { Trash2, Bookmark, MapPin, Pencil } from 'lucide-react';
 
 import { cn, formatArea } from '@/lib/utils';
 import urgencyIcon from '@/constants/urgency-icon';
 import Report from '@/interfaces/report';
+import { Button } from '@/components/ui/button';
 
 interface ReportItemProps {
   report: Report;
   deletable?: boolean;
+  editable?: boolean;
 }
 
-export default function ReportItem({ report, deletable = false }: ReportItemProps) {
+export default function ReportItem({ report, deletable = false, editable = false }: ReportItemProps) {
   // Darker shadow color 
   const shadowColor = 'rgba(160, 150, 130, 0.95)'; // Much darker shadow with higher opacity
+
+  const handleEdit = () => {
+    // Handle edit functionality - can be implemented later
+    console.log("Edit report:", report.id);
+  };
+
+  const handleDelete = () => {
+    // Handle delete functionality - can be implemented later
+    console.log("Delete report:", report.id);
+  };
                      
   return (
     <div className="w-full mb-3 mx-2 py-3 px-4 flex flex-col gap-2 items-start space-x-3 rounded-lg border border-gray-100 hover:shadow-md transition-shadow duration-200 ease-in-out" 
@@ -31,9 +43,24 @@ export default function ReportItem({ report, deletable = false }: ReportItemProp
           </div>
         </div>
         {deletable ? (
-          <button className="text-primary hover:text-accent transition-colors duration-150 ease-in-out p-1 flex-shrink-0">
-            <Trash2 size={20} />
-          </button>
+          <div className="flex items-center gap-1">
+            {editable && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-6 w-6 text-slate-800 hover:text-primary transition-colors duration-150 ease-in-out"
+                onClick={handleEdit}
+              >
+                <Pencil size={14} />
+              </Button>
+            )}
+            <button 
+              className="text-primary hover:text-accent transition-colors duration-150 ease-in-out p-1 flex-shrink-0"
+              onClick={handleDelete}
+            >
+              <Trash2 size={20} />
+            </button>
+          </div>
         ) : (
           <button className="text-slate-400 hover:text-primary transition-colors duration-150 ease-in-out p-1 flex-shrink-0">
             <Bookmark size={20} />
