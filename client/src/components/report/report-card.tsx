@@ -5,7 +5,7 @@ import Image from "next/image";
 import { MapPin, MessageSquare, ChevronRight, AlertTriangle, CircleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
@@ -158,7 +158,7 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
                 </Button>
               </div>
               
-              {/* Category - moved below location */}
+              {/* Category */}
               <div className="flex mb-4">
                 <span className="text-xs font-semibold text-slate-700 bg-muted px-3 py-1 rounded-full whitespace-nowrap">
                   {report.category}
@@ -178,10 +178,10 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
                 <p className="text-sm">{report.description}</p>
               </div>
               
-              <Separator className="my-4" />
+              <Separator className="my-4 w-full" />
               
               {/* Comments Section */}
-              <div>
+              <div className="w-full">
                 <div className="flex items-center justify-between mb-3">
                   <Button 
                     variant="ghost" 
@@ -196,7 +196,7 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
                 {showComments && (
                   <div className="space-y-4 mt-3 w-full">
                     {/* Comment input field - styled like searchbar */}
-                    <form onSubmit={handleCommentSubmit} className="flex mb-4">
+                    <form onSubmit={handleCommentSubmit} className="w-full mb-4">
                       <div className="flex items-center w-full rounded-md bg-muted px-3 py-1 shadow-inner">
                         <MessageSquare className="h-4 w-4 text-muted-foreground mr-2" />
                         <Input 
