@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils"
+
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -11,12 +12,12 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "../ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area"; // Make sure to import the proper ScrollArea
-import { CategoryDropdownMenu } from "../generic/category-dropdown";
-import { UrgencyDropdownMenu } from "../generic/urgency-dropdown";
-import ImageUploader from "../generic/image-uploader";
-import { Separator } from "../ui/separator";
+import { CategoryDropdownMenu } from "@/components/report/create-report-form/category-dropdown";
+import { UrgencyDropdownMenu } from "@/components/report/create-report-form/urgency-dropdown";
+import ImageUploader from "@/components/report/create-report-form/image-uploader";
+import { Separator } from "@/components/ui/separator";
 
 export function CreateReportForm({
   className,
@@ -29,7 +30,7 @@ export function CreateReportForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-4 -mt-12", className)} {...props}>
+    <div className={cn("w-full max-w-lg flex flex-col gap-4 -mt-12", className)} {...props}>
       <Card className="h-[85vh] min-h-[400px] max-h-[800px]"> {/* Set fixed height here */}
         <ScrollArea className="h-full"> {/* Make ScrollArea full height of card */}
           <CardHeader className="text-left sticky top-0 bg-background z-10">

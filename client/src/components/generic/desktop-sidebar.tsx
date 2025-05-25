@@ -1,5 +1,5 @@
 import { Calendar, Home, Inbox, Search, Settings } from "lucide-react";
-import SearchBar from "@/components/generic/search-bar";
+import SearchBar from "@/components/search/search-bar";
  
 import {
   FloatingSidebar,
