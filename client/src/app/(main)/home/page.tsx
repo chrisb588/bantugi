@@ -4,15 +4,26 @@ import SearchBar from "@/components/search/search-bar";
 import { useState } from "react";
 import SearchResultsList from "@/components/search/search-results-list";
 import { MobileNavbar } from "@/components/generic/mobile-navbar";
+import { FilterButton } from "@/components/ui/filter-button";
+import { FilterDropdown } from "@/components/ui/filter-dropdown";
 
 export default function HomePage() {
   const [isSearchScreenVisible, setIsSearchScreenVisible] = useState(false);
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
 
   const openSearchScreen = () => setIsSearchScreenVisible(true);
   const closeSearchScreen = () => {
     if (isSearchScreenVisible) {
       setIsSearchScreenVisible(false);
     }
+  };
+
+  const handleFilterClick = () => {
+    setIsFilterDropdownOpen(!isFilterDropdownOpen);
+  };
+
+  const closeFilterDropdown = () => {
+    setIsFilterDropdownOpen(false);
   };
 
   return (
@@ -33,11 +44,27 @@ export default function HomePage() {
           )}
         </div>
 
+        {/* Filter Button - positioned above mobile navbar */}
+        <div className="sticky bottom-20 left-0 right-0 z-30 pointer-events-none">
+          <div className="flex justify-start pl-4">
+            <FilterButton 
+              onClick={handleFilterClick}
+              className="pointer-events-auto"
+            />
+          </div>
+        </div>
+
         {/* Mobile Navbar (Sticky at the bottom of the mobile view container) */}
         <div className="sticky bottom-0 left-0 right-0 z-20">
           <MobileNavbar />
         </div>
       </div>
+
+      {/* Filter Dropdown */}
+      <FilterDropdown 
+        isOpen={isFilterDropdownOpen} 
+        onClose={closeFilterDropdown} 
+      />
     </div>
   );
 }
