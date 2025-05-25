@@ -11,13 +11,20 @@ const useSignup = () => {
     dispatch({ type: "AUTH/SIGNUP_REQUEST" });
 
     try {
-      const response = await axios.post(`${url}/auth/signup`,)
+        const response = await axios.post(`${url}/auth/signup`);
 
-      dispatch({ type: "AUTH/SIGNUP_SUCCESS", payload: response.data });
+        dispatch({ type: "AUTH/SIGNUP_SUCCESS", payload: response.data });
     } catch (error) {
-      dispatch({ type: "AUTH/SIGNUP_FAILURE", payload: error.response ? error.response.data.error : error.message });
+        // Narrow the type of error
+        if (axios.isAxiosError(error)) {
+            // Handle Axios-specific error
+            dispatch({ type: "AUTH/SIGNUP_FAILURE", payload: error.response ? error.response.data.error : error.message });
+        } else {
+            // Handle non-Axios errors
+            dispatch({ type: "AUTH/SIGNUP_FAILURE", payload: String(error) });
+        }
     }
-  }
+};
 
   return signup;
 }
