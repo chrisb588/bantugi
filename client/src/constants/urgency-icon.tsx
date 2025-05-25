@@ -1,11 +1,10 @@
 import { AlertTriangle, CircleAlert } from "lucide-react";
+import React from "react";
 
-import ReportUrgency from "@/enums/report/urgency"
-
-export const urgencyIcon = {
-  [ReportUrgency.Low]: <CircleAlert className="text-yellow" />,
-  [ReportUrgency.Medium]: <CircleAlert className="text-accent" />,
-  [ReportUrgency.High]: <AlertTriangle className="text-primary" />,
+export const urgencyIcon: { [key: string]: React.ReactNode } = {
+  "Low": <CircleAlert className="text-accent2" />, // FIXME: Black iyang irender instead of yellow
+  "Medium": <CircleAlert className="text-accent" />,
+  "High": <AlertTriangle className="text-primary" />,
 };
 
 export default urgencyIcon;

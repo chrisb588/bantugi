@@ -1,19 +1,21 @@
 import axios from 'axios';
 
+import { useAuthContext } from '@/context/auth-context';
+
 const url = '';
 
 const useSignup = () => {
-  const { dispatch } = useSignupContext();
+  const { dispatch } = useAuthContext();
 
   const signup = async () => {
-    dispatch({ type: "SIGNUP_LOADING" });
+    dispatch({ type: "AUTH/SIGNUP_REQUEST" });
 
     try {
       const response = await axios.post(`${url}/auth/signup`,)
 
-      dispatch({ type: "SIGNUP_SUCCESS", payload: response.data });
+      dispatch({ type: "AUTH/SIGNUP_SUCCESS", payload: response.data });
     } catch (error) {
-      dispatch({ type: "SIGNUP_FAILURE", payload: error.response ? error.response.data.error : error.message });
+      dispatch({ type: "AUTH/SIGNUP_FAILURE", payload: error.response ? error.response.data.error : error.message });
     }
   }
 

@@ -1,5 +1,3 @@
-import ReportUrgency from "@/enums/report/urgency";
-import ReportStatus from "@/enums/report/status";
 import Location from "@/interfaces/location";
 
 export default interface Report {
@@ -7,8 +5,9 @@ export default interface Report {
   title: string;
   description?: string;
   category: string;
-  urgency: ReportUrgency;
-  status: ReportStatus;
+  urgency: "Low" | "Medium" | "High";
+  status: "Unresolved" | "Being Addressed" | "Resolved";
   images?: string[];
   location: Location;
+  createdAt: Date;
 }

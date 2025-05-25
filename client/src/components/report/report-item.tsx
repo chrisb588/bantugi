@@ -1,16 +1,15 @@
 import { Trash2, Bookmark, MapPin, CircleAlert, AlertTriangle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
+import { cn, formatArea } from '@/lib/utils';
+import urgencyIcon from '@/constants/urgency-icon';
+import Report from '@/interfaces/report';
 
 interface ReportItemProps {
-  title: string;
-  urgency: string;
-  location: string;
-  description: string;
-  category: string;
+  report: Report;
   deletable?: boolean;
 }
 
-export default function ReportItem({ title, urgency, location, description, category, deletable = false }: ReportItemProps) {
+export default function ReportItem({ report, deletable = false }: ReportItemProps) {
   // Darker shadow color 
   const shadowColor = 'rgba(160, 150, 130, 0.95)'; // Much darker shadow with higher opacity
                      
@@ -23,17 +22,12 @@ export default function ReportItem({ title, urgency, location, description, cate
       <div className="flex justify-between w-full">
         <div className="flex gap-2">
           <div className={cn(
-            "p-2 rounded-full self-start mt-1", 
-            urgency === "high" ? "text-primary" : (urgency === "medium" ? "text-accent" : "text-yellow")
+            "p-2 rounded-full self-start mt-1"
           )}>
-            {urgency === "high" ? (
-              <AlertTriangle size={18} />
-            ) : (
-              <CircleAlert size={18} />
-            )}
+            {urgencyIcon[report.urgency]}
           </div>
           <div className="flex flex-col justify-center align-center gap-1">
-            <div className="font-semibold text-sm text-slate-800 tracking-tight">{title}</div>
+            <div className="font-semibold text-sm text-slate-800 tracking-tight">{report.title}</div>
           </div>
         </div>
         {deletable ? (
@@ -48,13 +42,13 @@ export default function ReportItem({ title, urgency, location, description, cate
       </div>
       <div className="text-xs text-slate-500 flex items-center">
         <MapPin size={14} className="mr-1" />
-        {location}
+        {formatArea(report.location.address)}
       </div>
       <div className="text-sm text-slate-600 leading-relaxed line-clamp-1 overflow-hidden">
-        {description}
+        {report.description}
       </div>
       <div className="text-xs font-semibold text-slate-700 bg-muted px-3 py-1 rounded-full whitespace-nowrap">
-        {category}
+        {report.category}
       </div>
     </div>
   );
