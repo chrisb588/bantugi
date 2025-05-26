@@ -31,13 +31,23 @@ export default function ProfileCard({
     router.push('[username]/account/edit');
   };
 
+  const navigateBackToProfile = () => {
+    router.back();
+  }
+
   const handleDeleteAccount = () => {
     alert('Account delete clicked'); //just put the delete logic here
+
+    router.push('/');
   };
 
   const handleLogout = () => {
     alert('Logout clicked');
+
+    router.push('/');
   };
+
+  // TODO: Add a back button when at the edit interface
 
   return (
     <div className={cn("w-full max-w-lg flex flex-col gap-4 -mt-12", className)} {...props}>

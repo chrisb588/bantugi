@@ -5,6 +5,7 @@ import urgencyIcon from '@/constants/urgency-icon';
 import Report from '@/interfaces/report';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { DeleteConfirmationDialog } from '../ui/delete-confirmation-dialog';
 
 interface ReportItemProps {
   report: Report;
@@ -62,12 +63,17 @@ export default function ReportItem({ report, deletable = false, editable = false
                 <Pencil size={14} />
               </Button>
             )}
-            <button 
-              className="text-primary hover:text-accent transition-colors duration-150 ease-in-out p-1 flex-shrink-0"
-              onClick={handleDelete}
-            >
-              <Trash2 size={20} />
-            </button>
+            <DeleteConfirmationDialog
+              title="Are you sure you want to delete this report?"
+              trigger={
+                <button 
+                  className="text-primary hover:text-accent transition-colors duration-150 ease-in-out p-1 flex-shrink-0"
+                >
+                  <Trash2 size={20} />
+                </button>
+              }
+              onConfirm={handleDelete}
+            />
           </div>
         ) : (
           <button className="text-slate-400 hover:text-primary transition-colors duration-150 ease-in-out p-1 flex-shrink-0">

@@ -53,7 +53,7 @@ export default function ImageUploader() {
     useDropzone({
       onDrop,
       maxFiles: 10,
-      maxSize: 1000000,
+      maxSize: 100000000,
       accept: { "image/png": [], "image/jpg": [], "image/jpeg": [] },
     });
 
@@ -74,7 +74,7 @@ export default function ImageUploader() {
         </label>
         <div
           {...getRootProps()}
-          className="mx-auto flex cursor-pointer flex-col items-center justify-center gap-y-2 rounded-lg border border-foreground p-8 shadow-sm shadow-foreground"
+          className="bg-muted mx-auto flex cursor-pointer flex-col items-center justify-center gap-y-2 rounded-lg p-8 inner-shadow"
         >
           {preview && (
             <img
@@ -83,20 +83,22 @@ export default function ImageUploader() {
               className="max-h-[400px] rounded-lg"
             />
           )}
-          <ImagePlus className={`size-40 ${preview ? "hidden" : "block"}`} />
+          <ImagePlus className={`size-20 ${preview ? "hidden" : "block"}`} />
           <Input {...getInputProps()} type="file" />
-          {isDragActive ? (
-            <p>Drop the image!</p>
-          ) : (
-            <p>Click here or drag an image to upload it</p>
-          )}
+          <div className="text-center text-sm font-medium">
+            {isDragActive ? (
+              <div>Drop the image!</div>
+            ) : (
+              <div>Click here or drag an image to upload it</div>
+            )}
+          </div>
         </div>
         <div className="mt-2 text-destructive">
           {errors.image && <p>{errors.image.message as string}</p>}
           {fileRejections.length !== 0 && (
-            <p>
+            <div className="text-center text-sm font-medium">
               Image must be less than 1MB and of type png, jpg, or jpeg
-            </p>
+            </div>
           )}
         </div>
       </div>
