@@ -5,6 +5,7 @@ import Report from '@/interfaces/report'
 import Comment from '@/interfaces/comment'
 import Location from '@/interfaces/location'
 import Area from '@/interfaces/area'
+import { getUserID } from './user'
 
 // Pinky promise you return report or else its null
 export async function getReport(reportId: string): Promise<Report | null> {
@@ -63,7 +64,6 @@ export async function createReport(data: {
   images: string[];
   urgency: "Low" | "Medium" | "High";
   status: "Unresolved" | "In Progress" | "Resolved"; 
-  user_id: string;
 
   latitude: number;
   longitude: number;
@@ -77,6 +77,7 @@ export async function createReport(data: {
   const supabase: SupabaseClient = createServerClient();
   // Construct the EWKT string for the PostGIS point.
   // PostGIS ST_MakePoint expects (longitude, latitude). 
+  const user_id = getUserID();
   const pointEWKT = `SRID=4326;POINT(${data.longitude} ${data.latitude})`;
 
   const { data: createdAreaData, error: areaError } = await supabase
@@ -124,7 +125,7 @@ export async function createReport(data: {
       images: data.images,
       urgency: data.urgency,
       status: data.status,
-      user_id: data.user_id,
+      user_id: user_id,
       location_id: location_id,
   })
   .select('report_no, title, description, category, urgency, status, images, datePosted, user_id')

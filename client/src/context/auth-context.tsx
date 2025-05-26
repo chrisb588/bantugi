@@ -1,3 +1,4 @@
+'use client'
 import React, { useContext, createContext, ReactNode, useReducer } from 'react';
 
 import { AuthState } from '@/interfaces/action-states/auth';
