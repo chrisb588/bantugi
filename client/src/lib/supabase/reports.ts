@@ -7,8 +7,7 @@ import Location from '@/interfaces/location'
 import Area from '@/interfaces/area'
 import { getUserID } from './user.server'
 
-// Pinky promise you return report or else its null
-export async function getReport(reportId: string): Promise<Report | null> {
+export async function getReport(reportId: string) {
   const supabase: SupabaseClient = createServerClient();
 
   const expectedColumns = ` 
@@ -101,12 +100,7 @@ export async function createReport(data: {
     area_id: area_id, 
   });
 
-  if (error || !createdLocationData) {
-  console.error('Error creating location:', error?.message);
-  return null;
-  }
   const location_id = createdLocationData.location_id;
-
 
   const { data: createdReportRow, error: reportError } = await supabase
   .from('reports')
