@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { userSignUp, signInWithPassword } from '@/lib/supabase/user';
+import { userSignUp, signInWithPassword } from '@/lib/supabase/user.client';
 import UserAuthDetails from "@/interfaces/user-auth";
 import { useAuthContext } from '@/context/auth-context';
 

@@ -5,7 +5,7 @@ import Report from '@/interfaces/report'
 import Comment from '@/interfaces/comment'
 import Location from '@/interfaces/location'
 import Area from '@/interfaces/area'
-import { getUserID } from './user'
+import { getUserID } from './user.server'
 
 // Pinky promise you return report or else its null
 export async function getReport(reportId: string): Promise<Report | null> {
@@ -37,7 +37,7 @@ export async function getReport(reportId: string): Promise<Report | null> {
   const { data: dbReportData, error } = await supabase
     .from('reports')
     .select(expectedColumns)
-    .eq('report_no', reportId)
+    .eq('id', reportId)
     .single();
 
   if (error) {
@@ -51,7 +51,8 @@ export async function getReport(reportId: string): Promise<Report | null> {
   }
 
   // console.log('Raw data from Supabase:', JSON.stringify(dbReportData, null, 2)); // For debugging
-  return transformSupabaseReportToAppReport(dbReportData);
+  //return transformSupabaseReportToAppReport(dbReportData);
+  return dbReportData
 }
 
 // User needs to be authenticated when inserting 
@@ -73,44 +74,35 @@ export async function createReport(data: {
   areaCity?: string;
   areaMunicipality?: string;
   areaBarangay: string;
-}): Promise<Report | null> {
+}) {
   const supabase: SupabaseClient = createServerClient();
-  // Construct the EWKT string for the PostGIS point.
-  // PostGIS ST_MakePoint expects (longitude, latitude). 
+
   const user_id = getUserID();
-  const pointEWKT = `SRID=4326;POINT(${data.longitude} ${data.latitude})`;
-
-  const { data: createdAreaData, error: areaError } = await supabase
-    .from('areas')
-    .insert({
-        area_province: data.areaProvince,
-        area_city: data.areaCity,
-        area_municipality: data.areaMunicipality,
-        area_barangay: data.areaBarangay,
-    })
-    .select('area_id, area_province, area_city, area_municipality, area_barangay')
-    .single();
-
-  if (areaError || !createdAreaData) {
-      console.error('Error creating area:', areaError?.message);
-      return null;
+  if (!user_id) {
+    console.error('Authentication required: No user ID found');
+    return {
+      success: false,
+      error: 'Authentication required',
+      status: 401
+    };
   }
+
+  const createdAreaData = await createAreaRecord(supabase, {
+    areaProvince: data.areaProvince,
+    areaCity: data.areaCity,
+    areaMunicipality: data.areaMunicipality,
+    areaBarangay: data.areaBarangay,
+  });
   const area_id = createdAreaData.area_id;
 
+  const createdLocationData = await createLocationRecord(supabase, {
+    latitude: data.latitude,
+    longitude: data.longitude,
+    area_id: area_id, 
+  });
 
-  const { data: createdLocationData, error: locationError } = await supabase
-  .from('locations')
-  .insert({
-      latitude: data.latitude,
-      longitude: data.longitude,
-      spatial_index: pointEWKT,
-      area_id: area_id,
-  })
-  .select('location_id, latitude, longitude')
-  .single();
-
-  if (locationError || !createdLocationData) {
-  console.error('Error creating location:', locationError?.message);
+  if (error || !createdLocationData) {
+  console.error('Error creating location:', error?.message);
   return null;
   }
   const location_id = createdLocationData.location_id;
@@ -120,15 +112,13 @@ export async function createReport(data: {
   .from('reports')
   .insert({
       title: data.title,
-      category: data.category,
+      location: data.locationAddressText,
       description: data.description,
       images: data.images,
-      urgency: data.urgency,
       status: data.status,
       user_id: user_id,
-      location_id: location_id,
   })
-  .select('report_no, title, description, category, urgency, status, images, datePosted, user_id')
+  .select('id, user_id')
   .single();
 
   if (reportError || !createdReportRow) {
@@ -136,11 +126,62 @@ export async function createReport(data: {
       return null;
   }
 
-  const finalArea = transformToArea(createdAreaData);
-  const finalLocation = transformToLocation(createdLocationData, finalArea);
-  const transformedReport = transformToReport(createdReportRow, finalLocation);
-  
-  return transformedReport;
+  return createdLocationData;
+}
+
+async function createAreaRecord(
+  supabase: SupabaseClient,
+  areaData: {
+    areaProvince: string;
+    areaCity?: string;
+    areaMunicipality?: string;
+    areaBarangay: string;
+  }
+) {
+  const { data: createdAreaData, error: areaError } = await supabase
+    .from('area')
+    .insert({
+      area_province: areaData.areaProvince,
+      area_city: areaData.areaCity,
+      area_municipality: areaData.areaMunicipality,
+      area_barangay: areaData.areaBarangay,
+    })
+    .select('area_id, area_province, area_city, area_municipality, area_barangay')
+    .single();
+
+  if (areaError) {
+    console.error('Error creating area in helper:', areaError.message);
+    throw areaError; // Or return an error object: { error: areaError, data: null }
+  }
+  if (!createdAreaData) {
+    const noDataError = new Error('No data returned after creating area.');
+    console.error(noDataError.message);
+    throw noDataError; // Or return an error object
+  }
+  return createdAreaData;
+}
+
+async function createLocationRecord(
+  supabase: SupabaseClient,
+  locationData: {
+    latitude: number;
+    longitude: number;
+    area_id: number;
+  }
+) {
+  const rpcParams = {
+    lat: locationData.latitude,
+    lon: locationData.longitude,
+    p_area_id: locationData.area_id,
+  };
+
+  const { data: createdLocationData, error: locationError } = await supabase
+    .rpc('insert_location_with_point', rpcParams);
+  if (locationError) {
+    console.error('Error creating location in helper:', locationError.message);
+    throw locationError; // Or return an error object
+  }
+  return createdLocationData; // This might be null or a status if RPC doesn't return the row
 }
 
 // needs the current user data to delete a report
@@ -208,64 +249,65 @@ export async function getCommentsByReportId(
   }
 }
 
-function transformSupabaseReportToAppReport(dbReportData: any): Report | null {
-  if (!dbReportData) {
-    return null;
-  }
+// to be redone once backend is finalized and interface doesnt change
+// function transformSupabaseReportToAppReport(dbReportData: any): Report | null {
+//   if (!dbReportData) {
+//     return null;
+//   }
 
-  try {
-    // Safely access nested location and area data
-    const firstLocationData = dbReportData.location && Array.isArray(dbReportData.location) && dbReportData.location.length > 0
-      ? dbReportData.location[0]
-      : null;
+//   try {
+//     // Safely access nested location and area data
+//     const firstLocationData = dbReportData.location && Array.isArray(dbReportData.location) && dbReportData.location.length > 0
+//       ? dbReportData.location[0]
+//       : null;
 
-    // Assuming firstLocationData.area is also an array
-    const firstAreaData = firstLocationData?.area && Array.isArray(firstLocationData.area) && firstLocationData.area.length > 0
-      ? firstLocationData.area[0]
-      : null;
+//     // Assuming firstLocationData.area is also an array
+//     const firstAreaData = firstLocationData?.area && Array.isArray(firstLocationData.area) && firstLocationData.area.length > 0
+//       ? firstLocationData.area[0]
+//       : null;
 
-    const area = transformToArea(firstAreaData);
-    const location = transformToLocation(firstLocationData, area);
-    const transformedReport = transformToReport(dbReportData, location)
+//     const area = transformToArea(firstAreaData);
+//     const location = transformToLocation(firstLocationData, area);
+//     const transformedReport = transformToReport(dbReportData, location)
 
-    return transformedReport;
+//     return transformedReport;
 
-  } catch (transformationError: any) {
-    console.error('Error transforming Supabase report data:', transformationError.message, 'Raw data:', dbReportData);
-    return null;
-  }
-}
+//   } catch (transformationError: any) {
+//     console.error('Error transforming Supabase report data:', transformationError.message, 'Raw data:', dbReportData);
+//     return null;
+//   }
+// }
 
-function transformToArea(areaData: any): Area {
-  return {
-    id: areaData.area_id,
-    province: areaData.area_province,
-    city: areaData.area_city,
-    municipality: areaData.area_municipality,
-    barangay: areaData.area_barangay,
-  };
-}
+// function transformToArea(areaData: any): Area {
+//   return {
+//     id: areaData.area_id,
+//     province: areaData.area_province,
+//     city: areaData.area_city,
+//     municipality: areaData.area_municipality,
+//     barangay: areaData.area_barangay,
+//   };
+// }
 
-function transformToLocation(locationData: any, area: Area): Location {
-  return {
-    address: area,
-    coordinates: {
-      lat: locationData.latitude,
-      lng: locationData.longitude,
-    },
-  };
-}
+// function transformToLocation(locationData: any, area: Area): Location {
+//   return {
+//     address: area,
+//     coordinates: {
+//       lat: locationData.latitude,
+//       lng: locationData.longitude,
+//     },
+//   };
+// }
 
-function transformToReport(reportData: any, location: Location): Report {
-  return {
-    id: reportData.report_no,
-    title: reportData.title,
-    description: reportData.description,
-    category: reportData.category,
-    urgency: reportData.urgency as "Low" | "Medium" | "High",
-    status: reportData.status as "Unresolved" | "Being Addressed" | "Resolved",
-    images: reportData.images,
-    location: location,
-    createdAt: new Date(reportData.datePosted),
-  };
-}
+// function transformToReport(reportData: any, location: Location): Report {
+//   return {
+//     id: reportData.report_no,
+//     title: reportData.title,
+//     description: reportData.description,
+//     category: reportData.category,
+//     urgency: reportData.urgency as "Low" | "Medium" | "High",
+//     status: reportData.status as "Unresolved" | "Being Addressed" | "Resolved",
+//     images: reportData.images,
+//     location: location,
+//     createdAt: new Date(reportData.datePosted),
+//   };
+// }

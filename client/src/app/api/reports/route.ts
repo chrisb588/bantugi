@@ -4,7 +4,6 @@ import { createReport } from '@/lib/supabase/reports';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-
   const report = await createReport(body);
 
   if (!report) {
