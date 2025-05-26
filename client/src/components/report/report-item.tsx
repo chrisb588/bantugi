@@ -4,6 +4,7 @@ import { cn, formatArea } from '@/lib/utils';
 import urgencyIcon from '@/constants/urgency-icon';
 import Report from '@/interfaces/report';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 interface ReportItemProps {
   report: Report;
@@ -12,6 +13,8 @@ interface ReportItemProps {
 }
 
 export default function ReportItem({ report, deletable = false, editable = false }: ReportItemProps) {
+  const router = useRouter();
+  
   // Darker shadow color 
   const shadowColor = 'rgba(160, 150, 130, 0.95)'; // Much darker shadow with higher opacity
 
@@ -24,13 +27,18 @@ export default function ReportItem({ report, deletable = false, editable = false
     // Handle delete functionality - can be implemented later
     console.log("Delete report:", report.id);
   };
+
+  const handleClick = () => {
+    router.push(`/report/${report.id}`)
+  }
                      
   return (
-    <div className="w-full mb-3 mx-2 py-3 px-4 flex flex-col gap-2 items-start space-x-3 rounded-lg border border-gray-100 hover:shadow-md transition-shadow duration-200 ease-in-out" 
+    <div className="w-full mb-3 mx-2 py-3 px-4 flex flex-col gap-2 items-start space-x-3 rounded-lg bg-background hover:shadow-md transition-shadow duration-200 ease-in-out" 
          style={{ 
-           background: '#FAF9F5', // Lighter than bg-background
            boxShadow: `0 2px 3px ${shadowColor}`
-         }}>
+         }}
+         onClick={handleClick}
+         >
       <div className="flex justify-between w-full">
         <div className="flex gap-2">
           <div className={cn(

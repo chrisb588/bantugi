@@ -10,33 +10,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
-export interface Author {
-  name: string;
-  location?: string;
-  avatar?: string;
-}
-
-export interface Comment {
-  id: string;
-  author: Author;
-  text: string;
-  datePosted: string;
-}
-
-export interface Report {
-  id: string;
-  title: string;
-  category: string;
-  location: string;
-  status: "Unresolved" | "In Progress" | "Resolved";
-  urgency: "low" | "medium" | "high";
-  description: string;
-  images: string[];
-  datePosted: string;
-  author: Author;
-  comments: Comment[];
-}
+import Report from "@/interfaces/report";
+import urgencyIcon from '@/constants/urgency-icon';
+import { formatArea } from '@/lib/utils';
 
 interface ReportCardProps {
   report: Report;
@@ -55,22 +31,26 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
 
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     // Handle comment submission - can be implemented later
     console.log("Comment submitted:", commentText);
+
     setCommentText("");
   };
 
   const nextImage = () => {
     setCurrentImageIndex((prevIndex) => 
-      prevIndex === report.images.length - 1 ? 0 : prevIndex + 1
+      prevIndex === report.images!.length - 1 ? 0 : prevIndex + 1
     );
   };
 
   const prevImage = () => {
     setCurrentImageIndex((prevIndex) => 
-      prevIndex === 0 ? report.images.length - 1 : prevIndex - 1
+      prevIndex === 0 ? report.images!.length - 1 : prevIndex - 1
     );
   };
+
+  // TODO: Display "no images provided" when there are no images
 
   return (
     <div className={cn("w-full max-w-lg flex flex-col gap-4 -mt-12", className)} {...props}>
@@ -80,31 +60,26 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
             <div className="flex items-center">
               <div className={cn(
                 "p-2 rounded-full self-start mt-1", 
-                report.urgency === "high" ? "text-primary" : (report.urgency === "medium" ? "text-accent" : "text-yellow")
               )}>
-                {report.urgency === "high" ? (
-                  <AlertTriangle size={28} />
-                ) : (
-                  <CircleAlert size={28} />
-                )}
+                {urgencyIcon[report.urgency]}
               </div>
               <div className="text-lg text-foreground font-bold">{report.title}</div>
             </div>
               {/* Report Images */}
               <div className="relative w-full h-64 rounded-lg overflow-hidden mb-5">
-                {report.images.length > 0 && (
+                {report.images!.length > 0 && (
                   <Image
-                    src={report.images[currentImageIndex] || "/img/placeholder-image.jpg"}
+                    src={report.images![currentImageIndex] || "/img/placeholder-image.jpg"}
                     alt={report.title}
                     fill
                     className="object-cover"
                   />
                 )}
                 
-                {report.images.length > 1 && (
+                {report.images!.length > 1 && (
                   <>
                     {/* Image navigation buttons - fixed alignment */}
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-2">
+                    {currentImageIndex != 0 && (<div className="absolute inset-y-0 left-0 flex items-center pl-2">
                       <Button 
                         variant="outline" 
                         size="icon" 
@@ -113,8 +88,8 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
                       >
                         <ChevronRight className="h-4 w-4 rotate-180 text-primary" />
                       </Button>
-                    </div>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                    </div>)}
+                    {currentImageIndex != report.images!.length-1 &&(<div className="absolute inset-y-0 right-0 flex items-center pr-2">
                       <Button 
                         variant="outline" 
                         size="icon" 
@@ -123,11 +98,11 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
                       >
                         <ChevronRight className="h-4 w-4 text-primary" />
                       </Button>
-                    </div>
+                    </div>)}
                     
                     {/* Image indicators */}
                     <div className="absolute bottom-2 right-2 flex gap-1">
-                      {report.images.map((_, i) => (
+                      {report.images!.map((_, i) => (
                         <div 
                           key={i} 
                           className={cn(
@@ -145,7 +120,7 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-1.5">
                   <MapPin className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">{report.location}</span>
+                  <span className="text-sm">{formatArea(report.location.address)}</span>
                 </div>
                 <Button 
                   variant="outline" 
@@ -165,6 +140,9 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
                 </span>
               </div>
               
+              {/* TODO: Do we allow users to edit the status?
+                      If so kay i-add lang ang dropdown*/}
+
               {/* Status */}
               <div className="flex items-center gap-2 mb-5">
                 <span className="h-2 w-2 rounded-full text-primary"></span>
@@ -177,6 +155,8 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
               <div className="mb-5">
                 <p className="text-sm">{report.description}</p>
               </div>
+
+              {/* TODO: Include posted by username (no need to show profile photo or location) */}
               
               <Separator className="my-4 w-full" />
               
@@ -222,29 +202,29 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
                     </form>
                     
                     {/* Comments list */}
-                    {report.comments.map((comment) => (
+                    {report.comments ? (report.comments.map((comment) => (
                       <div key={comment.id} className="flex items-start gap-3 pb-3 border-b border-gray-100">
                         <div className="relative h-8 w-8 rounded-full overflow-hidden bg-gray-200">
-                          {comment.author.avatar && (
-                            <Image
-                              src={comment.author.avatar}
-                              alt={comment.author.name}
-                              fill
-                              className="object-cover"
-                            />
-                          )}
+                          <Image
+                            src={comment.creator.profilePicture || '/img/placeholder-avatar.png'}
+                            alt={comment.creator.username}
+                            fill
+                            className="object-cover"
+                          />
                         </div>
                         <div className="flex-1">
                           <div className="flex flex-col">
-                            <span className="font-medium text-sm">{comment.author.name}</span>
-                            {comment.author.location && (
-                              <span className="text-xs text-gray-500">{comment.author.location}</span>
+                            <span className="font-medium text-sm">{comment.creator.username}</span>
+                            {comment.creator.location && (
+                              <span className="text-xs text-gray-500">{formatArea(comment.creator.location!.address)}</span>
                             )}
-                            <p className="text-sm mt-1">{comment.text}</p>
+                            <p className="text-sm mt-1">{comment.content}</p>
                           </div>
                         </div>
                       </div>
-                    ))}
+                    ))) : (
+                      <p className="text-sm text-gray-500">No comments.</p>
+                    )}
                   </div>
                 )}
               </div>

@@ -19,6 +19,10 @@ export const sampleResults: Report[] = [
       description: 'Severe flooding reported, roads impassable. Avoid area. Emergency services dispatched.',
       category: 'Flood Alert',
       createdAt: new Date('2023-10-01T08:00:00Z'),
+      creator: {
+        username: "Juan Dela Cruz",
+        profilePicture: "/img/avatar.jpg"
+      },
     },
     {
       id: 2,
@@ -37,6 +41,10 @@ export const sampleResults: Report[] = [
       description: 'Power outage expected from 1 PM to 5 PM today for urgent maintenance work. Please prepare accordingly.',
       category: 'Utility Work',
       createdAt: new Date('2023-10-01T08:00:00Z'),
+      creator: {
+        username: "Juan Dela Cruz",
+        profilePicture: "/img/avatar.jpg"
+      },
     },
     {
       id: 3,
@@ -55,6 +63,10 @@ export const sampleResults: Report[] = [
       description: 'Risk of landslides due to heavy rains. Residents advised to evacuate to safer ground immediately.',
       category: 'Geohazard',
       createdAt: new Date('2023-10-01T08:00:00Z'),
+      creator: {
+        username: "Juan Dela Cruz",
+        profilePicture: "/img/avatar.jpg"
+      },
     },
     {
       id: 4,
@@ -73,6 +85,10 @@ export const sampleResults: Report[] = [
       description: 'Street festival today, Mango Avenue closed to traffic until 10 PM. Plan alternate routes to avoid congestion.',
       category: 'Traffic',
       createdAt: new Date('2023-10-01T08:00:00Z'),
+      creator: {
+        username: "Juan Dela Cruz",
+        profilePicture: "/img/avatar.jpg"
+      },
     },
     {
       id: 5,
@@ -91,6 +107,10 @@ export const sampleResults: Report[] = [
       description: 'Risk of landslides due to heavy rains. Residents advised to evacuate to safer ground immediately.',
       category: 'Geohazard',
       createdAt: new Date('2023-10-01T08:00:00Z'),
+      creator: {
+        username: "Juan Dela Cruz",
+        profilePicture: "/img/avatar.jpg"
+      },
     },
     {
       id: 6,
@@ -109,5 +129,54 @@ export const sampleResults: Report[] = [
       description: 'Street festival today, Mango Avenue closed to traffic until 10 PM. Plan alternate routes to avoid congestion.',
       category: 'Traffic',
       createdAt: new Date('2023-10-01T08:00:00Z'),
+      creator: {
+        username: "Juan Dela Cruz",
+        profilePicture: "/img/avatar.jpg"
+      },
     },
   ];
+
+  export const sampleReport: Report = {
+    id: 1,
+    title: "BAHA SA UP",
+    category: "Environmental",
+    location: {
+      address: {
+        id: 1,
+        barangay: "Lahug",
+        city: "Cebu City",
+        province: "Cebu",
+      },
+      coordinates: { lat: 10.123, lng: 123.456 }
+    },
+    status: "Unresolved",
+    urgency: "Low",
+    description: "Panabangi mi ngari kay kusog kaayo ang baha diri, abot tuhod ang baha!",
+    // images: ["/img/flood-image.png"],
+    images: ["/img/flood-image.png", "/img/flood-image.jpg"],
+    createdAt: new Date(),
+    creator: {
+      username: "Juan Dela Cruz",
+      profilePicture: "/img/avatar.jpg"
+    },
+    comments: [
+      {
+        id: 1,
+        creator: {
+          username: "creeeees",
+          location: {
+            address: {
+              id: 1,
+              barangay: "Jagobiao",
+              city: "Mandaue City",
+              province: "Cebu",
+            },
+            coordinates: { lat: 10.123, lng: 123.456 }
+          },
+          profilePicture: "/img/avatar.jpg"
+        },
+        content: "Di diay ko, hmph!",
+        createdAt: new Date()
+      }
+    ]
+  };

@@ -1,4 +1,6 @@
 import Location from "@/interfaces/location";
+import Comment from "@/interfaces/comment";
+import User from "@/interfaces/user";
 
 export default interface Report {
   id: number;
@@ -10,4 +12,6 @@ export default interface Report {
   images?: string[];
   location: Location;
   createdAt: Date;
+  creator: User;
+  comments?: Comment[];
 }
