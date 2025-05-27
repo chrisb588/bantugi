@@ -17,5 +17,4 @@ Bantugi is our final project for CMSC 127 (File Processing and Database Systems)
 - NextJS with Typescript
 - Leaflet
 - Shadcn UI
-- Django
-- PostgreSQL
+- Supabase
