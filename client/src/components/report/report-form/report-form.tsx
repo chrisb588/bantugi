@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils"
 
@@ -19,6 +20,9 @@ import { UrgencyDropdownMenu } from "@/components/report/report-form/urgency-dro
 import ImageUploader from "@/components/report/report-form/image-uploader";
 import { Separator } from "@/components/ui/separator";
 import Report from "@/interfaces/report";
+import { Locate } from "lucide-react";
+import { useMapContext } from "@/context/map-context";
+import { useMapMarker } from "@/hooks/use-map-marker";
 
 interface ReportFormProps extends React.ComponentProps<"div"> {
   report?: Report;
@@ -29,8 +33,58 @@ export function ReportForm({
   report,
   ...props
 }: ReportFormProps) {
+  const [choosingLocation, setChoosingLocation] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<L.LatLng | null>(null);
+  const { mapInstanceRef } = useMapContext();
+  const { addMarker, removeMarker, getMarkerPosition } = useMapMarker();
+
   const router = useRouter();
-  
+
+  useEffect(() => {
+    // Cleanup marker when component unmounts
+    return () => {
+      removeMarker();
+    };
+  }, []);
+
+  const handleSetLocation = () => {
+    setChoosingLocation(true);
+
+    // Add click handler to map
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.on('click', (e) => {
+        const marker = addMarker(e.latlng);
+        
+        if (marker) {
+          marker.on('dragend', () => {
+            const position = getMarkerPosition();
+            if (position) {
+              setSelectedLocation(position);
+            }
+          });
+          
+          setSelectedLocation(e.latlng);
+        }
+      });
+    }
+  };
+
+  const handleCancelSetLocation = () => {
+    removeMarker();
+    setSelectedLocation(null);
+  };
+
+  const handleConfirmLocation = () => {
+    setChoosingLocation(false);
+    
+    // Remove click handler from map
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.off('click');
+    }
+
+    console.log(selectedLocation);
+  };
+
   const handleSubmit = () => {
     // submit logic here
 
@@ -43,9 +97,17 @@ export function ReportForm({
     router.back();
   }
 
+  // TODO: Add button to confirm location and return to form
+
   return (
-    <div className={cn("w-full max-w-lg flex flex-col gap-4 -mt-12", className)} {...props}>
-      <Card className="h-[85vh] min-h-[400px] max-h-[800px]"> {/* Set fixed height here */}
+    <div className={cn(
+      "w-full max-w-lg flex flex-col gap-4 -mt-12", 
+      className,
+    )} {...props}>
+      <Card className={cn(
+        "h-[85vh] min-h-[400px] max-h-[800px]",
+        choosingLocation ? "pointer-events-none hidden" : "pointer-events-auto",
+      )}> {/* Set fixed height here */}
         <ScrollArea className="h-full"> {/* Make ScrollArea full height of card */}
           <CardHeader className="text-left sticky top-0 bg-background z-10">
             <CardTitle className="text-2xl">{report ? "Edit Report" : "Create a Report"}</CardTitle>
@@ -81,6 +143,13 @@ export function ReportForm({
                       <UrgencyDropdownMenu />
                     </div>
                   </div>
+                  <div 
+                    className="flex items-center justify-start gap-2 text-md font-medium"
+                    onClick={handleSetLocation}
+                  >
+                    Mark Location on Map*
+                    <Locate size={16} className={selectedLocation ? "text-primary" : "text-foreground"} />
+                  </div>
                   <ImageUploader />
                 </div>
                 <Button type="submit" className="w-[70%] mx-auto" onClick={handleSubmit}>
@@ -94,6 +163,16 @@ export function ReportForm({
           </CardContent>
         </ScrollArea> 
       </Card>
+
+      {choosingLocation && (
+        <Button
+          className="fixed bottom-20 left-4 z-[1000] pointer-events-auto"
+          onClick={handleConfirmLocation}
+          disabled={!selectedLocation}
+        >
+          Confirm Location
+        </Button>
+      )}
     </div>
   )
 }

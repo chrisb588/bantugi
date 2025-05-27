@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LatLngExpression } from 'leaflet';
+import { useMapContext } from '@/context/map-context';
 
 interface MapProps {
   center?: LatLngExpression;
@@ -11,14 +11,13 @@ interface MapProps {
 }
 
 export default function Map({
-  center = [10.32256745, 123.898804407153], // UP Cebu Lahug Campus
+  center = [10.32256745, 123.898804407153],
   zoom = 17,
   className = '',
 }: MapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
+  const { mapInstanceRef } = useMapContext();
 
-  // Rest of your component remains the same...
   useEffect(() => {
     delete (L.Icon.Default.prototype as any)._getIconUrl;
     L.Icon.Default.mergeOptions({
@@ -46,13 +45,13 @@ export default function Map({
         }
       };
     }
-  }, [center, zoom]);
+  }, [center, zoom, mapInstanceRef]);
 
   useEffect(() => {
     if (mapInstanceRef.current) {
       mapInstanceRef.current.setView(center, zoom);
     }
-  }, [center, zoom]);
+  }, [center, zoom, mapInstanceRef]);
 
   return (
     <div 
@@ -60,15 +59,5 @@ export default function Map({
       className={`w-full h-screen ${className}`} 
       style={{ position: 'relative', zIndex: 0 }}
     />
-  );
-}
-
-export function useMap() {
-  return dynamic(
-    () => import('@/components/map/map'),
-    { 
-      ssr: false,
-      loading: () => <div className="w-full h-screen flex items-center justify-center bg-background">Loading map...</div>
-    }
   );
 }

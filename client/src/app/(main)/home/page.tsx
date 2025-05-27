@@ -1,15 +1,19 @@
 "use client";
 
 import SearchBar from "@/components/search/search-bar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SearchResultsList from "@/components/search/search-results-list";
 import { MobileNavbar } from "@/components/generic/mobile-navbar";
 import { FilterButton } from "@/components/ui/filter-button";
 import { FilterDropdown } from "@/components/ui/filter-dropdown";
+import { sampleResults } from "@/test";
+import { useReportMarkers } from "@/hooks/use-report-markers";
 
 export default function HomePage() {
   const [isSearchScreenVisible, setIsSearchScreenVisible] = useState(false);
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+
+  useReportMarkers(sampleResults);
 
   const openSearchScreen = () => setIsSearchScreenVisible(true);
   const closeSearchScreen = () => {

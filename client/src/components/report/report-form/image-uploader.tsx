@@ -64,9 +64,9 @@ export default function ImageUploader() {
 
   return (
     <div className="space-y-4">
-      <div className="mx-auto md:w-1/2">
+      <div className="flex flex-col items-center mx-auto md:w-1/2">
         <label
-          className={`block mb-2 text-xl font-semibold tracking-tight ${
+          className={`block mb-2 text-md font-semibold tracking-tight ${
             fileRejections.length !== 0 ? "text-destructive" : ""
           }`}
         >
