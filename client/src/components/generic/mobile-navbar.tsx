@@ -1,8 +1,10 @@
 import { MapPin, Bookmark, CopyCheck, Plus } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useUserContext } from '@/context/user-context';
+import Image from 'next/image';
 
 export function MobileNavbar() {
-  const username = 'user';
+  const { state: { user } } = useUserContext();
   
   const router = useRouter();
   const currentPath = usePathname();
@@ -13,8 +15,8 @@ export function MobileNavbar() {
   }
 
   const navigateToSaveReports = () => {
-    if (currentPath === `/${username}/saved-reports`) return; 
-    router.push(`/${username}/saved-reports`);
+    if (currentPath === `/${user?.username}/saved-reports`) return; 
+    router.push(`/${user?.username}/saved-reports`);
   }
 
   const navigateToCreateReport = () => {
@@ -23,13 +25,13 @@ export function MobileNavbar() {
   }
 
   const navigateToMyReports = () => {
-    if (currentPath === `/${username}/my-reports`) return;
-    router.push(`/${username}/my-reports`);
+    if (currentPath === `/${user?.username}/my-reports`) return;
+    router.push(`/${user?.username}/my-reports`);
   }
 
   const navigateToAccount = () => {
-    if (currentPath === `/${username}/account`) return;
-    router.push(`/${username}/account`);
+    if (currentPath === `/${user?.username}/account`) return;
+    router.push(`/${user?.username}/account`);
   }
 
   return (
@@ -67,7 +69,15 @@ export function MobileNavbar() {
           className="flex-1 flex justify-center p-2 text-gray-500 dark:text-gray-400 hover:text-primary"
           onClick={navigateToAccount}
         >
-          <div className="h-5 w-5 overflow-hidden rounded-full bg-primary"></div>
+          <div className="h-5 w-5 overflow-hidden rounded-full">
+            <Image
+              src={user?.profilePicture || '/img/avatar.jpg'}
+              alt="Profile"
+              width={20}
+              height={20}
+              className="object-cover"
+            />
+          </div>
         </button>
       </div>
     </div>

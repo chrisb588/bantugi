@@ -52,6 +52,9 @@ export function CreateAccountForm({
 
     try {
       // TODO: api call for signup (backend)
+      // the api call should respond w/ user details (and maybe jwt token?)
+      // since we need the user's avatar for the sidebar and
+      // their deets for the profile page
       console.log('Login attempt with:', formData);
       
       // On successful login:

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils"
+import { cn, formatArea } from "@/lib/utils"
 import Image from "next/image";
 import { MapPin, Settings2, Trash, ArrowLeftFromLine, Pencil, ChevronLeft } from "lucide-react";
 
@@ -20,6 +20,8 @@ import { useMapContext } from "@/context/map-context";
 import { useMapMarker } from "@/hooks/use-map-marker";
 import EditDetailsCard from "@/components/user/edit-details-card";
 import L from "leaflet";
+import { useUserContext } from "@/context/user-context";
+import { convertLatLngToArea } from "@/lib/geocoding";
 
 interface ProfileCardProps extends React.ComponentProps<"div"> {
   edit?: boolean;
@@ -30,17 +32,21 @@ export default function ProfileCard({
   edit = false,
   ...props
 }: ProfileCardProps) {
+  const { state: { user }, updateUser } = useUserContext();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingLocation, setIsEditingLocation] = useState(false);
-  const [username, setUsername] = useState("username"); // Replace with actual username
-  const [selectedLocation, setSelectedLocation] = useState<L.LatLng | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<L.LatLng | null>(
+    user?.location?.coordinates ? 
+    new L.LatLng(user.location.coordinates.lat, user.location.coordinates.lng) : 
+    null
+  );
   
   const { mapInstanceRef } = useMapContext();
   const { addMarker, removeMarker, getMarkerPosition, initializeMarker } = useMapMarker();
   const router = useRouter();
 
   const navigateToEditProfile = () => {
-    router.push('[username]/account/edit');
+    router.push(`/${user?.username}/account/edit`);
   };
 
   const navigateBackToProfile = () => {
@@ -53,10 +59,10 @@ export default function ProfileCard({
   }
 
   const handleConfirmNameEdit = (newUsername: string) => {
-    setUsername(newUsername);
+    updateUser({ username: newUsername });
     setIsEditingName(false);
-    // Add API call to update username
-  }
+    // TODO: Add API call to update username (backend)
+  };
 
   const handleEditLocation = () => {
     setIsEditingLocation(true);
@@ -94,11 +100,28 @@ export default function ProfileCard({
     }
   }
 
-  const handleConfirmLocation = () => {
+  const handleConfirmLocation = async () => {
+    if (selectedLocation) {
+      const address = await convertLatLngToArea(selectedLocation);
+
+      if (!address) {
+        // Provide a fallback or handle the error as needed
+        // Here, we throw an error, but you can set a default Area object if appropriate
+        throw new Error("Failed to retrieve address for the selected location.");
+      }
+      
+      updateUser({
+        location: {
+          coordinates: {
+            lat: selectedLocation.lat,
+            lng: selectedLocation.lng
+          },
+          address: address,
+        }
+      });
+    }
     setIsEditingLocation(false);
-    // Add API call to update location
     
-    // Remove click handler from map
     if (mapInstanceRef.current) {
       mapInstanceRef.current.off('click');
     }
@@ -166,16 +189,16 @@ export default function ProfileCard({
               )}
               <div className="relative h-32 w-32 rounded-full overflow-hidden bg-muted">
                 <Image
-                  src="/img/avatar.jpg"
-                  alt="Profile"
-                  fill
-                  className="object-cover"
-                />
+                src={user?.profilePicture || "/img/avatar.jpg"}
+                alt="Profile"
+                fill
+                className="object-cover"
+              />
               </div>
               <div className="flex flex-col items-center">
                 {edit ? (
                   <div className="flex items-center gap-2">
-                    <div className="font-bold text-lg text-foreground">{username}</div>
+                    <div className="font-bold text-lg text-foreground">{user?.username}</div>
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -186,12 +209,12 @@ export default function ProfileCard({
                     </Button>
                   </div>
                 ) : (
-                  <div className="font-bold text-lg text-foreground">{username}</div>
+                  <div className="font-bold text-lg text-foreground">{user?.username}</div>
                 )}
                 <div className="flex items-center gap-1 text-foreground">
                   <MapPin size={16} />
                   <div className="font-bold text-sm">
-                    Jagobiao, Mandaue City, Cebu
+                    {user?.location && formatArea(user?.location?.address)}
                   </div>
                   {edit && (
                     <Button 
