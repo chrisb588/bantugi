@@ -153,7 +153,7 @@ export function ReportForm({
                   <ImageUploader />
                 </div>
                 <Button type="submit" className="w-[70%] mx-auto" onClick={handleSubmit}>
-                  Submit
+                  {report ? "Save" : "Submit"} 
                 </Button>
               </div>
             </form>

@@ -11,12 +11,14 @@ interface ReportListProps {
   title: string;
   className?: string;
   isMyReportsView?: boolean; // when used for my reports page
+  isSavedReportsView?: boolean; // when used for saved reports page
 }
 
 const ReportList: React.FC<ReportListProps> = ({ 
   title, 
   className, 
   isMyReportsView = false,
+  isSavedReportsView = false,
   ...props 
 }) => {
   return (
@@ -36,6 +38,7 @@ const ReportList: React.FC<ReportListProps> = ({
                 report={result}
                 deletable={isMyReportsView} // only allow deletion of own reports in my reports page
                 editable={isMyReportsView} // only allow editing of own reports in my reports page
+                isSaved={isSavedReportsView} // indicate if this is a saved report
               />
             ))}
           </CardContent>

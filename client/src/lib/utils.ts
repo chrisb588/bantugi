@@ -10,5 +10,5 @@ export function cn(...inputs: ClassValue[]) {
 
 // formats area object into a string
 export function formatArea(area: Area) {
-  return `${area.barangay}, ${area.municipality || area.city}, ${area.province}`;
+  return `${area.barangay}, ${area.city}, ${area.province}`;
 }

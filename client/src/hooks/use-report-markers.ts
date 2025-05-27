@@ -5,8 +5,6 @@ import L from 'leaflet';
 import { useMapContext } from '@/context/map-context';
 import type Report from '@/interfaces/report';
 
-// FIXME: Get rid of windows is not defined error
-
 export function useReportMarkers(reports: Report[]) {
   const { mapInstanceRef } = useMapContext();
   

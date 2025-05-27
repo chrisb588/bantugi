@@ -13,7 +13,8 @@ export default function HomePage() {
   const [isSearchScreenVisible, setIsSearchScreenVisible] = useState(false);
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
 
-  useReportMarkers(sampleResults);
+  // FIXME: Get rid of windows is not defined error
+  // useReportMarkers(sampleResults);
 
   const openSearchScreen = () => setIsSearchScreenVisible(true);
   const closeSearchScreen = () => {

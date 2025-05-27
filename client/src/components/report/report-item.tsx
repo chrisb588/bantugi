@@ -9,11 +9,17 @@ import { DeleteConfirmationDialog } from '../ui/delete-confirmation-dialog';
 
 interface ReportItemProps {
   report: Report;
+  isSaved?: boolean;
   deletable?: boolean;
   editable?: boolean;
 }
 
-export default function ReportItem({ report, deletable = false, editable = false }: ReportItemProps) {
+export default function ReportItem({ 
+  report, 
+  isSaved = false, 
+  deletable = false, 
+  editable = false 
+}: ReportItemProps) {
   const router = useRouter();
   
   // Darker shadow color 
@@ -21,7 +27,7 @@ export default function ReportItem({ report, deletable = false, editable = false
 
   const handleEdit = () => {
     // Handle edit functionality - can be implemented later
-    console.log("Edit report:", report.id);
+    router.push(`/report/${report.id}/edit`);
   };
 
   const handleDelete = () => {
@@ -32,13 +38,29 @@ export default function ReportItem({ report, deletable = false, editable = false
   const handleClick = () => {
     router.push(`/report/${report.id}`)
   }
+
+  const handleAction = (e: React.MouseEvent) => {
+    const action = (e.target as HTMLElement).closest('[data-action]')?.getAttribute('data-action');
+    
+    switch (action) {
+      case 'edit':
+        handleEdit();
+        break;
+      case 'delete':
+        break;
+      case 'view':
+        handleClick();;
+        break;
+    }
+  };
                      
   return (
     <div className="w-full mb-3 mx-2 py-3 px-4 flex flex-col gap-2 items-start space-x-3 rounded-lg bg-background hover:shadow-md transition-shadow duration-200 ease-in-out" 
          style={{ 
            boxShadow: `0 2px 3px ${shadowColor}`
          }}
-         onClick={handleClick}
+         onClick={handleAction}
+         data-action="view"
          >
       <div className="flex justify-between w-full">
         <div className="flex gap-2">
@@ -58,7 +80,8 @@ export default function ReportItem({ report, deletable = false, editable = false
                 variant="ghost" 
                 size="icon" 
                 className="h-6 w-6 text-slate-800 hover:text-primary transition-colors duration-150 ease-in-out"
-                onClick={handleEdit}
+                onClick={handleAction}
+                data-action="edit"
               >
                 <Pencil size={14} />
               </Button>
@@ -68,6 +91,8 @@ export default function ReportItem({ report, deletable = false, editable = false
               trigger={
                 <button 
                   className="text-primary hover:text-accent transition-colors duration-150 ease-in-out p-1 flex-shrink-0"
+                  onClick={handleAction}
+                  data-action="delete"
                 >
                   <Trash2 size={20} />
                 </button>
@@ -76,8 +101,11 @@ export default function ReportItem({ report, deletable = false, editable = false
             />
           </div>
         ) : (
-          <button className="text-slate-400 hover:text-primary transition-colors duration-150 ease-in-out p-1 flex-shrink-0">
-            <Bookmark size={20} />
+          <button className={cn(
+            "transition-colors duration-150 ease-in-out p-1 flex-shrink-0",
+            isSaved ? "text-primary hover:text-accent" : "text-slate-400 hover:text-primary"
+          )}>
+            <Bookmark size={20} fill={isSaved ? "currentColor" : "none"} />
           </button>
         )}
       </div>
