@@ -10,7 +10,7 @@ export default interface Report {
   urgency: "Low" | "Medium" | "High";
   status: "Unresolved" | "Being Addressed" | "Resolved";
   images?: string[];
-  location: Location;
+  location?: Location;
   createdAt: Date;
   creator: User;
   comments?: Comment[];

@@ -16,22 +16,41 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export function CategoryDropdownMenu() {
+interface CategoryDropdownMenuProps {
+  value?: string;
+  onValueChange: (value: string) => void;
+}
+
+export function CategoryDropdownMenu({
+  value,
+  onValueChange
+}: CategoryDropdownMenuProps) {
+  const categories = [
+    "Environmental",
+    "Infrastructure",
+    "Basic Services",
+    "Crime and Order",
+    "Miscellaneous"
+  ];
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 rounded-full px-3 py-1 bg-muted text-xs">
-          <div className="w-full"></div>
+        <button className="flex items-center justify-between gap-2 rounded-full px-3 py-1 bg-muted text-xs w-full">
+          <span>{value || "-----"}</span>
           <ChevronDown className="h-3 w-3" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-32">
-        <DropdownMenuItem>Environmental</DropdownMenuItem>
-        <DropdownMenuItem>Infrastracture</DropdownMenuItem>
-        <DropdownMenuItem>Basic Services</DropdownMenuItem>
-        <DropdownMenuItem>Crime and Order</DropdownMenuItem>
-        <DropdownMenuItem>Miscellaneous</DropdownMenuItem>
+        {categories.map((category) => (
+          <DropdownMenuItem 
+            key={category}
+            onClick={() => onValueChange(category)}
+          >
+            {category}
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

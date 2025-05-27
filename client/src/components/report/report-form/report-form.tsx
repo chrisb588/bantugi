@@ -24,6 +24,7 @@ import { Locate } from "lucide-react";
 import { useMapContext } from "@/context/map-context";
 import { useMapMarker } from "@/hooks/use-map-marker";
 import L from "leaflet";
+import { convertLatLngToArea } from "@/lib/geocoding";
 
 interface ReportFormProps extends React.ComponentProps<"div"> {
   report?: Report;
@@ -36,10 +37,19 @@ export function ReportForm({
 }: ReportFormProps) {
   const [choosingLocation, setChoosingLocation] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<L.LatLng | null>(
-    report?.location.coordinates ? 
+    report?.location?.coordinates ? 
     new L.LatLng(report.location.coordinates.lat, report.location.coordinates.lng) : 
     null
   );
+  const [formData, setFormData] = useState<Partial<Report>>({
+    title: report?.title || '',
+    description: report?.description || '',
+    category: report?.category || '',
+    urgency: report?.urgency || 'Low',
+    status: report?.status || 'Unresolved',
+    images: report?.images || [],
+    location: report?.location || undefined,
+  });
 
   const { mapInstanceRef } = useMapContext();
   const { addMarker, removeMarker, getMarkerPosition, initializeMarker } = useMapMarker();
@@ -52,6 +62,37 @@ export function ReportForm({
       removeMarker();
     };
   }, []);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [id]: value
+    }));
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setFormData(prev => ({
+      ...prev,
+      category
+    }));
+  };
+
+  const handleUrgencyChange = (urgency: "Low" | "Medium" | "High") => {
+    setFormData(prev => ({
+      ...prev,
+      urgency
+    }));
+  };
+
+  const handleImagesChange = (images: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      images
+    }));
+  };
 
   const handleSetLocation = () => {
     setChoosingLocation(true);
@@ -94,7 +135,7 @@ export function ReportForm({
     removeMarker();
     
     // Restore previous location if editing
-    if (report?.location.coordinates) {
+    if (report?.location?.coordinates) {
       setSelectedLocation(
         new L.LatLng(report.location.coordinates.lat, report.location.coordinates.lng)
       );
@@ -106,30 +147,58 @@ export function ReportForm({
     }
   };
 
-  const handleConfirmLocation = () => {
+  const handleConfirmLocation = async () => {
     setChoosingLocation(false);
     
-    // Remove click handler from map
     if (mapInstanceRef.current) {
       mapInstanceRef.current.off('click');
     }
 
-    console.log(selectedLocation);
+    if (selectedLocation) {
+      try {
+        const address = await convertLatLngToArea(selectedLocation);
+        setFormData(prev => ({
+          ...prev,
+          location: Object.assign({}, prev.location, {
+            coordinates: { lat: selectedLocation.lat, lng: selectedLocation.lng },
+            address: address ?? prev.location?.address
+          })
+        }));
+      } catch (error) {
+        console.error('Failed to get address:', error);
+        // Handle error (maybe set a default address or show error message)
+      }
+    }
   };
 
-  const handleSubmit = () => {
-    // submit logic here
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.title || !formData.location?.coordinates) {
+      // Show error message
+      return;
+    }
 
+    // Create final report object
+    const finalReport: Partial<Report> = {
+      ...formData,
+      createdAt: new Date(),
+      status: 'Unresolved',
+      // Add other required fields
+    };
+
+    // api call to create report
+
+    console.log('Submitting report:', finalReport);
     router.push('/home');
-  }
+  };
 
   const handleCancel = () => {
     // clear form
 
     router.back();
   }
-
-  // TODO: Add button to confirm location and return to form
 
   return (
     <div className={cn(
@@ -157,22 +226,35 @@ export function ReportForm({
                       id="title"
                       type="text"
                       required
+                      value={formData.title}
+                      onChange={handleInputChange}
                     />
                   </div>
                   <div className="grid gap-1">
                     <div className="flex items-center">
                       <Label htmlFor="description">Description</Label>
                     </div>
-                    <Textarea id="description" className="min-h-[100px]" />
+                    <Textarea
+                      id="description"
+                      className="min-h-[100px]"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                    />
                   </div>
                   <div className="flex items-center justify-between gap-4">
                     <div className="grid gap-1 w-full">
                       <Label htmlFor="category">Category</Label>
-                      <CategoryDropdownMenu />
+                      <CategoryDropdownMenu
+                        value={formData.category}
+                        onValueChange={handleCategoryChange}
+                      />
                     </div>
                     <div className="grid gap-1 w-full">
                       <Label htmlFor="urgency">Urgency</Label>
-                      <UrgencyDropdownMenu />
+                      <UrgencyDropdownMenu
+                        value={formData.urgency}
+                        onValueChange={handleUrgencyChange}
+                      />
                     </div>
                   </div>
                   <div 
@@ -182,7 +264,10 @@ export function ReportForm({
                     Mark Location on Map*
                     <Locate size={16} className={selectedLocation ? "text-primary" : "text-foreground"} />
                   </div>
-                  <ImageUploader />
+                  <ImageUploader
+                    images={formData.images}
+                    onChange={handleImagesChange}
+                  />
                 </div>
                 <Button type="submit" className="w-[70%] mx-auto" onClick={handleSubmit}>
                   {report ? "Save" : "Submit"} 
@@ -197,7 +282,7 @@ export function ReportForm({
       </Card>
 
       {choosingLocation && (
-        <div className="fixed bottom-20 left-4 z-[1000] flex gap-2">
+        <div className="fixed bottom-20 left-4 z-[1000] flex gap-2 pointer-events-auto">
           <Button
             onClick={handleConfirmLocation}
             disabled={!selectedLocation}
