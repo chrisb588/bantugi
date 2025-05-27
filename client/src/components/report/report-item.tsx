@@ -111,7 +111,7 @@ export default function ReportItem({
       </div>
       <div className="text-xs text-slate-500 flex items-center">
         <MapPin size={14} className="mr-1" />
-        {formatArea(report.location.address)}
+        {report.location ? formatArea(report.location.address) : "Unknown Location"}
       </div>
       <div className="text-sm text-slate-600 leading-relaxed line-clamp-1 overflow-hidden">
         {report.description}

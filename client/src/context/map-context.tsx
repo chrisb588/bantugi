@@ -7,6 +7,7 @@ interface MapContextType {
   markerRef: React.RefObject<L.Marker | null>;
   updateMapView: (center: LatLngExpression, zoom: number) => void;
   centerOnLocation: (location: LatLngExpression) => void;
+  getBounds: () => L.LatLngBounds | null;
 }
 
 const MapContext = createContext<MapContextType | null>(null);
@@ -27,12 +28,17 @@ export function MapProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getBounds = () => {
+    return mapInstanceRef.current?.getBounds() || null;
+  };
+
   return (
     <MapContext.Provider value={{ 
       mapInstanceRef, 
       markerRef, 
       updateMapView,
-      centerOnLocation 
+      centerOnLocation,
+      getBounds
     }}>
       {children}
     </MapContext.Provider>

@@ -52,6 +52,10 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
 
   // TODO: Display "no images provided" when there are no images
 
+  // TODO: Add a back button when opening from a report item to go back to reports list
+
+  // TODO: Also try to fix daw the hover (styles for hovering doesn't get applied)
+
   return (
     <div className={cn("w-full max-w-lg flex flex-col gap-4 -mt-12", className)} {...props}>
       <Card className="h-[85vh] min-h-[400px] max-h-[800px]"> {/* Set fixed height here */}
@@ -120,7 +124,9 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-1.5">
                   <MapPin className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">{formatArea(report.location.address)}</span>
+                  <span className="text-sm">
+                    {report.location ? formatArea(report.location.address) : "Unknown Location"}
+                  </span>
                 </div>
                 <Button 
                   variant="outline" 

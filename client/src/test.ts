@@ -21,7 +21,7 @@ export const sampleResults: Report[] = [
       createdAt: new Date('2023-10-01T08:00:00Z'),
       creator: {
         username: "Juan Dela Cruz",
-        profilePicture: "/img/avatar.jpg"
+        profilePicture: "/img/avatar.png"
       },
     },
     {
@@ -43,7 +43,7 @@ export const sampleResults: Report[] = [
       createdAt: new Date('2023-10-01T08:00:00Z'),
       creator: {
         username: "Juan Dela Cruz",
-        profilePicture: "/img/avatar.jpg"
+        profilePicture: "/img/avatar.png"
       },
     },
     {
@@ -65,7 +65,7 @@ export const sampleResults: Report[] = [
       createdAt: new Date('2023-10-01T08:00:00Z'),
       creator: {
         username: "Juan Dela Cruz",
-        profilePicture: "/img/avatar.jpg"
+        profilePicture: "/img/avatar.png"
       },
     },
     {
@@ -87,7 +87,7 @@ export const sampleResults: Report[] = [
       createdAt: new Date('2023-10-01T08:00:00Z'),
       creator: {
         username: "Juan Dela Cruz",
-        profilePicture: "/img/avatar.jpg"
+        profilePicture: "/img/avatar.png"
       },
     },
     {
@@ -109,7 +109,7 @@ export const sampleResults: Report[] = [
       createdAt: new Date('2023-10-01T08:00:00Z'),
       creator: {
         username: "Juan Dela Cruz",
-        profilePicture: "/img/avatar.jpg"
+        profilePicture: "/img/avatar.png"
       },
     },
     {
@@ -131,7 +131,7 @@ export const sampleResults: Report[] = [
       createdAt: new Date('2023-10-01T08:00:00Z'),
       creator: {
         username: "Juan Dela Cruz",
-        profilePicture: "/img/avatar.jpg"
+        profilePicture: "/img/avatar.png"
       },
     },
   ];
@@ -157,7 +157,7 @@ export const sampleResults: Report[] = [
     createdAt: new Date(),
     creator: {
       username: "Juan Dela Cruz",
-      profilePicture: "/img/avatar.jpg"
+      profilePicture: "/img/avatar.png"
     },
     comments: [
       {
@@ -173,7 +173,7 @@ export const sampleResults: Report[] = [
             },
             coordinates: { lat: 10.123, lng: 123.456 }
           },
-          profilePicture: "/img/avatar.jpg"
+          profilePicture: "/img/avatar.png"
         },
         content: "Di diay ko, hmph!",
         createdAt: new Date()

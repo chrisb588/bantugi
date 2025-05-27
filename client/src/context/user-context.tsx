@@ -13,7 +13,7 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | null>(null);
 
-export function UserProvider({ children }: { children: ReactNode }) {
+export function UserContextProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(userReducer, initialState);
 
   const setUser = (user: User) => {

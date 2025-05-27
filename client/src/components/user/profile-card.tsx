@@ -189,7 +189,7 @@ export default function ProfileCard({
               )}
               <div className="relative h-32 w-32 rounded-full overflow-hidden bg-muted">
                 <Image
-                src={user?.profilePicture || "/img/avatar.jpg"}
+                src={user?.profilePicture || "/img/avatar.png"}
                 alt="Profile"
                 fill
                 className="object-cover"
@@ -198,7 +198,7 @@ export default function ProfileCard({
               <div className="flex flex-col items-center">
                 {edit ? (
                   <div className="flex items-center gap-2">
-                    <div className="font-bold text-lg text-foreground">{user?.username}</div>
+                    <div className="font-bold text-lg text-foreground">{user ? user.username : "User"}</div>
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -214,7 +214,7 @@ export default function ProfileCard({
                 <div className="flex items-center gap-1 text-foreground">
                   <MapPin size={16} />
                   <div className="font-bold text-sm">
-                    {user?.location && formatArea(user?.location?.address)}
+                    {user?.location ? formatArea(user?.location?.address) : "Unknown Location"}
                   </div>
                   {edit && (
                     <Button 

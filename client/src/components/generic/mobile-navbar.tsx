@@ -71,10 +71,10 @@ export function MobileNavbar() {
         >
           <div className="h-5 w-5 overflow-hidden rounded-full">
             <Image
-              src={user?.profilePicture || '/img/avatar.jpg'}
+              src={user?.profilePicture || '/img/avatar.png'}
               alt="Profile"
-              width={20}
-              height={20}
+              width={28}
+              height={28}
               className="object-cover"
             />
           </div>

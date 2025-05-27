@@ -22,7 +22,6 @@ export default function MainLayout({
   return (
     <div className="font-satoshi">
       <Provider>
-        <DesktopSidebar />
         <MobileNavbar />
         <Map />
         <div className="fixed inset-0 pointer-events-none">
