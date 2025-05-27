@@ -1,58 +1,42 @@
 // Where to function for CRUD function
 import { SupabaseClient } from '@supabase/supabase-js'
 import { createServerClient } from './server'
-import Report from '@/interfaces/report'
 import Comment from '@/interfaces/comment'
-import Location from '@/interfaces/location'
-import Area from '@/interfaces/area'
 import { getUserID } from './user.server'
 
 export async function getReport(reportId: string) {
   const supabase: SupabaseClient = createServerClient();
 
-  const expectedColumns = ` 
-    report_no, 
-    datePosted, 
-    category, 
-    description, 
-    title, 
-    status, 
-    images, 
-    user_id, 
-    urgency,
-    location:location_id (
-      latitude,
-      longitude,
-      area:area_id (
-        area_id, 
-        area_province,
-        area_city,
-        area_municipality,
-        area_barangay
-      )
-    )
+  const expectedColumns = `
+    id,
+    datePosted,
+    description,
+    location,
+    title,
+    status,
+    images,
+    user_id
   `;
 
   const { data: dbReportData, error } = await supabase
     .from('reports')
     .select(expectedColumns)
     .eq('id', reportId)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    console.error('Get report error:', error.message);
-    return null;
-  }
-  
-  if (!dbReportData) {
-    console.warn(`No data was returned for reportId: ${reportId}`);
+    console.error('Supabase getReport error:', error);
     return null;
   }
 
-  // console.log('Raw data from Supabase:', JSON.stringify(dbReportData, null, 2)); // For debugging
-  //return transformSupabaseReportToAppReport(dbReportData);
-  return dbReportData
+  if (!dbReportData) {
+    console.warn(`No report found for ID: ${reportId}`);
+    return null;
+  }
+
+  return dbReportData;
 }
+
 
 // User needs to be authenticated when inserting 
 // data to reports table

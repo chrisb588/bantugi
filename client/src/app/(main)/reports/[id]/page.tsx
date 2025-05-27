@@ -1,38 +1,59 @@
-'use client';
+'use client'
 
-import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertTriangle, MapPin } from "lucide-react";
-import { ReportCard, Report } from "@/components/report/report-card";
+import { AlertTriangle } from "lucide-react";
+import { ReportCard } from "@/components/report/report-card";
+import { Report } from "@/interfaces/report";
+import { MobileNavbar } from "@/components/generic/mobile-navbar";
+import { useEffect, useState, use } from "react";
+// using tempreport until everything can be represented in the database
+// report also needs GIS/ latitiude and longitude information for 
+// view in map features
 
-export default function ReportViewPage() {
-  // Mock data - can be replaced with actual API calls
-  const report: Report = {
-    id: "1",
-    title: "BAHA SA UP",
-    category: "Environmental",
-    location: "Lahug, Cebu City, Cebu",
-    status: "Unresolved",
-    urgency: "low",
-    description: "Panabangi mi ngari kay kusog kaayo ang baha diri, abot tuhod ang baha!",
-    images: ["/img/flood-image.png", "/img/flood-image.png"],
-    datePosted: new Date().toISOString(),
+export default function ReportViewPage({ params }: { params: { id: string } }) {
+  const [report, setReport] = useState<Report | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const resolvedParams = use(params); 
+  const { id } = resolvedParams;
+
+  useEffect(() => {
+
+    async function fetchReport() {
+      try {
+        const res = await fetch(`/api/reports/${id}`);
+        if (!res.ok) throw new Error("Failed to fetch report");
+        const data = await res.json();
+        setReport(data);
+      } catch (err) {
+        setError((err as Error).message);
+      }
+    }
+
+    fetchReport();
+  }, [id]);
+
+  if (error) return <div>Error: {error}</div>;
+  if (!report) return <div>Loading report...</div>;
+  console.log('test');
+  const tempreport = {
+    ...report,
     author: {
       name: "Juan Dela Cruz",
-      location: "Jagobiao, Mandaue City, Cebu",
+      location: report.location, // Use the location object from the original report
       avatar: "/img/avatar.jpg"
     },
+    datePosted: report.datePosted,
     comments: [
       {
         id: "1",
         author: {
           name: "creeeees",
-          location: "Jagobiao, Mandaue City, Cebu",
+          location: report.location, // Use the location object from the original report
           avatar: "/img/avatar.jpg"
         },
         text: "Di diay ko, hmph!",
-        datePosted: new Date().toISOString()
+        datePosted: report.datePosted,
       }
     ]
   };
@@ -47,7 +68,7 @@ export default function ReportViewPage() {
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10 overflow-hidden pointer-events-auto">
-      <ReportCard report={report} onViewMap={handleViewMap} />  
+      <ReportCard report={tempreport} onViewMap={handleViewMap} />  
     </div>
   );
 

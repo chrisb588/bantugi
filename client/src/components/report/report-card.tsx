@@ -30,7 +30,7 @@ export interface Report {
   category: string;
   location: string;
   status: "Unresolved" | "In Progress" | "Resolved";
-  urgency: "low" | "medium" | "high";
+  urgency: "Low" | "Medium" | "High";
   description: string;
   images: string[];
   datePosted: string;
@@ -80,9 +80,9 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
             <div className="flex items-center">
               <div className={cn(
                 "p-2 rounded-full self-start mt-1", 
-                report.urgency === "high" ? "text-primary" : (report.urgency === "medium" ? "text-accent" : "text-yellow")
+                report.urgency === "High" ? "text-primary" : (report.urgency === "Medium" ? "text-accent" : "text-yellow")
               )}>
-                {report.urgency === "high" ? (
+                {report.urgency === "High" ? (
                   <AlertTriangle size={28} />
                 ) : (
                   <CircleAlert size={28} />

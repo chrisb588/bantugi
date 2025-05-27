@@ -1,13 +1,15 @@
-import Location from "@/interfaces/location";
+import { Author } from "@/components/report/report-card";
 
-export default interface Report {
+export interface Report {
   id: number;
   title: string;
-  description?: string;
   category: string;
+  location: string;
+  status: "Unresolved" | "In Progress" | "Resolved";
   urgency: "Low" | "Medium" | "High";
-  status: "Unresolved" | "Being Addressed" | "Resolved";
-  images?: string[];
-  location: Location;
-  createdAt: Date;
+  description: string;
+  images: string[];
+  datePosted: string;
+  author: Author;
+  comments: Comment[];
 }

@@ -1,80 +1,44 @@
-"use client";
+'use client';
+
 import React from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useDropzone } from "react-dropzone";
-import { z } from "zod";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 
-const formSchema = z.object({
-  image: z
-    .instanceof(File)
-    .refine((file) => file.size !== 0, "Please upload an image"),
-});
+interface ImageUploaderProps {
+  onUpload: (file: File) => void;
+}
 
-export default function ImageUploader() {
+export default function ImageUploader({ onUpload }: ImageUploaderProps) {
   const [preview, setPreview] = React.useState<string | ArrayBuffer | null>("");
-
-  const {
-    register,
-    setValue,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    clearErrors,
-    resetField,
-  } = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    mode: "onBlur",
-    defaultValues: {
-      image: new File([""], "filename"),
-    },
-  });
 
   const onDrop = React.useCallback(
     (acceptedFiles: File[]) => {
+      const file = acceptedFiles[0];
+      if (!file) return;
+
       const reader = new FileReader();
-      try {
-        reader.onload = () => setPreview(reader.result);
-        reader.readAsDataURL(acceptedFiles[0]);
-        setValue("image", acceptedFiles[0]);
-        clearErrors("image");
-      } catch (error) {
-        setPreview(null);
-        resetField("image");
-      }
+      reader.onload = () => setPreview(reader.result);
+      reader.readAsDataURL(file);
+
+      onUpload(file);
     },
-    [setValue, clearErrors, resetField]
+    [onUpload]
   );
 
   const { getRootProps, getInputProps, isDragActive, fileRejections } =
     useDropzone({
       onDrop,
-      maxFiles: 10,
-      maxSize: 1000000,
+      maxFiles: 1,
+      maxSize: 1000000, // 1MB limit
       accept: { "image/png": [], "image/jpg": [], "image/jpeg": [] },
     });
-
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values);
-    toast.success(`Image uploaded successfully 🎉 ${values.image.name}`);
-  };
 
   return (
     <div className="space-y-4">
       <div className="mx-auto md:w-1/2">
-        <label
-          className={`block mb-2 text-xl font-semibold tracking-tight ${
-            fileRejections.length !== 0 ? "text-destructive" : ""
-          }`}
-        >
-          Upload your image
-        </label>
         <div
           {...getRootProps()}
-          className="mx-auto flex cursor-pointer flex-col items-center justify-center gap-y-2 rounded-lg border border-foreground p-8 shadow-sm shadow-foreground"
+          className="border-2 border-dashed border-gray-300 p-4 rounded-lg text-center cursor-pointer"
         >
           {preview && (
             <img
@@ -83,8 +47,7 @@ export default function ImageUploader() {
               className="max-h-[400px] rounded-lg"
             />
           )}
-          <ImagePlus className={`size-40 ${preview ? "hidden" : "block"}`} />
-          <Input {...getInputProps()} type="file" />
+          <input {...getInputProps()} type="file" />
           {isDragActive ? (
             <p>Drop the image!</p>
           ) : (
@@ -92,11 +55,8 @@ export default function ImageUploader() {
           )}
         </div>
         <div className="mt-2 text-destructive">
-          {errors.image && <p>{errors.image.message as string}</p>}
           {fileRejections.length !== 0 && (
-            <p>
-              Image must be less than 1MB and of type png, jpg, or jpeg
-            </p>
+            <p>Image must be less than 1MB and of type png, jpg, or jpeg</p>
           )}
         </div>
       </div>
