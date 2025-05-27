@@ -17,10 +17,11 @@ export function useReportMarkers(reports: Report[]) {
       const L = (await import('leaflet')).default;
 
       reports.forEach((report) => {
-        const { coordinates } = report.location;
-        const marker = L.marker([coordinates.lat, coordinates.lng], {
-          icon: createReportMarkerIcon(report.urgency),
-        });
+        const { coordinates } = report.location || {};
+        if (coordinates) {
+          const marker = L.marker([coordinates.lat, coordinates.lng], {
+            icon: createReportMarkerIcon(report.urgency),
+          });
 
         // Add popup with report info
         marker.bindPopup(`
@@ -33,6 +34,7 @@ export function useReportMarkers(reports: Report[]) {
 
         marker.addTo(mapInstanceRef.current!);
         markers.push(marker);
+        }
       });
     };
 
