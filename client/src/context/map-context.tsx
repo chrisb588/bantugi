@@ -6,6 +6,7 @@ interface MapContextType {
   mapInstanceRef: React.RefObject<L.Map | null>;
   markerRef: React.RefObject<L.Marker | null>;
   updateMapView: (center: LatLngExpression, zoom: number) => void;
+  centerOnLocation: (location: LatLngExpression) => void;
 }
 
 const MapContext = createContext<MapContextType | null>(null);
@@ -20,8 +21,19 @@ export function MapProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const centerOnLocation = (location: LatLngExpression) => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setView(location, 18); // Zoom level 18 for detailed view
+    }
+  };
+
   return (
-    <MapContext.Provider value={{ mapInstanceRef, markerRef, updateMapView }}>
+    <MapContext.Provider value={{ 
+      mapInstanceRef, 
+      markerRef, 
+      updateMapView,
+      centerOnLocation 
+    }}>
       {children}
     </MapContext.Provider>
   );

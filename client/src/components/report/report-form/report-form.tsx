@@ -23,6 +23,7 @@ import Report from "@/interfaces/report";
 import { Locate } from "lucide-react";
 import { useMapContext } from "@/context/map-context";
 import { useMapMarker } from "@/hooks/use-map-marker";
+import L from "leaflet";
 
 interface ReportFormProps extends React.ComponentProps<"div"> {
   report?: Report;
@@ -34,9 +35,14 @@ export function ReportForm({
   ...props
 }: ReportFormProps) {
   const [choosingLocation, setChoosingLocation] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<L.LatLng | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<L.LatLng | null>(
+    report?.location.coordinates ? 
+    new L.LatLng(report.location.coordinates.lat, report.location.coordinates.lng) : 
+    null
+  );
+
   const { mapInstanceRef } = useMapContext();
-  const { addMarker, removeMarker, getMarkerPosition } = useMapMarker();
+  const { addMarker, removeMarker, getMarkerPosition, initializeMarker } = useMapMarker();
 
   const router = useRouter();
 
@@ -50,8 +56,22 @@ export function ReportForm({
   const handleSetLocation = () => {
     setChoosingLocation(true);
 
-    // Add click handler to map
     if (mapInstanceRef.current) {
+      // If editing an existing location, initialize the marker there
+      if (selectedLocation) {
+        const marker = initializeMarker(selectedLocation);
+        
+        if (marker) {
+          marker.on('dragend', () => {
+            const position = getMarkerPosition();
+            if (position) {
+              setSelectedLocation(position);
+            }
+          });
+        }
+      }
+
+      // Add click handler to map
       mapInstanceRef.current.on('click', (e) => {
         const marker = addMarker(e.latlng);
         
@@ -70,8 +90,20 @@ export function ReportForm({
   };
 
   const handleCancelSetLocation = () => {
+    setChoosingLocation(false);
     removeMarker();
-    setSelectedLocation(null);
+    
+    // Restore previous location if editing
+    if (report?.location.coordinates) {
+      setSelectedLocation(
+        new L.LatLng(report.location.coordinates.lat, report.location.coordinates.lng)
+      );
+    }
+
+    // Remove click handler from map
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.off('click');
+    }
   };
 
   const handleConfirmLocation = () => {
@@ -165,13 +197,20 @@ export function ReportForm({
       </Card>
 
       {choosingLocation && (
-        <Button
-          className="fixed bottom-20 left-4 z-[1000] pointer-events-auto"
-          onClick={handleConfirmLocation}
-          disabled={!selectedLocation}
-        >
-          Confirm Location
-        </Button>
+        <div className="fixed bottom-20 left-4 z-[1000] flex gap-2">
+          <Button
+            onClick={handleConfirmLocation}
+            disabled={!selectedLocation}
+          >
+            Confirm Location
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleCancelSetLocation}
+          >
+            Cancel
+          </Button>
+        </div>
       )}
     </div>
   )

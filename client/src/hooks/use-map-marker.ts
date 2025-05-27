@@ -2,7 +2,20 @@ import { useMapContext } from "@/context/map-context";
 import L from "leaflet";
 
 export function useMapMarker() {
-  const { mapInstanceRef, markerRef } = useMapContext();
+  const { mapInstanceRef, markerRef, centerOnLocation } = useMapContext();
+
+  const initializeMarker = (position: L.LatLngExpression) => {
+    if (!mapInstanceRef.current) return;
+
+    // Center map on the initial position
+    centerOnLocation(position);
+
+    // Create initial marker
+    markerRef.current = L.marker(position, { draggable: true })
+      .addTo(mapInstanceRef.current);
+
+    return markerRef.current;
+  };
 
   const addMarker = (position: L.LatLngExpression) => {
     if (!mapInstanceRef.current) return;
@@ -31,6 +44,7 @@ export function useMapMarker() {
   };
 
   return {
+    initializeMarker,
     addMarker,
     removeMarker,
     getMarkerPosition,
