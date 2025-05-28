@@ -51,9 +51,9 @@ export function useReportMarkers(reports: Report[]) {
 const createReportMarkerIcon = (urgency: string) => {
   const iconUrl = `data:image/svg+xml;base64,${btoa(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${
-      urgency === 'High' ? '#ef4444' : 
-      urgency === 'Medium' ? '#f97316' : 
-      '#eab308'
+      urgency === 'High' ? '#930157' : 
+      urgency === 'Medium' ? '#B8180D' : 
+      '#EA9F41'
     }" width="24" height="24">
       <circle cx="12" cy="12" r="8"/>
     </svg>

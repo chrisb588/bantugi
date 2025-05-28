@@ -28,6 +28,9 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-accent2: var(--accent2);
+  --color-urgency-high: var(--urgency-high);
+  --color-urgency-medium: var(--urgency-medium);
+  --color-urgency-low: var(--urgency-low);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -77,7 +80,10 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  --accent2: #EEDB2D;
+  --accent2: #FEDA24;
+  --urgency-high: #930157;
+  --urgency-medium: #B8180D;
+  --urgency-low: #EA9F41;
 }
 
 /* .dark {
