@@ -4,8 +4,8 @@ import { createServerClient } from './server'
 import Comment from '@/interfaces/comment'
 import { getUserID } from './user.server'
 
-export async function getReport(reportId: string) {
-  const supabase: SupabaseClient = createServerClient();
+export async function getReport(server: SupabaseClient, reportId: string) {
+  const supabase: SupabaseClient = server;
 
   const expectedColumns = `
     id,
@@ -41,7 +41,7 @@ export async function getReport(reportId: string) {
 // User needs to be authenticated when inserting 
 // data to reports table
 // CHECK: Auth policies for reports table  
-export async function createReport(data: {
+export async function createReport(server: SupabaseClient, data: {
   title: string;
   category: string;
   description: string;
@@ -58,9 +58,9 @@ export async function createReport(data: {
   areaMunicipality?: string;
   areaBarangay: string;
 }) {
-  const supabase: SupabaseClient = createServerClient();
+  const supabase: SupabaseClient = server;
 
-  const user_id = getUserID();
+  const user_id = await getUserID(server);
   if (!user_id) {
     console.error('Authentication required: No user ID found');
     return {
@@ -165,11 +165,11 @@ async function createLocationRecord(
 // needs the current user data to delete a report
 // to be updated
 export async function deleteReport(
+    server: SupabaseClient,
     id: string
 ) {
-    const supabase: SupabaseClient = await createServerClient();
 
-    const { data, error} = await supabase
+    const { data, error} = await server
     .from('reports')
     .delete()
     .eq('report_no', id);
@@ -184,11 +184,10 @@ export async function deleteReport(
 
 // pinky promise you return an array of comments
 export async function getCommentsByReportId(
+  server: SupabaseClient,
   reportId: string
 ): Promise<Comment[]> {
-  const supabase: SupabaseClient = await createServerClient();
-
-  const { data, error } = await supabase
+  const { data, error } = await server
     .from("comments")
     .select(`
       id,

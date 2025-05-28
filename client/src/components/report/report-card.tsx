@@ -10,33 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
-export interface Author {
-  name: string;
-  location?: string;
-  avatar?: string;
-}
-
-export interface Comment {
-  id: string;
-  author: Author;
-  text: string;
-  datePosted: string;
-}
-
-export interface Report {
-  id: string;
-  title: string;
-  category: string;
-  location: string;
-  status: "Unresolved" | "In Progress" | "Resolved";
-  urgency: "Low" | "Medium" | "High";
-  description: string;
-  images: string[];
-  datePosted: string;
-  author: Author;
-  comments: Comment[];
-}
+import { Report } from "@/interfaces/report";
 
 interface ReportCardProps {
   report: Report;
@@ -145,7 +119,7 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-1.5">
                   <MapPin className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">{report.location}</span>
+                  <span className="text-sm">{report.location.address}</span>
                 </div>
                 <Button 
                   variant="outline" 
@@ -225,10 +199,10 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
                     {report.comments.map((comment) => (
                       <div key={comment.id} className="flex items-start gap-3 pb-3 border-b border-gray-100">
                         <div className="relative h-8 w-8 rounded-full overflow-hidden bg-gray-200">
-                          {comment.author.avatar && (
+                          {comment.creator.profilePicture && (  
                             <Image
-                              src={comment.author.avatar}
-                              alt={comment.author.name}
+                              src={comment.creator.profilePicture}
+                              alt={comment.creator.username}
                               fill
                               className="object-cover"
                             />
@@ -236,11 +210,11 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
                         </div>
                         <div className="flex-1">
                           <div className="flex flex-col">
-                            <span className="font-medium text-sm">{comment.author.name}</span>
-                            {comment.author.location && (
-                              <span className="text-xs text-gray-500">{comment.author.location}</span>
+                            <span className="font-medium text-sm">{comment.creator.username}</span>
+                            {comment.creator.location && (
+                              <span className="text-xs text-gray-500">{comment.creator.location}</span>
                             )}
-                            <p className="text-sm mt-1">{comment.text}</p>
+                            <p className="text-sm mt-1">{comment.content}</p>
                           </div>
                         </div>
                       </div>

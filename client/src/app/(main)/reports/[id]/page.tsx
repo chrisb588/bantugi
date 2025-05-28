@@ -14,8 +14,7 @@ import { useEffect, useState, use } from "react";
 export default function ReportViewPage({ params }: { params: { id: string } }) {
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const resolvedParams = use(params); 
-  const { id } = resolvedParams;
+  const { id } = params;
 
   useEffect(() => {
 
@@ -35,25 +34,26 @@ export default function ReportViewPage({ params }: { params: { id: string } }) {
 
   if (error) return <div>Error: {error}</div>;
   if (!report) return <div>Loading report...</div>;
-  console.log('test');
+
   const tempreport = {
+    
     ...report,
     author: {
-      name: "Juan Dela Cruz",
-      location: report.location, // Use the location object from the original report
-      avatar: "/img/avatar.jpg"
+      username: "Juan Dela Cruz",
+      location: "UP Cebu", // Use the location object from the original report
+      profilePicture: "/img/avatar.jpg"
     },
     datePosted: report.datePosted,
     comments: [
       {
         id: "1",
-        author: {
-          name: "creeeees",
-          location: report.location, // Use the location object from the original report
-          avatar: "/img/avatar.jpg"
+        creator: {
+          username: "creeeees",
+          location: "UP Cebu", // Use the location object from the original report
+          profilePicture: "/img/avatar.jpg"
         },
-        text: "Di diay ko, hmph!",
-        datePosted: report.datePosted,
+        content: "Di diay ko, hmph!",
+        createdAt: new Date(report.datePosted),
       }
     ]
   };
@@ -62,9 +62,6 @@ export default function ReportViewPage({ params }: { params: { id: string } }) {
     // Implementation for view in map functionality
     console.log("View in map clicked");
   };
-
-  // Define a consistent red color
-  const redColor = "#B8180D";
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10 overflow-hidden pointer-events-auto">

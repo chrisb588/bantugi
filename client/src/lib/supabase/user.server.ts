@@ -3,10 +3,9 @@ import { createServerClient } from "./server";
 import UserAuthDetails from "@/interfaces/user-auth";
 import User from "@/interfaces/user";
 
-export async function userSignUp(payload: UserAuthDetails) {
-    const supabase : SupabaseClient = await createServerClient();
+export async function userSignUp(server: SupabaseClient, payload: UserAuthDetails) {
 
-    const {data : signupData, error: signUpError} = await supabase.auth.signUp({
+    const {data : signupData, error: signUpError} = await server.auth.signUp({
         email: payload.username,
         password: payload.password
     })
@@ -18,7 +17,7 @@ export async function userSignUp(payload: UserAuthDetails) {
 
     const userId = signupData?.user?.id;
 
-    const { data: Profile, error: profileError} = await supabase
+    const { data: Profile, error: profileError} = await server
     .from('users')
     .select('*')
     .eq('user_id', userId)
@@ -33,20 +32,23 @@ export async function userSignUp(payload: UserAuthDetails) {
     return Profile as User
 }
 
-export async function getUserID() {
-    const supabase : SupabaseClient = await createServerClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
+export async function getUserID(server: SupabaseClient) {
+    const { data: { user }, error } = await server.auth.getUser();
 
-    if (user) {
-    const userId = user.id;
-    console.log('Current user ID:', userId);
+    if (error) {
+        console.error('Error getting user:', error.message);
+        return null;
     }
 
+    if (user) {
+        return user.id;
+    }
+    
+    return null;
 }
 
-export async function signInWithPassword(payload: UserAuthDetails) {
-    const supabase : SupabaseClient = await createServerClient();
-    const { data : { user }, error : signInError} = await supabase.auth.signInWithPassword({
+export async function signInWithPassword(server: SupabaseClient, payload: UserAuthDetails) {
+    const { data : { user }, error : signInError} = await server.auth.signInWithPassword({
         email: payload.username,
         password: payload.password,        
     });

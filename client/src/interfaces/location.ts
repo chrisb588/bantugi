@@ -1,7 +1,7 @@
 import Area from './area';
 
 export default interface Location {
-  address: Area;
+  address: string;
   coordinates: {
     lat: number;
     lng: number;
