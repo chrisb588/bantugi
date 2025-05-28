@@ -73,7 +73,7 @@ export default function Home() {
           </div>
           
           <div className="flex flex-col md:flex-row gap-6 w-full max-w-xl mx-auto py-4" data-aos="fade-up" data-aos-delay="400">
-            <Link href="/create-account" className="w-64 mx-auto">
+            <Link href="/sign-up" className="w-64 mx-auto">
               <Button
                 className="w-64 px-6 py-4 text-lg lg:px-8 lg:py-5 lg:text-xl font-bold rounded-xl transition-all duration-200 hover:scale-105 bg-[#EA9F41] text-white hover:bg-white hover:text-[#EA9F41]"
               >

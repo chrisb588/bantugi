@@ -57,13 +57,13 @@ MIDDLEWARE = [
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.BasicAuthentication',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'otp_app.auth.SupabaseAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny',
-    ),
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }
 
 ROOT_URLCONF = 'otp_validation.urls'
@@ -158,20 +158,58 @@ EMAIL_USE_SSL = False
 
 
 CORS_ALLOWED_ORIGINS = [
-    f'{config('CONNECTION_SCHEME')}://{config('CONNECTION_IP')}:{config('CONNECTION_PORT')}',
+    'http://localhost:3000',
+    'http://localhost:3004',
+    'http://localhost:3005',
+    'http://localhost:3006',
+    'http://localhost:3008',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3004',
+    'http://127.0.0.1:3005',
+    'http://127.0.0.1:3006',
+    'http://127.0.0.1:3008',
 ]
-CORS_ALLOW_CREDENTIALS = True 
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'access-control-allow-origin',
+    'access-control-allow-credentials',
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'http://localhost:3004',
+    'http://localhost:3005',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3004',
+    'http://127.0.0.1:3005',
+]
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = False  # Set to True in production
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_NAME = config('CSRF_COOKIE_NAME', default='csrftoken')
 
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',  # Default backend
-    'otp_app.backends.EmailAuthBackend',  # Custom email authentication backend
+    'django.contrib.auth.backends.ModelBackend',
 ]
-
-
-CSRF_TRUSTED_ORIGINS = [
-    f'{config('CONNECTION_SCHEME')}://{config('CONNECTION_IP')}:{config('CONNECTION_PORT')}',
-]
-CSRF_COOKIE_HTTPONLY = False
-CSRF_FAILURE_VIEW = 'otp_app.views.csrf_failure'
-CSRF_COOKIE_NAME = config('CSRF_COOKIE_NAME')

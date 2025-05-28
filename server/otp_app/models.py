@@ -33,6 +33,7 @@ class CustomUserManager(BaseUserManager):
 
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
+    supabase_uid = models.CharField(max_length=255, unique=True, null=True)
     
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
@@ -56,13 +57,11 @@ class OtpToken(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.otp_code:  # Generate OTP only if not set
-            self.otp_code = secrets.token_hex(3).upper()
+            # Generate a 6-digit OTP
+            self.otp_code = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
         if not self.otp_expires_at:
             self.otp_expires_at = now() + timedelta(minutes=10)
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.user.username} - {self.otp_code}"
-
-
-    
+        return f"{self.user.email} - {self.otp_code}"

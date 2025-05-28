@@ -34,11 +34,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    return { user: data.user, error };
+    try {
+      // First, create user in Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { user: null, error };
+      }
+
+      // Get CSRF token first
+      const csrfResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/get-csrf-token/`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      
+      if (!csrfResponse.ok) {
+        throw new Error('Failed to get CSRF token');
+      }
+      
+      const { csrfToken } = await csrfResponse.json();
+
+      // Send OTP request to Django backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/send-otp/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send OTP');
+      }
+
+      return { user: data.user, error: null };
+    } catch (err: any) {
+      console.error('Error sending OTP:', err);
+      return {
+        user: null,
+        error: {
+          message: err.message || 'Failed to complete signup process',
+          status: 500,
+        },
+      };
+    }
   };
 
   const signIn = async (email: string, password: string) => {

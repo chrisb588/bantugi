@@ -31,7 +31,7 @@ export default function SignIn() {
         }
         return;
       }
-      router.push('/profile');
+      router.push('/main/home');
     } catch (error: any) {
       setError('An unexpected error occurred. Please try again.');
       console.error('Sign in error:', error);

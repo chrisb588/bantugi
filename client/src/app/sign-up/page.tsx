@@ -49,11 +49,14 @@ export default function SignUp() {
       }
 
       // Show success message
-      setSuccessMessage('Account created successfully! Redirecting to sign in...');
+      setSuccessMessage('Account created successfully! Redirecting to OTP verification...');
       
-      // Redirect after a short delay
+      // Store email in session storage for OTP verification
+      sessionStorage.setItem('verificationEmail', email);
+      
+      // Redirect to OTP verification page after a short delay
       setTimeout(() => {
-        router.push('/sign-in');
+        router.push('/verify-otp');
       }, 2000);
 
     } catch (error: any) {

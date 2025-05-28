@@ -164,59 +164,85 @@ def verify_email(request, email):
         'message': "Invalid request method. Please use POST."
     }, status=405) 
 
- 
+
 def send_otp(request):
     if request.method == 'POST':
         try:
-            post_data_dict = json.loads(request.body)
-            user_email = post_data_dict.get("otp_email")
+            data = json.loads(request.body)
+            email = data.get('email')
 
-            if not user_email:
+            if not email:
                 return JsonResponse({
                     'success': False,
-                    'message': "Email field is required."
+                    'message': 'Email is required.'
                 }, status=400)
+
+            try:
+                user = get_user_model().objects.get(email=email)
+            except get_user_model().DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'User not found.'
+                }, status=404)
+
+            # Delete any existing OTP
+            OtpToken.objects.filter(user=user).delete()
+
+            # Create new OTP token
+            otp_token = OtpToken.objects.create(user=user)
+
+            # Send OTP email
+            subject = 'Your OTP Code for Email Verification'
+            message = f"""
+            Hello {user.email},
+
+            Your verification code is: {otp_token.otp_code}
+
+            This code will expire in 10 minutes.
+
+            If you didn't request this code, please ignore this email.
+
+            Best regards,
+            The Bantugi Team
+            """
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    config('EMAIL_HOST_USER'),
+                    [user.email],
+                    fail_silently=False
+                )
+            except Exception as e:
+                # Log the email error
+                print(f"Email error: {str(e)}")
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Failed to send OTP email. Please try again.'
+                }, status=500)
+
+            response = JsonResponse({
+                'success': True,
+                'message': 'OTP sent successfully.'
+            })
+            return response
+
         except json.JSONDecodeError:
             return JsonResponse({
                 'success': False,
-                'message': "Invalid JSON format."
+                'message': 'Invalid JSON format.'
             }, status=400)
-
-        User = get_user_model()
-        if User.objects.filter(email=user_email).exists():
-            user = User.objects.get(email=user_email)
-            otp_code = secrets.token_hex(3).upper()  # Generate a new OTP
-
-            otp, created = OtpToken.objects.update_or_create(
-                user=user, defaults={'otp_code': otp_code, 'otp_expires_at': timezone.now() + timezone.timedelta(minutes=5)}
-            )
-
-            # Email variables
-            subject = "Email Verification"
-            message = f"""
-                Hi {user.username}, here is your OTP: {otp.otp_code}
-                It expires in 5 minutes. Use the URL below to verify your email:
-                http://127.0.0.1:8000/verify-email/{user.username}
-            """
-            sender = config('EMAIL_HOST_USER')
-            receiver = [user.email]
-
-            # Send email
-            send_mail(subject, message, sender, receiver, fail_silently=False)
-
-            return JsonResponse({
-                'success': True,
-                'message': "A new OTP has been sent to your email address."
-            })
-        else:
+        except Exception as e:
+            # Log the error
+            print(f"Error in send_otp: {str(e)}")
             return JsonResponse({
                 'success': False,
-                'message': "This email doesn't exist in the database."
-            })
+                'message': 'An error occurred. Please try again.'
+            }, status=500)
 
     return JsonResponse({
         'success': False,
-        'message': "Invalid request method. Please use POST."
+        'message': 'Invalid request method. Please use POST.'
     }, status=405)
 
 
@@ -258,7 +284,7 @@ def signin(request):
         'message': "Invalid request method. Please use POST."
     }, status=405)
 
- 
+
 def change_password(request):
     if request.method == 'POST':
         try:
@@ -313,3 +339,129 @@ def csrf_failure(request, reason=""):
         "success": False,
         "message": reason,
     }, status=403)
+
+
+def verify_otp(request):
+    """Verify OTP code"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            email = data.get('email')
+            otp_code = data.get('otp')
+
+            if not email or not otp_code:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Email and OTP code are required.'
+                }, status=400)
+
+            # Get user and their OTP token
+            try:
+                user = get_user_model().objects.get(email=email)
+                otp_token = OtpToken.objects.get(user=user)
+            except (get_user_model().DoesNotExist, OtpToken.DoesNotExist):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Invalid email or OTP not found.'
+                }, status=400)
+
+            # Check if OTP is expired
+            if otp_token.otp_expires_at < now():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'OTP has expired. Please request a new one.'
+                }, status=400)
+
+            # Verify OTP code
+            if otp_token.otp_code != otp_code:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Invalid OTP code.'
+                }, status=400)
+
+            # Activate user account
+            user.is_active = True
+            user.save()
+
+            # Delete used OTP token
+            otp_token.delete()
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Email verified successfully. You can now sign in.'
+            })
+
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid JSON format.'
+            }, status=400)
+
+    return JsonResponse({
+        'success': False,
+        'message': 'Invalid request method. Please use POST.'
+    }, status=405)
+
+
+def resend_otp(request):
+    """Resend OTP code"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            email = data.get('email')
+
+            if not email:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Email is required.'
+                }, status=400)
+
+            # Get user
+            try:
+                user = get_user_model().objects.get(email=email)
+            except get_user_model().DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Email not found.'
+                }, status=400)
+
+            # Delete existing OTP if any
+            OtpToken.objects.filter(user=user).delete()
+
+            # Create new OTP token
+            otp_token = OtpToken.objects.create(user=user)
+
+            # Send OTP email
+            subject = 'Your OTP Code for Email Verification'
+            message = f"""
+            Hello {user.username},
+
+            Your new OTP code for email verification is: {otp_token.otp_code}
+
+            This code will expire in 10 minutes.
+
+            If you didn't request this code, please ignore this email.
+
+            Best regards,
+            The Bantugi Team
+            """
+            sender = config('EMAIL_HOST_USER')
+            receiver = [user.email]
+
+            send_mail(subject, message, sender, receiver, fail_silently=False)
+
+            return JsonResponse({
+                'success': True,
+                'message': 'New OTP code has been sent to your email.'
+            })
+
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid JSON format.'
+            }, status=400)
+
+    return JsonResponse({
+        'success': False,
+        'message': 'Invalid request method. Please use POST.'
+    }, status=405)
