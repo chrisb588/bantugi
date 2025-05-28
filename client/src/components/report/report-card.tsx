@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from "next/image";
-import { MapPin, MessageSquare, ChevronRight, AlertTriangle, CircleAlert } from "lucide-react";
+import { MapPin, MessageSquare, ChevronRight, AlertTriangle, ChevronLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,9 +18,10 @@ interface ReportCardProps {
   report: Report;
   className?: string;
   onViewMap?: () => void;
+  onBack?: () => void;
 }
 
-export function ReportCard({ report, className, onViewMap, ...props }: ReportCardProps) {
+export function ReportCard({ report, className, onViewMap, onBack, ...props }: ReportCardProps) {
   const [showComments, setShowComments] = useState(true);
   const [commentText, setCommentText] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -50,17 +51,28 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
     );
   };
 
-  // TODO: Display "no images provided" when there are no images
-
-  // TODO: Add a back button when opening from a report item to go back to reports list
-
-  // TODO: Also try to fix daw the hover (styles for hovering doesn't get applied)
-
   return (
     <div className={cn("w-full max-w-lg flex flex-col gap-4 -mt-12", className)} {...props}>
       <Card className="h-[85vh] min-h-[400px] max-h-[800px]"> {/* Set fixed height here */}
         <ScrollArea className="h-full"> {/* Make ScrollArea full height of card */}
           <CardContent className="flex flex-col items-start py-4">
+            {/* Back button */}
+            {onBack && (
+              <div className="flex justify-start w-full">
+                <Button
+                  variant="ghost"
+                  style={{ height: '32px', width: '32px', padding: '0' }}
+                  onClick={onBack}
+                >
+                  <ChevronLeft 
+                  size={24}
+                  style={{ height: '24px', width: '24px' }}
+                  className="text-foreground hover:text-secondary"
+                  />
+                </Button>
+              </div>
+            )}
+            
             <div className="flex items-center">
               <div className={cn(
                 "p-2 rounded-full self-start mt-1", 
@@ -69,18 +81,30 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
               </div>
               <div className="text-lg text-foreground font-bold">{report.title}</div>
             </div>
+            
+            {/* Complete: Username is now shown below the title and icon */}
+            <div className="text-sm text-muted-foreground mb-3">
+              Posted by {report.creator.username}
+            </div>
               {/* Report Images */}
               <div className="relative w-full h-64 rounded-lg overflow-hidden mb-5">
-                {report.images!.length > 0 && (
+                {report.images && report.images.length > 0 ? (
                   <Image
-                    src={report.images![currentImageIndex] || "/img/placeholder-image.jpg"}
+                    src={report.images[currentImageIndex] || "/img/placeholder-image.jpg"}
                     alt={report.title}
                     fill
                     className="object-cover"
                   />
+                ) : (
+                  <div className="flex items-center justify-center h-full bg-muted text-muted-foreground">
+                    <div className="text-center">
+                      <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No images provided</p>
+                    </div>
+                  </div>
                 )}
                 
-                {report.images!.length > 1 && (
+                {report.images && report.images.length > 1 && (
                   <>
                     {/* Image navigation buttons - fixed alignment */}
                     {currentImageIndex != 0 && (<div className="absolute inset-y-0 left-0 flex items-center pl-2">
@@ -93,7 +117,7 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
                         <ChevronRight className="h-4 w-4 rotate-180 text-primary" />
                       </Button>
                     </div>)}
-                    {currentImageIndex != report.images!.length-1 &&(<div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                    {currentImageIndex != report.images.length-1 &&(<div className="absolute inset-y-0 right-0 flex items-center pr-2">
                       <Button 
                         variant="outline" 
                         size="icon" 
@@ -106,7 +130,7 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
                     
                     {/* Image indicators */}
                     <div className="absolute bottom-2 right-2 flex gap-1">
-                      {report.images!.map((_, i) => (
+                      {report.images.map((_, i) => (
                         <div 
                           key={i} 
                           className={cn(
@@ -162,7 +186,7 @@ export function ReportCard({ report, className, onViewMap, ...props }: ReportCar
                 <p className="text-sm">{report.description}</p>
               </div>
 
-              {/* TODO: Include posted by username (no need to show profile photo or location) */}
+              {/* COMPLETED: Include posted by username*/}
               
               <Separator className="my-4 w-full" />
               

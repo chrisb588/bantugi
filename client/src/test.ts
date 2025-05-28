@@ -152,7 +152,7 @@ export const sampleResults: Report[] = [
     status: "Unresolved",
     urgency: "Low",
     description: "Panabangi mi ngari kay kusog kaayo ang baha diri, abot tuhod ang baha!",
-    // images: ["/img/flood-image.png"],
+    //images: [],
     images: ["/img/flood-image.png", "/img/flood-image.jpg"],
     createdAt: new Date(),
     creator: {
