@@ -5,9 +5,11 @@ import Image from 'next/image';
 
 export function MobileNavbar() {
   const { state: { user } } = useUserContext();
-  
   const router = useRouter();
   const currentPath = usePathname();
+
+  // Avoid rendering until user data is available
+  if (!user) return null;
 
   const navigateToHome = () => {
     if (currentPath === '/home') return;

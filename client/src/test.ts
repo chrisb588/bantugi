@@ -1,9 +1,8 @@
-import Report from '@/interfaces/report';
-import { LatLng } from 'leaflet';
+import { Report } from '@/interfaces/report';
 
 export const sampleResults: Report[] = [
     {
-      id: 1,
+      id: "1",
       status: 'Being Addressed',
       title: 'MAJOR FLOODING DOWNTOWN',
       urgency: "High",
@@ -25,7 +24,7 @@ export const sampleResults: Report[] = [
       },
     },
     {
-      id: 2,
+      id: "2",
       status: 'Being Addressed',
       title: 'Power Maintenance Scheduled',
       urgency: "Medium",
@@ -47,7 +46,7 @@ export const sampleResults: Report[] = [
       },
     },
     {
-      id: 3,
+      id: "3",
       status: 'Being Addressed',
       title: 'Landslide Warning: Mountain View',
       urgency: "High",
@@ -69,7 +68,7 @@ export const sampleResults: Report[] = [
       },
     },
     {
-      id: 4,
+      id: "4",
       status: 'Being Addressed',
       title: 'Road Closure: Mango Avenue',
       urgency: "Low",
@@ -91,7 +90,7 @@ export const sampleResults: Report[] = [
       },
     },
     {
-      id: 5,
+      id: "5",
       status: 'Being Addressed',
       title: 'Landslide Warning: Mountain View',
       urgency: "High",
@@ -113,7 +112,7 @@ export const sampleResults: Report[] = [
       },
     },
     {
-      id: 6,
+      id: "6",
       status: 'Being Addressed',
       title: 'Road Closure: Mango Avenue',
       urgency: "Medium",
@@ -137,7 +136,7 @@ export const sampleResults: Report[] = [
   ];
 
   export const sampleReport: Report = {
-    id: 1,
+    id: "1",
     title: "BAHA SA UP",
     category: "Environmental",
     location: {
@@ -161,7 +160,7 @@ export const sampleResults: Report[] = [
     },
     comments: [
       {
-        id: 1,
+        id: "1",
         creator: {
           username: "creeeees",
           location: {

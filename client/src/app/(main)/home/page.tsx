@@ -8,7 +8,7 @@ import { FilterButton } from "@/components/ui/filter-button";
 import { FilterDropdown } from "@/components/ui/filter-dropdown";
 import { sampleResults } from "@/test";
 import { useReportMarkers } from "@/hooks/use-report-markers";
-import Report from "@/interfaces/report";
+import { Report } from "@/interfaces/report";
 import { useVisibleReports } from "@/hooks/use-visible-reports";
 
 export default function HomePage() {
@@ -17,16 +17,9 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // FIXME: Get rid of windows is not defined error
-  // useReportMarkers(sampleResults);
   const visibleReports = useVisibleReports();
 
-  useEffect(() => {
-    // Display markers for visible reports
-    if (visibleReports.length > 0) {
-      useReportMarkers(visibleReports);
-    }
-  }, [visibleReports]);
+  useReportMarkers(visibleReports);
 
   const openSearchScreen = () => setIsSearchScreenVisible(true);
   const closeSearchScreen = () => {

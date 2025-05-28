@@ -12,31 +12,39 @@ export async function GET(request: NextRequest) {
   const neLat = parseFloat(searchParams.get('ne_lat') || '0');
   const neLng = parseFloat(searchParams.get('ne_lng') || '0');
 
-  if (!swLat || !swLng || !neLat || !neLng) {
-    return new NextResponse(JSON.stringify({ error: "Missing bounds parameters" }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  if (
+  isNaN(swLat) || isNaN(swLng) ||
+  isNaN(neLat) || isNaN(neLng)
+) {
+  return new NextResponse(JSON.stringify({ error: "Missing or invalid bounds parameters" }), {
+    status: 400,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
 
   const responseForSupabase = new NextResponse(null, { status: 200 });
   const supabase = createServerClient(request, responseForSupabase);
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000); // 5-second timeout
+
   try {
-    const { data: rpcData, error: rpcError } = await supabase.rpc('get_reports_within_bounds_detailed', {
-      p_sw_lat: swLat,
-      p_sw_lng: swLng,
-      p_ne_lat: neLat,
-      p_ne_lng: neLng,
-    });
+    const { data: rpcData, error: rpcError } = await supabase
+      .rpc('get_reports_within_bounds_detailed', {
+        p_sw_lat: swLat,
+        p_sw_lng: swLng,
+        p_ne_lat: neLat,
+        p_ne_lng: neLng,
+      })
+      .abortSignal(controller.signal);
+
+    clearTimeout(timeout);
 
     if (rpcError) {
       console.error("Error fetching reports by bounds (RPC):", rpcError.message);
-      const errorHeaders = new Headers(responseForSupabase.headers);
-      errorHeaders.set('Content-Type', 'application/json');
       return new NextResponse(JSON.stringify({ error: "Internal server error during RPC call", message: rpcError.message }), {
         status: 500,
-        headers: errorHeaders,
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
@@ -80,12 +88,17 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error("RPC call timed out");
+      return new NextResponse(JSON.stringify({ error: "Request timed out" }), {
+        status: 504,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
     console.error("Error in API route /api/location:", error);
-    const errorHeaders = new Headers(responseForSupabase.headers);
-    errorHeaders.set('Content-Type', 'application/json');
     return new NextResponse(JSON.stringify({ error: "Internal server error", message: error.message || 'Unknown error' }), {
       status: 500,
-      headers: errorHeaders,
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

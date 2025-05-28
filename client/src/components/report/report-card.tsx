@@ -235,12 +235,14 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
                     {report.comments ? (report.comments.map((comment) => (
                       <div key={comment.id} className="flex items-start gap-3 pb-3 border-b border-gray-100">
                         <div className="relative h-8 w-8 rounded-full overflow-hidden bg-gray-200">
-                          <Image
-                            src={comment.creator.profilePicture || '/img/placeholder-avatar.png'}
-                            alt={comment.creator.username}
-                            fill
-                            className="object-cover"
-                          />
+                          {comment.creator.profilePicture && (  
+                            <Image
+                              src={comment.creator.profilePicture}
+                              alt={comment.creator.username}
+                              fill
+                              className="object-cover"
+                            />
+                          )}
                         </div>
                         <div className="flex-1">
                           <div className="flex flex-col">

@@ -1,7 +1,7 @@
 import type Area from '@/interfaces/area';
 import type { LatLng } from 'leaflet';
 
-export async function convertLatLngToArea(latLng: LatLng): Promise<Area | null> {
+export async function convertLatLngToArea(latLng: LatLng): Promise<Area> {
   try {
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${latLng.lat}&lon=${latLng.lng}&format=json`
@@ -25,7 +25,12 @@ export async function convertLatLngToArea(latLng: LatLng): Promise<Area | null> 
     return area;
   } catch (error) {
     console.error('Error converting coordinates to area:', error);
-    return null;
+    return {
+      id: generateAreaId(latLng),
+      province: "Unknown",
+      city: "Unknown",
+      barangay: "Unknown"
+    };
   }
 }
 

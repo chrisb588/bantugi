@@ -3,7 +3,7 @@ import Comment from "@/interfaces/comment";
 import User from "@/interfaces/user";
 
 export default interface Report {
-  id: number;
+  id: string;
   title: string;
   description?: string;
   category: string;

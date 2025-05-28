@@ -1,7 +1,7 @@
 import Location from "@/interfaces/location"; 
 import { createServerClient } from "@/lib/supabase/server";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { Report } from "@/interfaces/report";
+import Report from "@/interfaces/report";
 // Get all reports X distance away from the center of the map view
 export async function getAllReportsByDistance(
     server: SupabaseClient,

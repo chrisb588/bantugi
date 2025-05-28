@@ -10,5 +10,8 @@ export function cn(...inputs: ClassValue[]) {
 
 // formats area object into a string
 export function formatArea(area: Area) {
+  if (!area || !area.barangay || !area.city || !area.province) {
+    return "Unknown Location";
+  }
   return `${area.barangay}, ${area.city}, ${area.province}`;
 }
