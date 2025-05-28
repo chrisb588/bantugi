@@ -161,18 +161,20 @@ export default function ProfileCard({
         <Card className="h-[85vh] min-h-[400px] max-h-[800px]"> {/* Set fixed height here */}
           <ScrollArea className="h-full"> {/* Make ScrollArea full height of card */}
             <CardHeader className="text-center sticky top-0 bg-background z-10">
-              {/* TODO: Make this larger */}
               {edit && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                >
-                  <ChevronLeft 
-                  size={100} 
-                  onClick={navigateBackToProfile}
-                  className="text-foreground hover:text-secondary"
-                  />
-                </Button>
+                <div className="flex justify-start mb-2">
+                  <Button
+                    variant="ghost"
+                    style={{ height: '40px', width: '40px', padding: '0' }}
+                    onClick={navigateBackToProfile}
+                  >
+                    <ChevronLeft 
+                    size={32}
+                    style={{ height: '32px', width: '32px' }}
+                    className="text-foreground hover:text-secondary"
+                    />
+                  </Button>
+                </div>
               )}
               <CardTitle className="text-2xl">YOUR PROFILE</CardTitle>
             </CardHeader>

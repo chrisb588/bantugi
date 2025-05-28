@@ -27,11 +27,11 @@ export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
   const getUrgencyCircleColor = (urgencyValue: string) => {
     switch (urgencyValue) {
       case "High":
-        return "bg-primary"; // red
+        return "bg-urgency-high";
       case "Medium":
-        return "bg-accent"; // orange
+        return "bg-urgency-medium";
       case "Low":
-        return "bg-accent2"; // yellow
+        return "bg-urgency-low";
       default:
         return "bg-gray-400";
     }
@@ -72,19 +72,19 @@ export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
                 <DropdownMenuContent className="w-32 shadow-lg">
                   <DropdownMenuItem onClick={() => setUrgency("High")}>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-primary drop-shadow-sm"></div>
+                      <div className="w-2 h-2 rounded-full bg-urgency-high drop-shadow-sm"></div>
                       <span className="drop-shadow-sm">High</span>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setUrgency("Medium")}>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-accent drop-shadow-sm"></div>
+                      <div className="w-2 h-2 rounded-full bg-urgency-medium drop-shadow-sm"></div>
                       <span className="drop-shadow-sm">Medium</span>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setUrgency("Low")}>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-accent2 drop-shadow-sm"></div>
+                      <div className="w-2 h-2 rounded-full bg-urgency-low drop-shadow-sm"></div>
                       <span className="drop-shadow-sm">Low</span>
                     </div>
                   </DropdownMenuItem>

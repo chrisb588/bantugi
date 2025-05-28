@@ -21,11 +21,9 @@ export default function ReportViewPage() {
     router.back();
   }
 
-
-  // TODO: Add a button somewhere in the page to return to the reports list
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10 overflow-hidden pointer-events-auto">
-      <ReportCard report={report} onViewMap={handleViewMap} />  
+      <ReportCard report={report} onViewMap={handleViewMap} onBack={navigateBack} />  
     </div>
   );
 } 
