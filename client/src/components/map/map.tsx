@@ -16,7 +16,7 @@ export default function Map({
   className = '',
 }: MapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const { mapInstanceRef } = useMapContext();
+  const { mapInstanceRef, setMapReady } = useMapContext();
 
   useEffect(() => {
     delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -38,14 +38,18 @@ export default function Map({
 
       mapInstanceRef.current.zoomControl.remove();
 
+      // Set map as ready after initialization
+      setMapReady(true);
+
       return () => {
         if (mapInstanceRef.current) {
+          setMapReady(false);
           mapInstanceRef.current.remove();
           mapInstanceRef.current = null;
         }
       };
     }
-  }, [center, zoom, mapInstanceRef]);
+  }, [center, zoom, mapInstanceRef, setMapReady]);
 
   useEffect(() => {
     if (mapInstanceRef.current) {

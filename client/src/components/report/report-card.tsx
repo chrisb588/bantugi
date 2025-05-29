@@ -14,7 +14,6 @@ import Report from "@/interfaces/report";
 import urgencyIcon from '@/constants/urgency-icon';
 import { formatArea } from '@/lib/utils';
 import { useMapContext } from '@/context/map-context';
-import { Marker } from 'leaflet';
 
 interface ReportCardProps {
   report: Report;
@@ -32,26 +31,34 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
   const { mapInstanceRef } = useMapContext();
 
   useEffect(() => {
-    if (!mapInstanceRef.current || !isViewingMap) return;
-
-    let marker: Marker | null = null;
-
-    if (report.location && report.location.coordinates && mapInstanceRef.current) {
-      const { coordinates } = report.location;
-
-      // Create and add new marker
-      marker = new Marker([coordinates.lat, coordinates.lng], {
-        draggable: false,
-        title: report.title
-      });
-
-      marker.addTo(mapInstanceRef.current);
-      mapInstanceRef.current.setView([coordinates.lat, coordinates.lng], 18);
+    if (typeof window === 'undefined' || !mapInstanceRef.current || !isViewingMap) {
+      return;
     }
 
+    let markerInstance: import('leaflet').Marker | null = null;
+
+    // Dynamically import Leaflet
+    import('leaflet').then(L => {
+      if (report.location && report.location.coordinates && mapInstanceRef.current) {
+        const { coordinates } = report.location;
+
+        markerInstance = new L.Marker([coordinates.lat, coordinates.lng], {
+          draggable: false,
+          title: report.title,
+        });
+
+        if (mapInstanceRef.current) { // Ensure mapInstance is still valid
+            markerInstance.addTo(mapInstanceRef.current);
+            mapInstanceRef.current.setView([coordinates.lat, coordinates.lng], 18);
+        }
+      }
+    }).catch(error => {
+      console.error("Failed to load Leaflet for ReportCard marker:", error);
+    });
+
     return () => {
-      if (marker) {
-        marker.remove();
+      if (markerInstance && mapInstanceRef.current && mapInstanceRef.current.hasLayer(markerInstance)) {
+        markerInstance.remove();
       }
     };
   }, [isViewingMap, report, mapInstanceRef]);

@@ -1,14 +1,19 @@
 'use client';
 
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 import { ReportCard } from "@/components/report/report-card";
-import { sampleReport } from "@/test";
+import { sampleResults } from "@/test";
 
 export default function ReportViewPage() {
   const router = useRouter();
+  const params = useParams();
   
-  const report = sampleReport;
+  // Get the report ID from the URL parameters
+  const reportId = parseInt(params.id as string);
+  
+  // Find the report with the matching ID from sampleResults
+  const report = sampleResults.find(r => r.id === reportId) || sampleResults[0];
 
   // use me to return to the previous page (search results, saved reports, my reports)
   const navigateBack = () => {

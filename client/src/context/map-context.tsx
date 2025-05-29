@@ -1,11 +1,13 @@
 'use client';
 
-import { createContext, useContext, useRef, ReactNode } from 'react';
+import { createContext, useContext, useRef, ReactNode, useState } from 'react';
 import type { Map, Marker, LatLngExpression, LatLngBounds, LatLng } from 'leaflet';
 
 interface MapContextType {
   mapInstanceRef: React.RefObject<Map | null>;
   markerRef: React.RefObject<Marker | null>;
+  mapReady: boolean;
+  setMapReady: (ready: boolean) => void;
   updateMapView: (center: LatLngExpression, zoom: number) => void;
   centerOnLocation: (location: LatLngExpression) => void;
   getBounds: () => LatLngBounds | null;
@@ -17,6 +19,7 @@ const MapContext = createContext<MapContextType | null>(null);
 export function MapProvider({ children }: { children: ReactNode }) {
   const mapInstanceRef = useRef<Map | null>(null);
   const markerRef = useRef<Marker | null>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   const updateMapView = (center: LatLngExpression, zoom: number) => {
     if (mapInstanceRef.current) {
@@ -53,7 +56,9 @@ export function MapProvider({ children }: { children: ReactNode }) {
   return (
     <MapContext.Provider value={{ 
       mapInstanceRef, 
-      markerRef, 
+      markerRef,
+      mapReady,
+      setMapReady,
       updateMapView,
       centerOnLocation,
       getBounds,

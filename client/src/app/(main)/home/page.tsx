@@ -1,7 +1,7 @@
 "use client";
 
 import SearchBar from "@/components/search/search-bar";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import SearchResultsList from "@/components/search/search-results-list";
 import { MobileNavbar } from "@/components/generic/mobile-navbar";
 import { FilterButton } from "@/components/ui/filter-button";
@@ -9,34 +9,22 @@ import { FilterDropdown } from "@/components/ui/filter-dropdown";
 import { sampleResults } from "@/test";
 import { useReportMarkers } from "@/hooks/use-report-markers";
 import Report from "@/interfaces/report";
-import dynamic from 'next/dynamic';
-import { useMapContext } from '@/context/map-context';
-import { Marker } from "leaflet";
 import { FilterOptions } from "@/components/ui/filter-dropdown";
-
-const ReportMarkers = dynamic(
-  () => import('@/components/map/report-markers'),
-  { 
-    ssr: false,
-    loading: () => null
-  }
-);
 
 export default function HomePage() {
   const [isSearchScreenVisible, setIsSearchScreenVisible] = useState(false);
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [reportMarkers, setReportMarkers] = useState<Report[]>(sampleResults);
+  const [filteredReports, setFilteredReports] = useState<Report[]>(sampleResults);
   const [activeFilters, setActiveFilters] = useState<FilterOptions>({
     urgency: "All",
     category: "All",
     status: "All"
   });
 
-  // FIXME: Get rid of windows is not defined error
-  // useReportMarkers(sampleResults);
-  const { mapInstanceRef } = useMapContext();
+  // Use the hook to create markers for filtered reports
+  useReportMarkers(filteredReports);
 
   const filterReports = (reports: Report[], filters: FilterOptions) => {
     return reports.filter(report => {
@@ -58,57 +46,18 @@ export default function HomePage() {
     //     body: JSON.stringify(activeFilters)
     //   });
     //   const data = await response.json();
-    //   setReportMarkers(data);
+    //   setFilteredReports(data);
     // };
     console.log(activeFilters);
 
     // For now, filter the sample data
-    const filteredReports = filterReports(sampleResults, activeFilters);
-    setReportMarkers(filteredReports);
+    const filtered = filterReports(sampleResults, activeFilters);
+    setFilteredReports(filtered);
   }, [activeFilters]);
 
   const handleApplyFilters = (filters: FilterOptions) => {
     setActiveFilters(filters);
   };
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !mapInstanceRef.current) return;
-
-    const markers: Marker[] = [];
-
-    const initMarkers = async () => {
-      const L = (await import('leaflet')).default;
-
-      sampleResults.forEach((report) => {
-        const { coordinates } = report.location || {};
-        if (coordinates && mapInstanceRef.current) {
-          const marker = L.marker([coordinates.lat, coordinates.lng], {
-            draggable: false, // Make sure markers aren't draggable
-            title: report.title // Show title on hover
-          });
-
-          // Add popup with report details
-          marker.bindPopup(`
-            <div class="text-sm">
-              <h3 class="font-bold">${report.title}</h3>
-              <p>${report.category}</p>
-              <p class="text-xs text-gray-500">${report.status}</p>
-            </div>
-          `);
-
-          marker.addTo(mapInstanceRef.current);
-          markers.push(marker);
-        }
-      });
-    };
-
-    initMarkers();
-
-    // Cleanup function to remove markers when component unmounts
-    return () => {
-      markers.forEach(marker => marker.remove());
-    };
-  }, [sampleResults, mapInstanceRef]);
 
   const openSearchScreen = () => setIsSearchScreenVisible(true);
   const closeSearchScreen = () => {
@@ -148,11 +97,6 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col h-screen">
-      {/* <Suspense fallback={null}>
-        {reportMarkers.length > 0 && (
-          <ReportMarkers reports={reportMarkers} />
-        )}
-      </Suspense> */}
       {/* --- Mobile View Container --- */}
       <div className="md:hidden flex flex-col flex-1 min-h-0 px-4">
         {/* Mobile Header (Sticky) */}
