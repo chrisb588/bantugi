@@ -248,7 +248,7 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
                           <div className="flex flex-col">
                             <span className="font-medium text-sm">{comment.creator.username}</span>
                             {comment.creator.location && (
-                              <span className="text-xs text-gray-500">{formatArea(comment.creator.location!.address)}</span>
+                              <span className="text-xs text-gray-500">{formatArea(comment.creator.location.address)}</span>
                             )}
                             <p className="text-sm mt-1">{comment.content}</p>
                           </div>

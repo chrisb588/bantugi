@@ -33,18 +33,37 @@ export async function userSignUp(server: SupabaseClient, payload: UserAuthDetail
 }
 
 export async function getUserID(server: SupabaseClient) {
-    const { data: { user }, error } = await server.auth.getUser();
+    try {
+        // First try to get the session to ensure we have a valid auth context
+        const { data: { session }, error: sessionError } = await server.auth.getSession();
+        
+        if (sessionError) {
+            console.warn('Session error in getUserID:', sessionError.message);
+            return null;
+        }
 
-    if (error) {
-        console.error('Error getting user:', error.message);
+        if (!session) {
+            console.log('No active session found in getUserID');
+            return null;
+        }
+
+        // Now get the user with the session context
+        const { data: { user }, error } = await server.auth.getUser();
+
+        if (error) {
+            console.error('Error getting user:', error.message);
+            return null;
+        }
+
+        if (user) {
+            return user.id;
+        }
+        
+        return null;
+    } catch (error: any) {
+        console.error('Unexpected error in getUserID:', error.message);
         return null;
     }
-
-    if (user) {
-        return user.id;
-    }
-    
-    return null;
 }
 
 export async function signInWithPassword(server: SupabaseClient, payload: UserAuthDetails) {

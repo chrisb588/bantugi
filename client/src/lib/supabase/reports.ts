@@ -3,19 +3,25 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { createServerClient } from './server'
 import Comment from '@/interfaces/comment'
 import { getUserID } from './user.server'
+import Report from '@/interfaces/report';
+import Location from '@/interfaces/location';
+import Area from '@/interfaces/area';
+import User from '@/interfaces/user';
 
 export async function getReport(server: SupabaseClient, reportId: string) {
   const supabase: SupabaseClient = server;
 
   const expectedColumns = `
     id,
-    datePosted,
-    description,
-    location,
+    created_at, 
     title,
+    description,
     status,
     images,
-    user_id
+    category,
+    urgency,
+    location_id,
+    created_by
   `;
 
   const { data: dbReportData, error } = await supabase
@@ -37,10 +43,6 @@ export async function getReport(server: SupabaseClient, reportId: string) {
   return dbReportData;
 }
 
-
-// User needs to be authenticated when inserting 
-// data to reports table
-// CHECK: Auth policies for reports table  
 export async function createReport(server: SupabaseClient, data: {
   title: string;
   category: string;
@@ -55,7 +57,7 @@ export async function createReport(server: SupabaseClient, data: {
 
   areaProvince: string;
   areaCity?: string;
-  areaMunicipality?: string;
+  // areaMunicipality?: string; // Removed as it's not in the area table DDL
   areaBarangay: string;
 }) {
   const supabase: SupabaseClient = server;
@@ -73,7 +75,7 @@ export async function createReport(server: SupabaseClient, data: {
   const createdAreaData = await createAreaRecord(supabase, {
     areaProvince: data.areaProvince,
     areaCity: data.areaCity,
-    areaMunicipality: data.areaMunicipality,
+    // areaMunicipality: data.areaMunicipality, // Removed
     areaBarangay: data.areaBarangay,
   });
   const area_id = createdAreaData.area_id;
@@ -90,21 +92,24 @@ export async function createReport(server: SupabaseClient, data: {
   .from('reports')
   .insert({
       title: data.title,
-      location: data.locationAddressText,
       description: data.description,
       images: data.images,
       status: data.status,
-      user_id: user_id,
+      category: data.category,
+      urgency: data.urgency,
+      created_by: user_id, // Changed from creator_id to match DB schema
+      location_id: location_id, // from createLocationRecord
   })
-  .select('id, user_id')
+  .select('id, title, description, category, urgency, status, images, created_at, created_by, location_id') // Changed creator_id to created_by
   .single();
 
   if (reportError || !createdReportRow) {
       console.error('Error creating report:', reportError?.message);
-      return null;
+      // It might be better to return an error object or throw an error
+      return null; 
   }
 
-  return createdLocationData;
+  return createdReportRow;
 }
 
 async function createAreaRecord(
@@ -112,7 +117,7 @@ async function createAreaRecord(
   areaData: {
     areaProvince: string;
     areaCity?: string;
-    areaMunicipality?: string;
+    // areaMunicipality?: string; // Removed
     areaBarangay: string;
   }
 ) {
@@ -121,10 +126,10 @@ async function createAreaRecord(
     .insert({
       area_province: areaData.areaProvince,
       area_city: areaData.areaCity,
-      area_municipality: areaData.areaMunicipality,
+      // area_municipality: areaData.areaMunicipality, // Removed
       area_barangay: areaData.areaBarangay,
     })
-    .select('area_id, area_province, area_city, area_municipality, area_barangay')
+    .select('area_id, area_province, area_city, area_barangay') // Removed area_municipality
     .single();
 
   if (areaError) {
@@ -226,65 +231,113 @@ export async function getCommentsByReportId(
   }
 }
 
-// to be redone once backend is finalized and interface doesnt change
-// function transformSupabaseReportToAppReport(dbReportData: any): Report | null {
-//   if (!dbReportData) {
-//     return null;
-//   }
+// Helper functions to transform Supabase DB rows to application interfaces
 
-//   try {
-//     // Safely access nested location and area data
-//     const firstLocationData = dbReportData.location && Array.isArray(dbReportData.location) && dbReportData.location.length > 0
-//       ? dbReportData.location[0]
-//       : null;
+// Import interfaces (ensure these are correctly pathed if not at top level of this file)
 
-//     // Assuming firstLocationData.area is also an array
-//     const firstAreaData = firstLocationData?.area && Array.isArray(firstLocationData.area) && firstLocationData.area.length > 0
-//       ? firstLocationData.area[0]
-//       : null;
+// Define placeholder types for DB row structures based on DDL.
+interface DbAreaRow {
+  id: number; // Matches area.id PK
+  area_province: string;
+  area_city?: string | null;
+  // area_municipality?: string | null; // Removed
+  area_barangay: string;
+}
 
-//     const area = transformToArea(firstAreaData);
-//     const location = transformToLocation(firstLocationData, area);
-//     const transformedReport = transformToReport(dbReportData, location)
+interface DbLocationRow {
+  location_id: number;
+  latitude: number | null;
+  longitude: number | null;
+  area?: DbAreaRow | null; 
+}
 
-//     return transformedReport;
+interface DbUserRow {
+  id: string; 
+  username?: string | null;
+  profile_pic_url?: string | null;
+}
 
-//   } catch (transformationError: any) {
-//     console.error('Error transforming Supabase report data:', transformationError.message, 'Raw data:', dbReportData);
-//     return null;
-//   }
-// }
+interface DbReportRow {
+  id: string; 
+  title: string;
+  description: string;
+  status: "Unresolved" | "Being Addressed" | "Resolved";
+  images?: string[] | null;
+  created_at: string; 
+  category: string;
+  urgency: "Low" | "Medium" | "High";
+  location_id?: number | null;
+  location?: DbLocationRow | null;
+  created_by: string; 
+  creator?: DbUserRow | null;
+}
 
-// function transformToArea(areaData: any): Area {
-//   return {
-//     id: areaData.area_id,
-//     province: areaData.area_province,
-//     city: areaData.area_city,
-//     municipality: areaData.area_municipality,
-//     barangay: areaData.area_barangay,
-//   };
-// }
+export function transformDbAreaToArea(dbArea: DbAreaRow | null | undefined): Area | undefined {
+  if (!dbArea) {
+    return undefined;
+  }
+  return {
+    id: dbArea.id, // Use id from DbAreaRow
+    province: dbArea.area_province,
+    city: dbArea.area_city ?? undefined,
+    barangay: dbArea.area_barangay,
+  };
+}
 
-// function transformToLocation(locationData: any, area: Area): Location {
-//   return {
-//     address: area,
-//     coordinates: {
-//       lat: locationData.latitude,
-//       lng: locationData.longitude,
-//     },
-//   };
-// }
+export function transformDbLocationToLocation(dbLocation: DbLocationRow | null | undefined): Location | undefined {
+  if (!dbLocation || dbLocation.latitude === null || dbLocation.longitude === null) {
+    return undefined;
+  }
 
-// function transformToReport(reportData: any, location: Location): Report {
-//   return {
-//     id: reportData.report_no,
-//     title: reportData.title,
-//     description: reportData.description,
-//     category: reportData.category,
-//     urgency: reportData.urgency as "Low" | "Medium" | "High",
-//     status: reportData.status as "Unresolved" | "Being Addressed" | "Resolved",
-//     images: reportData.images,
-//     location: location,
-//     createdAt: new Date(reportData.datePosted),
-//   };
-// }
+  const area = dbLocation.area ? transformDbAreaToArea(dbLocation.area) : undefined;
+  
+  if (!area) {
+    console.warn("Could not transform area for location_id:", dbLocation.location_id);
+    return undefined;
+  }
+
+  return {
+    coordinates: {
+      lat: dbLocation.latitude,
+      lng: dbLocation.longitude,
+    },
+    address: area,
+  };
+}
+
+export function transformDbUserToUser(dbUser: DbUserRow | null | undefined): User | undefined {
+  if (!dbUser || !dbUser.username) {
+    return undefined; 
+  }
+  return {
+    username: dbUser.username,
+    profilePicture: dbUser.profile_pic_url ?? undefined,
+  };
+}
+
+export function transformDbReportToReport(dbReport: DbReportRow | null | undefined): Report | undefined {
+  if (!dbReport) {
+    return undefined;
+  }
+
+  const location = dbReport.location ? transformDbLocationToLocation(dbReport.location) : undefined;
+  const creator = dbReport.creator ? transformDbUserToUser(dbReport.creator) : undefined;
+
+  if (!creator) {
+    console.warn(`Report ${dbReport.id} is missing valid creator information or creator could not be transformed.`);
+    return undefined;
+  }
+
+  return {
+    id: dbReport.id,
+    title: dbReport.title,
+    description: dbReport.description,
+    category: dbReport.category,
+    urgency: dbReport.urgency,
+    status: dbReport.status,
+    images: dbReport.images ?? undefined,
+    createdAt: new Date(dbReport.created_at),
+    location: location,
+    creator: creator,
+  };
+}

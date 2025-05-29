@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { cn } from "@/lib/utils"
@@ -21,7 +21,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter();
-  const { login, isLoading, error } = useAuth();
+  const { login, isLoading, error, user, initialAuthCheckComplete } = useAuth();
   const [formData, setFormData] = useState<UserAuthDetails>({
     username: '',
     password: ''
@@ -36,6 +36,14 @@ export function LoginForm({
     e.preventDefault();
     await login(formData);
   };
+
+  // Effect to handle redirection after user state changes
+  useEffect(() => {
+    // Only redirect if the initial auth check is complete and user is successfully authenticated
+    if (initialAuthCheckComplete && user) {
+      router.replace('/home');
+    }
+  }, [user, initialAuthCheckComplete, router]);
   
   const onCreateAccountClick = () => {
     router.replace('/create-account')
@@ -48,19 +56,15 @@ export function LoginForm({
           <CardTitle className="text-xl sm:text-2xl">READY TO SERVE <br /> YOUR COMMUNITY?</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center">
+          {/* Combined error display */}
           {error && (
-            <div className="w-full p-3 mb-4 bg-red-50 border border-red-200 text-red-600 rounded-md">
+            <div className="w-full p-3 mb-4 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm text-center">
               {error}
             </div>
           )}
           <form className="w-full max-w-full" onSubmit={handleSubmit}>
             <div className="w-full grid gap-6 sm:gap-10">
               <div className="w-full grid gap-3">
-                {error && (
-                  <div className="text-sm text-destructive text-center">
-                    {error}
-                  </div>
-                )}
                 <div className="grid gap-1">
                   <Label htmlFor="username">Username</Label>
                   <Input

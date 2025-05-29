@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useRef, ReactNode, useCallback, RefObject, useState, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useRef, ReactNode, useCallback, RefObject, useState, useEffect } from 'react';
 // Import types from leaflet, but not L itself at the top level for the provider
 import type { Map as LeafletMap, Marker as LeafletMarker, LatLngExpression, LatLngBounds } from 'leaflet';
 
@@ -49,16 +49,15 @@ export function MapProvider({ children }: { children: ReactNode }) {
 
   const setMapInstance = useCallback((map: LeafletMap | null) => {
     console.log("MapContext: setMapInstance called with map:", !!map);
-    (mapInstanceRef as React.RefObject<LeafletMap | null>).current = map; // Use MutableRefObject for assignment
+    mapInstanceRef.current = map; 
     setIsMapInstanceSet(!!map);
   }, []);
   
-  // isMapReady is true only when L is loaded AND the map instance is set
   const isMapReady = isLModuleLoaded && isMapInstanceSet;
 
   useEffect(() => {
-    // Optional: Log when isMapReady changes, for debugging
-    console.log(`MapProvider: isMapReady status: ${isMapReady} (L Loaded: ${isLModuleLoaded}, Map Instance Set: ${isMapInstanceSet})`);
+    // Simplified log for isMapReady changes
+    console.log(`MapProvider: isMapReady is now ${isMapReady}. (L: ${isLModuleLoaded}, MapInstance: ${isMapInstanceSet})`);
   }, [isMapReady, isLModuleLoaded, isMapInstanceSet]);
 
   const updateMapView = useCallback((center: LatLngExpression, zoom: number) => {
@@ -77,16 +76,18 @@ export function MapProvider({ children }: { children: ReactNode }) {
     return mapInstanceRef.current?.getBounds() || null;
   }, []);
 
-  const contextValue = useMemo(() => ({
+  // Restore useMemo
+  const contextValue = React.useMemo(() => ({
     mapInstanceRef,
     setMapInstance,
     markerRef,
     updateMapView,
     centerOnLocation,
     getBounds,
-    L, // <<< ADDED: Provide L from state
+    L, 
     isMapReady,
-  }), [L, setMapInstance, updateMapView, centerOnLocation, getBounds, isMapReady, isMapInstanceSet]); // Added L and isMapInstanceSet to dependencies
+  }), [L, setMapInstance, updateMapView, centerOnLocation, getBounds, isMapReady, /* mapInstanceRef is stable, markerRef is stable */]);
+
 
   return (
     <MapContext.Provider value={contextValue}>

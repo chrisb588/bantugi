@@ -1,0 +1,1522 @@
+GET
+http://localhost:3000/home
+[HTTP/1.1 200 OK 361ms]
+
+GET
+http://localhost:3000/_next/static/media/Nohemi_Bold-s.p.9a4db5f5.otf
+[HTTP/1.1 200 OK 0ms]
+
+GET
+http://localhost:3000/_next/static/media/Nohemi_Medium-s.p.9b089af0.ttf
+[HTTP/1.1 200 OK 0ms]
+
+GET
+http://localhost:3000/_next/static/media/Satoshi_Variable-s.p.f9c29cb1.ttf
+[HTTP/1.1 200 OK 0ms]
+
+GET
+http://localhost:3000/_next/static/chunks/src_app_a22798ea._.css
+[HTTP/1.1 200 OK 18ms]
+
+GET
+http://localhost:3000/_next/static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_fd44f5a4._.js
+[HTTP/1.1 200 OK 12ms]
+
+GET
+http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js
+[HTTP/1.1 200 OK 124ms]
+
+GET
+http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_8f19e6fb._.js
+[HTTP/1.1 200 OK 114ms]
+
+GET
+http://localhost:3000/_next/static/chunks/node_modules_next_dist_2ecbf5fa._.js
+[HTTP/1.1 200 OK 24ms]
+
+GET
+http://localhost:3000/_next/static/chunks/node_modules_@swc_helpers_cjs_00636ac3._.js
+[HTTP/1.1 200 OK 19ms]
+
+GET
+http://localhost:3000/_next/static/chunks/_e69f0d32._.js
+[HTTP/1.1 200 OK 12ms]
+
+GET
+http://localhost:3000/_next/static/chunks/_93808211._.js
+[HTTP/1.1 200 OK 23ms]
+
+GET
+http://localhost:3000/_next/static/chunks/node_modules_next_dist_1a6ee436._.js
+[HTTP/1.1 200 OK 24ms]
+
+GET
+http://localhost:3000/_next/static/chunks/src_app_layout_tsx_c0237562._.js
+[HTTP/1.1 200 OK 14ms]
+
+GET
+http://localhost:3000/_next/static/chunks/node_modules_4d8d38b9._.js
+[HTTP/1.1 200 OK 18ms]
+
+GET
+http://localhost:3000/_next/static/chunks/src_4e011d10._.js
+[HTTP/1.1 200 OK 30ms]
+
+GET
+http://localhost:3000/_next/static/chunks/node_modules_next_2add1232._.js
+[HTTP/1.1 200 OK 39ms]
+
+GET
+http://localhost:3000/_next/static/chunks/node_modules_@supabase_auth-js_dist_module_33324aae._.js
+[HTTP/1.1 200 OK 35ms]
+
+GET
+http://localhost:3000/_next/static/chunks/node_modules_tailwind-merge_dist_bundle-mjs_mjs_b854acb4._.js
+[HTTP/1.1 200 OK 26ms]
+
+GET
+http://localhost:3000/_next/static/chunks/node_modules_61311029._.js
+[HTTP/1.1 200 OK 63ms]
+
+GET
+http://localhost:3000/_next/static/chunks/src_app_(main)_layout_tsx_de0cc085._.js
+[HTTP/1.1 200 OK 8ms]
+
+GET
+http://localhost:3000/_next/static/chunks/src_components_map_map_tsx_ea313a72._.js
+[HTTP/1.1 200 OK 11ms]
+
+GET
+http://localhost:3000/_next/static/chunks/src_b348d3d0._.js
+[HTTP/1.1 200 OK 27ms]
+
+GET
+http://localhost:3000/_next/static/chunks/node_modules_f821b430._.js
+[HTTP/1.1 200 OK 31ms]
+
+GET
+http://localhost:3000/_next/static/chunks/src_app_(main)_home_page_tsx_53cffe54._.js
+[HTTP/1.1 200 OK 10ms]
+
+unreachable code after return statement node_modules_61311029._.js:8711:5
+unreachable code after return statement node_modules_61311029._.js:8869:5
+unreachable code after return statement node_modules_61311029._.js:8917:5
+unreachable code after return statement node_modules_61311029._.js:8933:5
+Download the React DevTools for a better development experience: https://react.dev/link/react-devtools node_modules_next_dist_compiled_2ce9398a._.js:16384:54
+GET
+http://localhost:3000/favicon.ico
+[HTTP/1.1 404 Not Found 0ms]
+
+[AuthContextProvider] AuthContextProvider function body executing... 2 src_4e011d10._.js:228:13
+[useFetchPins] HOOK BODY EXECUTING. isMapReady: false, mapInstanceRef.current: false, L: false src_b348d3d0._.js:2217:13
+[useFetchPins] Hook rendering. isLoading: false Pins count: 0 Error: null src_b348d3d0._.js:2414:13
+[useFetchPins] HOOK BODY EXECUTING. isMapReady: false, mapInstanceRef.current: false, L: false src_b348d3d0._.js:2217:13
+[useFetchPins] Hook rendering. isLoading: false Pins count: 0 Error: null src_b348d3d0._.js:2414:13
+MapProvider: isMapReady status: false (L Loaded: false, Map Instance Set: false) src_4e011d10._.js:1850:21
+[useFetchPins] Main effect: ENTRY. isMapReady: false, mapInstance: false, L: false, initialLoadSetupDone: false, initialFetchTriggered: false src_b348d3d0._.js:2310:21
+[useFetchPins] Main effect: Prerequisites NOT MET. Returning. src_b348d3d0._.js:2312:25
+[AuthContextProvider] useEffect for checkCurrentUser running... src_4e011d10._.js:232:21
+[SupabaseClient] Attempting to get current user session... src_4e011d10._.js:76:13
+MapProvider: isMapReady status: false (L Loaded: false, Map Instance Set: false) src_4e011d10._.js:1850:21
+[AuthContextProvider] AuthContextProvider function body executing... 2 src_4e011d10._.js:228:13
+[SupabaseClient] Active session found by getSession(): 
+Object { accessToken: "eyJhbGciOiJIUzI1NiIs...", refreshToken: "a4ig3yp4w2vv...", user: {…}, expiresAt: "2025-05-29T23:27:33.000Z", expiresIn: 3600 }
+src_4e011d10._.js:87:17
+[SupabaseClient] Calling supabase.auth.getUser()... src_4e011d10._.js:99:13
+[AuthContextProvider] AuthContextProvider function body executing... 4 src_4e011d10._.js:228:13
+GET
+http://localhost:3000/_next/static/chunks/node_modules_leaflet_dist_leaflet-src_e7e140e9.js
+[HTTP/1.1 200 OK 41ms]
+
+GET
+http://localhost:3000/_next/static/chunks/node_modules_leaflet_dist_leaflet-src_ec3a98a0.js
+[HTTP/1.1 200 OK 4ms]
+
+GET
+http://localhost:3000/_next/static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_61dcf9ba._.js
+[HTTP/1.1 200 OK 8ms]
+
+GET
+http://localhost:3000/_next/static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_66796270._.js
+[HTTP/1.1 200 OK 5ms]
+
+GET
+http://localhost:3000/_next/static/chunks/node_modules_27e44d03._.js
+[HTTP/1.1 200 OK 44ms]
+
+GET
+http://localhost:3000/_next/static/chunks/src_4a2e4ecf._.js
+[HTTP/1.1 200 OK 11ms]
+
+GET
+http://localhost:3000/_next/static/chunks/src_components_map_map_tsx_c37736ad._.js
+[HTTP/1.1 200 OK 4ms]
+
+GET
+ws://localhost:3000/_next/webpack-hmr
+[HTTP/1.1 101 Switching Protocols 2ms]
+
+MapProvider: Leaflet (L) loaded and icons configured. 2 src_4e011d10._.js:1831:29
+[useFetchPins] HOOK BODY EXECUTING. isMapReady: false, mapInstanceRef.current: false, L: true src_b348d3d0._.js:2217:13
+[useFetchPins] Hook rendering. isLoading: false Pins count: 0 Error: null src_b348d3d0._.js:2414:13
+[useFetchPins] HOOK BODY EXECUTING. isMapReady: false, mapInstanceRef.current: false, L: true src_b348d3d0._.js:2217:13
+[useFetchPins] Hook rendering. isLoading: false Pins count: 0 Error: null src_b348d3d0._.js:2414:13
+MapContents: L is loaded. Rendering MapContainer. isMapReady currently: false 2 src_4a2e4ecf._.js:1075:13
+MapProvider: isMapReady status: false (L Loaded: true, Map Instance Set: false) src_4e011d10._.js:1850:21
+[useFetchPins] Main effect: ENTRY. isMapReady: false, mapInstance: false, L: true, initialLoadSetupDone: false, initialFetchTriggered: false src_b348d3d0._.js:2310:21
+[useFetchPins] Main effect: Prerequisites NOT MET. Returning. src_b348d3d0._.js:2312:25
+MapProvider: isMapReady status: false (L Loaded: true, Map Instance Set: false) src_4e011d10._.js:1850:21
+[useDrawPins] Hook called/re-rendered. Received pins count: 0 isMapReady: false L: true mapInstance: false 2 src_4a2e4ecf._.js:665:13
+GET
+https://b.tile.openstreetmap.org/13/6915/3859.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6915/3860.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/13/6915/3858.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6913/3859.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6916/3859.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/13/6916/3860.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/13/6915/3861.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6916/3858.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6913/3861.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6916/3861.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/13/6917/3859.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6912/3860.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/13/6912/3858.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6917/3858.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/13/6912/3861.png
+[HTTP/1.1 200 OK 0ms]
+
+MapFeaturesLoader: Setting map instance in context 
+Object { options: {…}, _handlers: (7) […], _layers: {…}, _zoomBoundLayers: {…}, _sizeChanged: false, _container: div.h-full.w-full.leaflet-container.leaflet-touch.leaflet-retina.leaflet-fade-anim.leaflet-grab.leaflet-touch-drag.leaflet-touch-zoom, _leaflet_id: 2, _containerId: 3, _fadeAnimated: true, _panes: {…}, … }
+src_4a2e4ecf._.js:901:25
+MapContext: setMapInstance called with map: true src_4e011d10._.js:1840:21
+[useDrawPins] useEffect triggered. isMapReady: false, L: true, mapInstance: true, pins count: 0 src_4a2e4ecf._.js:668:21
+[useDrawPins] useEffect: Prerequisites (map, L) not met. Clearing markers and returning. src_4a2e4ecf._.js:670:25
+MapFeaturesLoader: Map instance already set to the same instance. src_4a2e4ecf._.js:904:25
+[useDrawPins] useEffect triggered. isMapReady: false, L: true, mapInstance: true, pins count: 0 src_4a2e4ecf._.js:668:21
+[useDrawPins] useEffect: Prerequisites (map, L) not met. Clearing markers and returning. src_4a2e4ecf._.js:670:25
+MapContents: L is loaded. Rendering MapContainer. isMapReady currently: true src_4a2e4ecf._.js:1075:13
+MapContents: L is loaded. Rendering MapContainer. isMapReady currently: true src_4a2e4ecf._.js:1075:13
+[useDrawPins] Hook called/re-rendered. Received pins count: 0 isMapReady: true L: true mapInstance: true src_4a2e4ecf._.js:665:13
+[useDrawPins] Hook called/re-rendered. Received pins count: 0 isMapReady: true L: true mapInstance: true src_4a2e4ecf._.js:665:13
+[useDrawPins] useEffect triggered. isMapReady: true, L: true, mapInstance: true, pins count: 0 src_4a2e4ecf._.js:668:21
+[useDrawPins] useEffect: Clearing existing markers. src_4a2e4ecf._.js:680:21
+[useDrawPins] useEffect: No pins to draw. Returning. src_4a2e4ecf._.js:691:25
+MapProvider: isMapReady status: true (L Loaded: true, Map Instance Set: true) src_4e011d10._.js:1850:21
+GET
+https://a.tile.openstreetmap.org/13/6914/3859.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6914/3860.png
+[HTTP/2 200  0ms]
+
+[SupabaseClient] User successfully retrieved by supabase.auth.getUser(): 
+Object { id: "9ec60809-0af0-4523-8235-b7482335bf8b", email: "wildriftkaoi@gmail.com", aud: "authenticated" }
+src_4e011d10._.js:122:17
+[AuthContextProvider] AuthContextProvider function body executing... src_4e011d10._.js:228:13
+[AuthContextProvider] AuthContextProvider function body executing... src_4e011d10._.js:228:13
+GET
+https://c.tile.openstreetmap.org/13/6914/3858.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/13/6913/3860.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6914/3861.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6913/3858.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6912/3859.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6917/3860.png
+[HTTP/2 200  0ms]
+
+[Fast Refresh] rebuilding node_modules_next_dist_client_8f19e6fb._.js:14984:17
+GET
+https://c.tile.openstreetmap.org/13/6917/3861.png
+[HTTP/2 200  0ms]
+
+[Fast Refresh] done in 116ms node_modules_next_dist_client_8f19e6fb._.js:14848:13
+GET
+https://a.tile.openstreetmap.org/13/6914/3859.png
+[HTTP/2 304  128ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6914/3860.png
+[HTTP/2 304  115ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6914/3858.png
+[HTTP/2 304  115ms]
+
+GET
+https://a.tile.openstreetmap.org/13/6913/3860.png
+[HTTP/2 304  116ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6914/3861.png
+[HTTP/2 304  110ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6913/3858.png
+[HTTP/2 304  105ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6912/3859.png
+[HTTP/2 304  103ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6917/3860.png
+[HTTP/2 304  70ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6917/3861.png
+[HTTP/2 304  68ms]
+
+GET
+https://a.tile.openstreetmap.org/13/6914/3862.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6913/3862.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6915/3862.png
+[HTTP/2 200  19ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6912/3862.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6916/3862.png
+[HTTP/2 200  0ms]
+
+MouseEvent.mozPressure is deprecated. Use PointerEvent.pressure instead. node_modules_27e44d03._.js:497:17
+MouseEvent.mozInputSource is deprecated. Use PointerEvent.pointerType instead. node_modules_27e44d03._.js:497:17
+GET
+http://localhost:3000/marker/marker-icon-2x.png
+NS_BINDING_ABORTED
+
+GET
+http://localhost:3000/marker/marker-shadow.png
+[HTTP/1.1 304 Not Modified 21ms]
+
+GET
+https://b.tile.openstreetmap.org/12/3456/1930.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/12/3457/1930.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/12/3457/1929.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/12/3456/1931.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/12/3456/1929.png
+[HTTP/3 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/12/3458/1930.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/12/3455/1929.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/12/3458/1929.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/12/3458/1931.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/12/3457/1931.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/12/3455/1930.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/12/3455/1931.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/12/3457/1931.png
+[HTTP/2 304  17ms]
+
+GET
+https://b.tile.openstreetmap.org/12/3459/1930.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/12/3459/1929.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/12/3459/1931.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/12/3455/1930.png
+[HTTP/2 304  18ms]
+
+GET
+https://b.tile.openstreetmap.org/12/3455/1931.png
+[HTTP/2 304  19ms]
+
+GET
+https://c.tile.openstreetmap.org/12/3456/1928.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/12/3458/1928.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/12/3457/1928.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/12/3459/1928.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/12/3455/1928.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/11/1728/965.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/11/1728/964.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/11/1727/965.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/11/1729/965.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/11/1728/966.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/11/1729/964.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/11/1727/964.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/12/3457/1932.png
+NS_BINDING_ABORTED
+
+GET
+https://b.tile.openstreetmap.org/11/1729/966.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/11/1727/966.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/12/3458/1932.png
+NS_BINDING_ABORTED
+
+GET
+https://a.tile.openstreetmap.org/12/3456/1932.png
+NS_BINDING_ABORTED
+
+GET
+https://b.tile.openstreetmap.org/11/1730/965.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/11/1726/965.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/12/3459/1932.png
+NS_BINDING_ABORTED
+
+GET
+https://c.tile.openstreetmap.org/12/3455/1932.png
+NS_BINDING_ABORTED
+
+GET
+https://c.tile.openstreetmap.org/11/1726/964.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/12/3460/1930.png
+NS_BINDING_ABORTED
+
+GET
+https://c.tile.openstreetmap.org/12/3454/1930.png
+NS_BINDING_ABORTED
+
+GET
+https://a.tile.openstreetmap.org/12/3454/1931.png
+NS_BINDING_ABORTED
+
+GET
+https://b.tile.openstreetmap.org/12/3460/1929.png
+NS_BINDING_ABORTED
+
+GET
+https://b.tile.openstreetmap.org/12/3454/1929.png
+NS_BINDING_ABORTED
+
+GET
+https://a.tile.openstreetmap.org/12/3454/1928.png
+NS_BINDING_ABORTED
+
+GET
+https://a.tile.openstreetmap.org/12/3460/1931.png
+NS_BINDING_ABORTED
+
+GET
+https://c.tile.openstreetmap.org/11/1730/966.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/11/1726/966.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/12/3460/1932.png
+NS_BINDING_ABORTED
+
+GET
+https://b.tile.openstreetmap.org/12/3454/1932.png
+NS_BINDING_ABORTED
+
+GET
+https://a.tile.openstreetmap.org/12/3460/1928.png
+NS_BINDING_ABORTED
+
+GET
+https://a.tile.openstreetmap.org/11/1730/964.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/12/3457/1928.png
+[HTTP/2 304  19ms]
+
+GET
+https://b.tile.openstreetmap.org/12/3455/1928.png
+[HTTP/2 304  17ms]
+
+GET
+https://a.tile.openstreetmap.org/11/1730/964.png
+[HTTP/2 304  17ms]
+
+GET
+https://a.tile.openstreetmap.org/11/1728/963.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/11/1727/963.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/11/1729/963.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/11/1726/963.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/11/1730/963.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/11/1725/964.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/11/1731/964.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/11/1725/965.png
+[HTTP/2 200  18ms]
+
+GET
+https://c.tile.openstreetmap.org/11/1731/965.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/11/1725/963.png
+NS_BINDING_ABORTED
+
+GET
+https://a.tile.openstreetmap.org/11/1731/963.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/11/1725/966.png
+NS_BINDING_ABORTED
+
+GET
+https://a.tile.openstreetmap.org/11/1731/966.png
+NS_BINDING_ABORTED
+
+GET
+https://c.tile.openstreetmap.org/10/864/482.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/10/863/481.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/10/864/481.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/10/863/483.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/10/864/483.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/10/862/482.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/10/865/482.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/10/862/481.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/10/865/481.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/10/862/483.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/10/865/483.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/10/863/482.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/10/863/482.png
+[HTTP/2 304  19ms]
+
+GET
+https://a.tile.openstreetmap.org/10/864/480.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/10/863/480.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/10/866/481.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/10/866/482.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/10/862/480.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/10/865/480.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/10/866/480.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/10/866/483.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/10/865/480.png
+[HTTP/2 304  21ms]
+
+GET
+https://c.tile.openstreetmap.org/10/866/480.png
+[HTTP/2 304  15ms]
+
+GET
+https://c.tile.openstreetmap.org/10/866/483.png
+[HTTP/2 304  18ms]
+
+GET
+https://a.tile.openstreetmap.org/9/432/240.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/432/241.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/431/239.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/432/239.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/430/240.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/431/240.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/433/241.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/431/241.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/431/242.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/432/242.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/430/239.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/433/239.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/430/242.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/433/242.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/433/240.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/430/241.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/431/240.png
+[HTTP/2 304  18ms]
+
+GET
+https://a.tile.openstreetmap.org/9/431/241.png
+[HTTP/2 304  17ms]
+
+GET
+https://b.tile.openstreetmap.org/9/433/240.png
+[HTTP/2 304  18ms]
+
+GET
+https://c.tile.openstreetmap.org/9/430/241.png
+[HTTP/2 304  17ms]
+
+GET
+https://b.tile.openstreetmap.org/9/432/238.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/430/238.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/429/239.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/433/238.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/434/241.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/429/240.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/434/238.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/434/242.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/434/240.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/434/239.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/429/241.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/429/238.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/429/242.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/430/238.png
+[HTTP/2 304  17ms]
+
+GET
+https://c.tile.openstreetmap.org/9/433/238.png
+[HTTP/2 304  18ms]
+
+GET
+https://a.tile.openstreetmap.org/9/429/240.png
+[HTTP/2 304  17ms]
+
+GET
+https://c.tile.openstreetmap.org/9/434/240.png
+[HTTP/2 304  18ms]
+
+GET
+https://b.tile.openstreetmap.org/9/434/239.png
+[HTTP/2 304  16ms]
+
+GET
+https://b.tile.openstreetmap.org/9/429/241.png
+[HTTP/2 304  19ms]
+
+GET
+https://b.tile.openstreetmap.org/9/429/238.png
+[HTTP/2 304  18ms]
+
+GET
+https://c.tile.openstreetmap.org/9/429/242.png
+[HTTP/2 304  18ms]
+
+GET
+https://a.tile.openstreetmap.org/9/428/238.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/428/240.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/428/239.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/428/241.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/428/242.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/428/240.png
+[HTTP/2 304  18ms]
+
+GET
+https://c.tile.openstreetmap.org/9/428/237.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/427/238.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/430/237.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/429/237.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/431/237.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/427/237.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/432/237.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/427/239.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/427/240.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/9/433/237.png
+[HTTP/2 200  19ms]
+
+GET
+https://c.tile.openstreetmap.org/9/427/241.png
+[HTTP/2 200  17ms]
+
+GET
+https://b.tile.openstreetmap.org/9/430/237.png
+[HTTP/2 304  17ms]
+
+GET
+https://a.tile.openstreetmap.org/9/429/237.png
+[HTTP/2 304  21ms]
+
+GET
+https://c.tile.openstreetmap.org/9/431/237.png
+[HTTP/2 304  17ms]
+
+GET
+https://b.tile.openstreetmap.org/9/427/237.png
+[HTTP/2 304  16ms]
+
+GET
+https://a.tile.openstreetmap.org/9/432/237.png
+[HTTP/2 304  17ms]
+
+GET
+https://b.tile.openstreetmap.org/9/427/240.png
+[HTTP/2 304  16ms]
+
+GET
+https://b.tile.openstreetmap.org/9/426/238.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/426/237.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/425/238.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/425/237.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/9/426/239.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/9/426/240.png
+[HTTP/2 200  22ms]
+
+GET
+https://b.tile.openstreetmap.org/9/425/239.png
+[HTTP/2 200  21ms]
+
+GET
+https://c.tile.openstreetmap.org/9/425/240.png
+[HTTP/2 200  19ms]
+
+GET
+https://a.tile.openstreetmap.org/9/426/237.png
+[HTTP/2 304  17ms]
+
+GET
+https://a.tile.openstreetmap.org/9/425/238.png
+[HTTP/2 304  16ms]
+
+GET
+https://c.tile.openstreetmap.org/9/425/237.png
+[HTTP/2 304  22ms]
+
+GET
+https://c.tile.openstreetmap.org/9/426/239.png
+[HTTP/2 304  20ms]
+
+GET
+https://a.tile.openstreetmap.org/7/106/59.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/7/107/59.png
+[HTTP/2 200  28ms]
+
+GET
+https://b.tile.openstreetmap.org/7/106/60.png
+[HTTP/2 200  26ms]
+
+GET
+https://c.tile.openstreetmap.org/7/107/60.png
+[HTTP/2 200  19ms]
+
+GET
+https://c.tile.openstreetmap.org/7/106/58.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/7/107/58.png
+[HTTP/2 200  21ms]
+
+GET
+https://c.tile.openstreetmap.org/7/105/59.png
+[HTTP/2 200  18ms]
+
+GET
+https://c.tile.openstreetmap.org/7/108/59.png
+[HTTP/2 200  18ms]
+
+GET
+https://a.tile.openstreetmap.org/7/105/60.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/7/108/60.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/7/106/61.png
+[HTTP/2 200  18ms]
+
+GET
+https://a.tile.openstreetmap.org/7/107/61.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/7/105/58.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/7/108/58.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/7/105/61.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/7/108/61.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/7/104/59.png
+[HTTP/2 200  18ms]
+
+GET
+https://c.tile.openstreetmap.org/7/104/60.png
+[HTTP/2 200  23ms]
+
+GET
+https://a.tile.openstreetmap.org/7/109/59.png
+[HTTP/2 200  18ms]
+
+GET
+https://b.tile.openstreetmap.org/7/109/60.png
+[HTTP/2 200  20ms]
+
+GET
+https://a.tile.openstreetmap.org/7/104/58.png
+[HTTP/2 200  20ms]
+
+GET
+https://a.tile.openstreetmap.org/7/104/61.png
+[HTTP/2 200  21ms]
+
+GET
+https://c.tile.openstreetmap.org/7/109/58.png
+[HTTP/2 200  19ms]
+
+GET
+https://c.tile.openstreetmap.org/7/109/61.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/8/215/120.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/8/215/119.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/8/214/119.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/8/216/119.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/8/214/120.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/8/216/120.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/8/215/121.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/8/215/119.png
+[HTTP/2 304  18ms]
+
+GET
+https://c.tile.openstreetmap.org/8/214/118.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/8/216/118.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/8/216/121.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/8/215/118.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/8/213/119.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/8/217/119.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/8/217/120.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/8/214/121.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/8/217/121.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/8/213/120.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/8/213/118.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/8/217/118.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/8/213/121.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/8/215/118.png
+[HTTP/2 304  19ms]
+
+GET
+https://c.tile.openstreetmap.org/8/214/121.png
+[HTTP/2 304  18ms]
+
+GET
+https://a.tile.openstreetmap.org/8/213/120.png
+[HTTP/2 304  19ms]
+
+GET
+https://b.tile.openstreetmap.org/8/213/118.png
+[HTTP/2 304  17ms]
+
+GET
+https://c.tile.openstreetmap.org/8/217/118.png
+[HTTP/2 304  16ms]
+
+GET
+https://b.tile.openstreetmap.org/10/863/482.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/10/866/483.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/10/863/484.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/10/864/484.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/10/862/484.png
+[HTTP/2 200  21ms]
+
+GET
+https://c.tile.openstreetmap.org/10/865/484.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/10/861/482.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/10/861/483.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/10/861/481.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/10/861/484.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/10/866/484.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/10/861/483.png
+[HTTP/2 304  18ms]
+
+GET
+https://b.tile.openstreetmap.org/10/861/481.png
+[HTTP/2 304  21ms]
+
+GET
+https://a.tile.openstreetmap.org/11/1730/964.png
+[HTTP/1.1 200 OK 0ms]
+
+The resource at “http://localhost:3000/_next/static/media/Nohemi_Bold-s.p.9a4db5f5.otf” preloaded with link preload was not used within a few seconds. Make sure all attributes of the preload tag are set correctly. home
+The resource at “http://localhost:3000/_next/static/media/Nohemi_Medium-s.p.9b089af0.ttf” preloaded with link preload was not used within a few seconds. Make sure all attributes of the preload tag are set correctly. home
+The resource at “http://localhost:3000/_next/static/media/Satoshi_Variable-s.p.f9c29cb1.ttf” preloaded with link preload was not used within a few seconds. Make sure all attributes of the preload tag are set correctly. home
+GET
+https://c.tile.openstreetmap.org/13/6914/3861.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/13/6914/3862.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6913/3862.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6915/3862.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6914/3860.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://a.tile.openstreetmap.org/13/6913/3860.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6912/3862.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6916/3862.png
+[HTTP/1.1 200 OK 0ms]
+
+GET
+https://b.tile.openstreetmap.org/13/6914/3863.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/13/6913/3863.png
+[HTTP/2 200  22ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6915/3863.png
+[HTTP/2 200  23ms]
+
+GET
+https://a.tile.openstreetmap.org/13/6916/3863.png
+[HTTP/2 200  22ms]
+
+GET
+https://c.tile.openstreetmap.org/13/6912/3863.png
+[HTTP/2 200  19ms]
+
+GET
+https://b.tile.openstreetmap.org/15/27657/15445.png
+[HTTP/2 200  20ms]
+
+GET
+https://c.tile.openstreetmap.org/15/27657/15446.png
+[HTTP/2 200  19ms]
+
+GET
+https://a.tile.openstreetmap.org/15/27656/15445.png
+[HTTP/2 200  22ms]
+
+GET
+https://c.tile.openstreetmap.org/15/27658/15445.png
+[HTTP/2 200  20ms]
+
+GET
+https://b.tile.openstreetmap.org/15/27656/15446.png
+[HTTP/2 200  21ms]
+
+GET
+https://a.tile.openstreetmap.org/15/27658/15446.png
+[HTTP/2 200  22ms]
+
+GET
+https://a.tile.openstreetmap.org/15/27657/15444.png
+[HTTP/2 200  22ms]
+
+GET
+https://a.tile.openstreetmap.org/15/27657/15447.png
+[HTTP/2 200  21ms]
+
+GET
+https://c.tile.openstreetmap.org/15/27656/15444.png
+[HTTP/2 200  23ms]
+
+GET
+https://b.tile.openstreetmap.org/15/27658/15444.png
+[HTTP/2 200  17ms]
+
+GET
+https://c.tile.openstreetmap.org/15/27656/15447.png
+[HTTP/2 200  19ms]
+
+GET
+https://b.tile.openstreetmap.org/15/27658/15447.png
+[HTTP/2 200  19ms]
+
+GET
+https://c.tile.openstreetmap.org/15/27655/15445.png
+[HTTP/2 200  20ms]
+
+GET
+https://a.tile.openstreetmap.org/15/27659/15445.png
+[HTTP/2 200  18ms]
+
+GET
+https://a.tile.openstreetmap.org/15/27655/15446.png
+[HTTP/2 200  22ms]
+
+GET
+https://b.tile.openstreetmap.org/15/27659/15446.png
+[HTTP/2 200  19ms]
+
+GET
+https://b.tile.openstreetmap.org/15/27655/15444.png
+[HTTP/2 200  19ms]
+
+GET
+https://c.tile.openstreetmap.org/15/27659/15444.png
+[HTTP/2 200  21ms]
+
+GET
+https://b.tile.openstreetmap.org/15/27655/15447.png
+[HTTP/2 200  18ms]
+
+GET
+https://c.tile.openstreetmap.org/15/27659/15447.png
+[HTTP/2 200  19ms]
+
+GET
+https://c.tile.openstreetmap.org/15/27657/15443.png
+[HTTP/2 200  26ms]
+
+GET
+https://b.tile.openstreetmap.org/15/27656/15443.png
+[HTTP/2 200  20ms]
+
+GET
+https://a.tile.openstreetmap.org/15/27658/15443.png
+[HTTP/2 200  23ms]
+
+GET
+https://a.tile.openstreetmap.org/15/27655/15443.png
+[HTTP/2 200  20ms]
+
+GET
+https://b.tile.openstreetmap.org/15/27659/15443.png
+[HTTP/2 200  20ms]
+
+GET
+https://b.tile.openstreetmap.org/14/13828/7722.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/14/13828/7721.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/14/13827/7722.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/14/13829/7722.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/14/13828/7723.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/14/13827/7721.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/14/13829/7721.png
+[HTTP/2 200  20ms]
+
+GET
+https://b.tile.openstreetmap.org/14/13827/7723.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/14/13829/7723.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/14/13828/7720.png
+[HTTP/2 200  21ms]
+
+GET
+https://b.tile.openstreetmap.org/14/13827/7720.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/14/13829/7720.png
+[HTTP/2 200  0ms]
+
+GET
+https://b.tile.openstreetmap.org/14/13826/7721.png
+[HTTP/2 200  18ms]
+
+GET
+https://c.tile.openstreetmap.org/14/13830/7721.png
+[HTTP/2 200  0ms]
+
+GET
+https://c.tile.openstreetmap.org/14/13826/7722.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/14/13830/7722.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/14/13826/7720.png
+[HTTP/2 200  19ms]
+
+GET
+https://b.tile.openstreetmap.org/14/13830/7720.png
+[HTTP/2 200  0ms]
+
+GET
+https://a.tile.openstreetmap.org/14/13826/7723.png
+[HTTP/2 200  20ms]
+
+GET
+https://b.tile.openstreetmap.org/14/13830/7723.png
+[HTTP/2 200  0ms]
+

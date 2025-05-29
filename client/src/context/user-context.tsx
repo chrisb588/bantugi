@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useReducer, ReactNode } from 'react';
+import { createContext, useContext, useReducer, ReactNode, useCallback } from 'react';
 import { userReducer, initialState } from '@/reducers/user';
 import type User from '@/interfaces/user';
 
@@ -16,17 +16,17 @@ const UserContext = createContext<UserContextType | null>(null);
 export function UserContextProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(userReducer, initialState);
 
-  const setUser = (user: User) => {
+  const setUser = useCallback((user: User) => {
     dispatch({ type: 'SET_USER', payload: user });
-  };
+  }, []);
 
-  const updateUser = (updates: Partial<User>) => {
+  const updateUser = useCallback((updates: Partial<User>) => {
     dispatch({ type: 'UPDATE_USER', payload: updates });
-  };
+  }, []);
 
-  const clearUser = () => {
+  const clearUser = useCallback(() => {
     dispatch({ type: 'CLEAR_USER' });
-  };
+  }, []);
 
   return (
     <UserContext.Provider value={{ state, setUser, updateUser, clearUser }}>

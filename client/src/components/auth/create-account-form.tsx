@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Import useEffect
 import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils"
@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import UserAuthDetails from "@/interfaces/user-auth";
+import { useAuth } from "@/hooks/useAuth"; // Import useAuth
 
 interface CreateAccountFormData extends UserAuthDetails {
   confirmPassword: string;
@@ -28,7 +29,8 @@ export function CreateAccountForm({
     password: '',
     confirmPassword: '',
   });
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null); // Renamed to avoid conflict
+  const { signup, isLoading, error: authError, user, initialAuthCheckComplete } = useAuth(); // Add user and initialAuthCheckComplete
   
   const router = useRouter();
 
@@ -38,31 +40,32 @@ export function CreateAccountForm({
       ...prev,
       [id]: value
     }));
-    setError(null);
+    setFormError(null); // Clear form-specific error
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setFormError(null);
 
-    if (formData.password != formData.confirmPassword) {
-      setError('Passwords do not match');
+    if (formData.password !== formData.confirmPassword) {
+      setFormError('Passwords do not match');
       return;
     }
 
-    try {
-      // TODO: api call for signup (backend)
-      // the api call should respond w/ user details (and maybe jwt token?)
-      // since we need the user's avatar for the sidebar and
-      // their deets for the profile page
-      console.log('Login attempt with:', formData);
-      
-      // On successful login:
-      router.replace('/home');
-    } catch (err) {
-      setError('Invalid username or password');
-    }
+    // Extract username and password for the signup function
+    const { username, password } = formData;
+    await signup({ username, password }); // Signup now returns a boolean, but we'll rely on the effect
+    
+    // Navigation is handled by the useAuth hook upon successful signup
   };
+
+  // Effect to handle redirection after user state changes
+  useEffect(() => {
+    // Only redirect if the initial auth check is complete and user is successfully authenticated
+    if (initialAuthCheckComplete && user) {
+      router.replace('/home');
+    }
+  }, [user, initialAuthCheckComplete, router]);
   
   const onLoginClick = () => {
     router.replace('/login')
@@ -78,9 +81,10 @@ export function CreateAccountForm({
           <form onSubmit={handleSubmit} className="w-full max-w-full">
             <div className="w-full grid gap-6 sm:gap-10">
               <div className="w-full grid gap-3">
-                {error && (
-                  <div className="text-sm text-destructive text-center">
-                    {error}
+                {/* Display form-specific error or auth error */}
+                {(formError || authError) && (
+                  <div className="w-full p-3 mb-2 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm text-center">
+                    {formError || authError}
                   </div>
                 )}
                 <div className="grid gap-1">
@@ -91,6 +95,7 @@ export function CreateAccountForm({
                     value={formData.username}
                     onChange={handleInputChange}
                     required
+                    disabled={isLoading} // Disable input when loading
                   />
                 </div>
                 <div className="grid gap-1">
@@ -103,6 +108,7 @@ export function CreateAccountForm({
                     value={formData.password}
                     onChange={handleInputChange}
                     required 
+                    disabled={isLoading} // Disable input when loading
                   />
                 </div>
                 <div className="grid gap-1">
@@ -115,15 +121,16 @@ export function CreateAccountForm({
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                     required 
+                    disabled={isLoading} // Disable input when loading
                   />
                 </div>
               </div>
-              <Button type="submit" className="w-full sm:w-[70%] mx-auto">
-                Create Account
+              <Button type="submit" className="w-full sm:w-[70%] mx-auto" disabled={isLoading}>
+                {isLoading ? 'Creating Account...' : 'Create Account'}
               </Button>
             </div>
           </form>
-          <Button variant="outline" className="w-full sm:w-[70%] mx-auto mt-2" onClick={onLoginClick}>
+          <Button variant="outline" className="w-full sm:w-[70%] mx-auto mt-2" onClick={onLoginClick} disabled={isLoading}>
             Login
           </Button>
         </CardContent>

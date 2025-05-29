@@ -1,4 +1,5 @@
 import Report from '@/interfaces/report';
+import Area from '@/interfaces/area'; // Import Area interface
 
 export const sampleResults: Report[] = [
     {
@@ -179,3 +180,51 @@ export const sampleResults: Report[] = [
       }
     ]
   };
+
+export const mapTestReports: Report[] = [
+  {
+    id: 'dummy1',
+    title: 'Major Pothole',
+    description: 'A very large and dangerous pothole on Main St.',
+    category: 'Road Hazard',
+    urgency: 'High',
+    status: 'Unresolved',
+    location: {
+      coordinates: { lat: 10.323, lng: 123.899 },
+      address: { id: 1, province: 'Cebu', city: 'Cebu City', barangay: 'Kamputhaw' } as Area,
+    },
+    createdAt: new Date('2025-05-29T10:00:00Z'), // Using a fixed date for consistency
+    creator: { username: 'TestUser1', profilePicture: '/img/avatar.png' },
+    images: ['/img/flood-image.jpg'],
+  },
+  {
+    id: 'dummy2',
+    title: 'Broken Streetlight',
+    description: 'Streetlight near the park is out.',
+    category: 'Electrical Issue',
+    urgency: 'Medium',
+    status: 'Being Addressed',
+    location: {
+      coordinates: { lat: 10.324, lng: 123.900 },
+      address: { id: 2, province: 'Cebu', city: 'Cebu City', barangay: 'Lahug' } as Area,
+    },
+    createdAt: new Date('2025-05-29T10:05:00Z'),
+    creator: { username: 'TestUser2', profilePicture: '/img/avatar.png' },
+    images: ['/img/flood-image.png'],
+  },
+  {
+    id: 'dummy3',
+    title: 'Overflowing Trash Bin',
+    description: 'Public trash bin at the corner is full and overflowing.',
+    category: 'Sanitation',
+    urgency: 'Low',
+    status: 'Resolved',
+    location: {
+      coordinates: { lat: 10.325, lng: 123.901 },
+      address: { id: 3, province: 'Cebu', city: 'Cebu City', barangay: 'Apas' } as Area,
+    },
+    createdAt: new Date('2025-05-29T10:10:00Z'),
+    creator: { username: 'TestUser3', profilePicture: '/img/avatar.png' },
+    images: ['/img/hand-img-1.png'],
+  },
+];

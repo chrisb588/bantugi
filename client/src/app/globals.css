@@ -1,3 +1,5 @@
+@import "leaflet/dist/leaflet.css"; /* Add this line */
+
 @import "tailwindcss";
 @import "tw-animate-css";
 

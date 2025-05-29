@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react"; // Added useMemo
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner"; // Import toast
 
 import { Button } from "@/components/ui/button";
 import {
@@ -189,7 +190,7 @@ export function ReportForm({
 
         if (addressDetails === null) {
           console.error('Could not determine address for the selected location.');
-          // TODO: Provide user feedback
+          toast.error('Could not determine address for the selected location.');
           return;
         }
 
@@ -204,35 +205,75 @@ export function ReportForm({
         console.log("Location confirmed:", selectedLocation, "Address:", addressDetails);
       } catch (error) {
         console.error('Failed to process location:', error);
-        // TODO: Provide user feedback
+        toast.error('Failed to process location. Please try again.');
       }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.location?.address || !formData.location?.coordinates) {
-      console.error("Validation failed: Title and a confirmed location (with coordinates and address) are required.");
-      // TODO: Show a more user-friendly error message
+    if (!formData.title || !formData.location?.address || !formData.location?.coordinates || !formData.category || !formData.urgency) {
+      console.error("Validation failed: Title, category, urgency, and a confirmed location (with coordinates and address) are required.");
+      toast.error("Validation failed: Title, category, urgency, and a confirmed location are required.");
       return;
     }
 
-    const finalLocation: Location = {
-      coordinates: formData.location.coordinates,
-      address: formData.location.address,
-    };
-
-    const finalReportData: Partial<Report> = {
-      ...formData,
+    // Prepare the data for the /api/reports endpoint
+    // This should match the expected structure in `lib/supabase/reports.ts` createReport function
+    const reportDataForApi = {
       title: formData.title,
-      location: finalLocation,
-      createdAt: formData.createdAt || new Date(),
+      description: formData.description || '',
+      category: formData.category,
+      urgency: formData.urgency,
       status: formData.status || 'Unresolved',
+      images: formData.images || [],
+      latitude: formData.location.coordinates.lat,
+      longitude: formData.location.coordinates.lng,
+      // locationAddressText: // This is not directly used by createReport, but good to have if your geocoding/area creation needs it.
+      // For now, createReport reconstructs area from lat/lng if needed or uses existing.
+      // We pass the components of the address directly as expected by createReport
+      areaProvince: formData.location.address.province,
+      areaCity: formData.location.address.city,
+      areaBarangay: formData.location.address.barangay,
+      // locationAddressText is not explicitly in createReport input,
+      // but it's good practice to ensure all data for area/location creation is present.
+      // The backend `createReport` will handle creating/finding area and location records.
+      locationAddressText: `${formData.location.address.barangay}, ${formData.location.address.city ? formData.location.address.city + ', ' : ''}${formData.location.address.province}`
+
     };
 
-    console.log('Submitting report:', finalReportData);
-    // TODO: Actual submission logic
-    // router.push('/home');
+    console.log('Submitting report with data:', reportDataForApi);
+
+    try {
+      const response = await fetch('/api/reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reportDataForApi),
+      });
+
+      if (!response.ok) {
+        const errorResult = await response.json();
+        console.error('Failed to create report:', errorResult.error);
+        toast.error(`Failed to create report: ${errorResult.error || 'Server error'}`);
+        return;
+      }
+
+      const newReport = await response.json();
+      console.log('Report created successfully:', newReport);
+      toast.success('Report created successfully!');
+      // Navigate to the new report's page
+      if (newReport.id) {
+        router.push(`/reports/${newReport.id}`);
+      } else {
+        // Fallback if ID is not in the response, though it should be
+        router.push('/home');
+      }
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      toast.error('An unexpected error occurred while submitting the report.');
+    }
   };
 
   const handleCancel = () => {

@@ -36,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${Satoshi.variable} ${Nohemi.variable} scroll-smooth`}>
+    <html lang="en" className={`${Satoshi.variable} ${Nohemi.variable} scroll-smooth`} suppressHydrationWarning={true}>
       <body
         className="font-satoshi antialiased"
       >

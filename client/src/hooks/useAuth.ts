@@ -1,76 +1,38 @@
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { userSignUp, signInWithPassword } from '@/lib/supabase/user.client';
-import UserAuthDetails from "@/interfaces/user-auth";
 import { useAuthContext } from '@/context/auth-context';
+import UserAuthDetails from "@/interfaces/user-auth";
+import { useEffect } from 'react'; // Import useEffect
 
 export function useAuth() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const context = useAuthContext();
   const router = useRouter();
-  const { dispatch } = useAuthContext();
 
-  const login = async (credentials: UserAuthDetails) => {
-    setIsLoading(true);
-    setError(null);
-    dispatch({ type: "AUTH/LOGIN_REQUEST" });
-    
-    try {
-      const user = await signInWithPassword(credentials);
-      if (user) {
-        dispatch({ type: "AUTH/LOGIN_SUCCESS", payload: user });
-        router.push('/home');
-        return true;
-      } else {
-        const errorMsg = 'Login failed. Please check your credentials.';
-        dispatch({ type: "AUTH/LOGIN_FAILURE", payload: errorMsg });
-        setError(errorMsg);
-        return false;
-      }
-    } catch (err) {
-      const errorMsg = 'An error occurred during login.';
-      dispatch({ type: "AUTH/LOGIN_FAILURE", payload: errorMsg });
-      setError(errorMsg);
-      console.error(err);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const signup = async (credentials: UserAuthDetails) => {
-    setIsLoading(true);
-    setError(null);
-    dispatch({ type: "AUTH/SIGNUP_REQUEST" });
-    
-    try {
-      const user = await userSignUp(credentials); // user is of type User
-      if (user) {
-        const authResponsePayload = {
-          success: true as const,
-          message: 'Signup successful!',
-          user: user,
-          feedback: '' 
-        };
-        dispatch({ type: "AUTH/SIGNUP_SUCCESS", payload: authResponsePayload });
-        router.push('/home');
-        return true;
-      } else {
-        const errorMsg = 'Signup failed.';
-        dispatch({ type: "AUTH/SIGNUP_FAILURE", payload: errorMsg }); // Changed payload to errorMsg
-        setError(errorMsg);
-        return false;
-      }
-    } catch (err) {
-      const errorMsg = 'An error occurred during signup.';
-      dispatch({ type: "AUTH/SIGNUP_FAILURE", payload: errorMsg });
-      setError(errorMsg);
-      console.error(err);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
+  const { state, login: contextLogin, signup: contextSignup, logout: contextLogout } = context;
+
+  const login = async (credentials: UserAuthDetails): Promise<boolean> => {
+    const user = await contextLogin(credentials);
+    return !!user; // Return true if user object is returned, false otherwise
   };
 
-  return { login, signup, isLoading, error };
+  const signup = async (credentials: UserAuthDetails): Promise<boolean> => {
+    const user = await contextSignup(credentials);
+    return !!user; // Return true if user object is returned, false otherwise
+  };
+
+  const logout = async () => {
+    await contextLogout();
+    // Consider if this immediate redirect is always desired or should also be effect-driven
+    // For now, keeping it as is, as it's less likely to cause issues than login/signup redirects
+    router.push('/login'); 
+  };
+
+  return {
+    user: state.user,
+    isLoading: state.loading,
+    error: state.error,
+    initialAuthCheckComplete: state.initialAuthCheckComplete,
+    login,
+    signup,
+    logout,
+  };
 }

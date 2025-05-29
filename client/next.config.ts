@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
         port: '', 
         pathname: '/storage/v1/object/public/report-images/**', 
       },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };

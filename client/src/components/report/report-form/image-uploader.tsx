@@ -19,27 +19,55 @@ export default function ImageUploader({ images = [], onChange }: ImageUploaderPr
 
   const onDrop = React.useCallback(
     async (acceptedFiles: File[]) => {
-      const newPreviews: string[] = [];
-      const newImages: string[] = [];
+      const newLocalPreviews: string[] = [];
+      const uploadedImageUrls: string[] = [];
 
       for (const file of acceptedFiles) {
         try {
+          // Generate local preview
           const preview = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result as string);
             reader.onerror = reject;
             reader.readAsDataURL(file);
           });
+          newLocalPreviews.push(preview);
 
-          newPreviews.push(preview);
-          newImages.push(preview); // In real app, you'd upload to server and store URLs
+          // Upload the file
+          const formData = new FormData();
+          formData.append('file', file);
+
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            toast.error(`Upload failed for ${file.name}: ${errorData.error || 'Server error'}`);
+            console.error('Upload failed:', errorData);
+            continue; // Skip to the next file
+          }
+
+          const result = await response.json();
+          if (result.fileUrl) {
+            uploadedImageUrls.push(result.fileUrl);
+          } else {
+            toast.error(`Upload succeeded for ${file.name} but no URL was returned.`);
+            console.error('Upload succeeded but no URL returned:', result);
+          }
         } catch (error) {
-          console.error('Error processing file:', error);
+          toast.error(`Error processing or uploading ${file.name}.`);
+          console.error('Error processing or uploading file:', error);
         }
       }
 
-      setPreviews(prev => [...prev, ...newPreviews]);
-      onChange([...images, ...newImages]);
+      if (newLocalPreviews.length > 0) {
+        setPreviews(prev => [...prev, ...newLocalPreviews]);
+      }
+      if (uploadedImageUrls.length > 0) {
+        onChange([...images, ...uploadedImageUrls]);
+      }
     },
     [images, onChange]
   );

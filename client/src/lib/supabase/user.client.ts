@@ -1,14 +1,28 @@
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from './client';
+import type { User as SupabaseUser, SupabaseClient } from '@supabase/supabase-js';
 import UserAuthDetails from '@/interfaces/user-auth';
+import type User from '@/interfaces/user';
 
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Create a single instance of the Supabase client
+const supabase: SupabaseClient = createClient();
 
-export async function signInWithPassword(payload: UserAuthDetails) {
+// Export the supabase client instance
+export { supabase };
+
+// Helper function to adapt Supabase user to your User interface
+function adaptSupabaseUser(supabaseUser: SupabaseUser | null): User | null {
+  if (!supabaseUser) return null;
+  return {
+    username: supabaseUser.email || '', // Use email as username, provide fallback
+    profilePicture: supabaseUser.user_metadata?.avatar_url || undefined, // Get avatar_url from user_metadata
+    emailConfirmedAt: supabaseUser.email_confirmed_at, // Populate email confirmation status
+    // location can be added later if needed
+  };
+}
+
+export async function signInWithPassword(payload: UserAuthDetails): Promise<User | null> {
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: payload.username,
+    email: payload.username, // Assuming payload.username is the email
     password: payload.password,
   });
 
@@ -17,19 +31,93 @@ export async function signInWithPassword(payload: UserAuthDetails) {
     throw error;
   }
 
-  return data.user;
+  return adaptSupabaseUser(data.user);
 }
 
-export async function userSignUp(payload: UserAuthDetails) {
+export async function userSignUp(payload: UserAuthDetails): Promise<User | null> {
   const { data, error } = await supabase.auth.signUp({
-    email: payload.username,
+    email: payload.username, // Assuming payload.username is the email
     password: payload.password,
+    options: {
+      data: { // This data goes into user_metadata
+        avatar_url: "https://placehold.co/40x40.png?text=Avatar", // Placeholder avatar
+      }
+    }
   });
 
   if (error) {
     console.error("Signup error:", error.message);
     throw error;
   }
+  return adaptSupabaseUser(data.user);
+}
 
-  return data.user;
+export async function getCurrentUser(): Promise<User | null> {
+  console.log("[SupabaseClient] Attempting to get current user session...");
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+  if (sessionError) {
+    console.error("[SupabaseClient] Error getting session:", sessionError.message, sessionError);
+    // It's possible getSession fails but getUser might still work with a persisted token,
+    // or if the error is transient. So, we'll still proceed to getUser.
+  }
+
+  if (!session) {
+    console.log("[SupabaseClient] No active session found by getSession().");
+    // This is a common scenario if the user is not logged in or session expired and couldn't be refreshed.
+  } else {
+    console.log("[SupabaseClient] Active session found by getSession():", {
+      accessToken: session.access_token.substring(0, 20) + "...", // Log a snippet
+      refreshToken: session.refresh_token ? session.refresh_token.substring(0, 20) + "..." : "N/A",
+      user: session.user ? { id: session.user.id, email: session.user.email, aud: session.user.aud } : null,
+      expiresAt: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+      expiresIn: session.expires_in
+    });
+  }
+
+  console.log("[SupabaseClient] Calling supabase.auth.getUser()...");
+  // No explicit token is passed to supabase.auth.getUser() here.
+  // The Supabase client library will use the token from its internal storage (managed via getSession/setSession and cookies/localStorage).
+  const { data: { user: userFromGetUser }, error: getUserError } = await supabase.auth.getUser();
+
+  if (getUserError) {
+    console.error("[SupabaseClient] Error from supabase.auth.getUser():", getUserError.message, getUserError);
+    if (session && session.user) {
+      console.warn("[SupabaseClient] supabase.auth.getUser() failed. User from getSession() was:", {
+         id: session.user.id, email: session.user.email, aud: session.user.aud 
+      });
+    } else if (session) {
+      console.warn("[SupabaseClient] supabase.auth.getUser() failed. Session existed but had no user object. Session data:", {
+        accessToken: session.access_token.substring(0, 20) + "...",
+        expiresAt: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+      });
+    } else {
+      console.warn("[SupabaseClient] supabase.auth.getUser() failed, and no session was found by getSession() either.");
+    }
+    return null; 
+  }
+  
+  if (userFromGetUser) {
+    console.log("[SupabaseClient] User successfully retrieved by supabase.auth.getUser():", { 
+      id: userFromGetUser.id, 
+      email: userFromGetUser.email, 
+      aud: userFromGetUser.aud,
+      // You can add more fields from userFromGetUser if needed for debugging
+      // For example: userFromGetUser.email_confirmed_at, userFromGetUser.created_at
+    });
+  } else {
+    console.log("[SupabaseClient] supabase.auth.getUser() returned no user, but also no error.");
+    // This case might happen if the session from getSession() was null or invalid,
+    // and getUser() confirmed there's no authenticated user.
+  }
+  
+  return adaptSupabaseUser(userFromGetUser);
+}
+
+export async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    console.error("Sign-out error:", error.message);
+    throw error;
+  }
 }

@@ -1,6 +1,6 @@
-import { useCallback } from 'react'; // Removed useEffect, useState
+import { useCallback } from 'react';
 import { useMapContext } from "@/context/map-context";
-import type { LatLngExpression, Marker as LeafletMarkerType, LatLng, Icon as LeafletIcon, DivIcon as LeafletDivIcon } from 'leaflet'; // Import types
+import type { LatLngExpression, Marker as LeafletMarkerType, LatLng, Icon as LeafletIcon, DivIcon as LeafletDivIcon } from 'leaflet';
 
 export function useMapMarker() {
   // Destructure L, isMapReady directly from useMapContext
@@ -19,12 +19,11 @@ export function useMapMarker() {
       });
       return null;
     }
-    // console.log("useMapMarker: Initializing marker at", position);
-    
+
     // Ensure mapInstanceRef.current exists for getZoom
     if (centerOnLocation && mapInstanceRef.current) { 
         centerOnLocation(position, mapInstanceRef.current.getZoom());
-    } else if (mapInstanceRef.current) { // Fallback if centerOnLocation is not available (should not happen with context)
+    } else if (mapInstanceRef.current) { // Fallback if centerOnLocation is not available
         mapInstanceRef.current.setView(position, mapInstanceRef.current.getZoom());
     }
 
@@ -45,7 +44,7 @@ export function useMapMarker() {
     // Assign to the markerRef from context
     (markerRef as React.RefObject<LeafletMarkerType | null>).current = marker.addTo(mapInstanceRef.current);
     return markerRef.current;
-  }, [mapInstanceRef, L, centerOnLocation, markerRef, isMapReady]); // Added isMapReady to dependencies
+  }, [mapInstanceRef, L, centerOnLocation, markerRef, isMapReady]);
 
   const addMarker = useCallback((position: LatLngExpression, options?: { icon?: LeafletIcon | LeafletDivIcon, popupContent?: string | HTMLElement, draggable?: boolean }) => {
     const currentMap = mapInstanceRef.current; // Capture current map instance
@@ -59,7 +58,6 @@ export function useMapMarker() {
       });
       return null;
     }
-    // console.log("useMapMarker: Adding marker at", position);
 
     if (markerRef.current) {
       markerRef.current.remove();
@@ -81,14 +79,12 @@ export function useMapMarker() {
       return markerRef.current;
     } catch (e) {
         console.error("Error during marker.addTo(currentMap) in useMapMarker (addMarker):", e);
-        // Log additional state for debugging if needed
         return null;
     }
-  }, [mapInstanceRef, L, markerRef, isMapReady]); // Added isMapReady to dependencies, removed centerOnLocation as it's not used in addMarker
+  }, [mapInstanceRef, L, markerRef, isMapReady]);
 
   const removeMarker = useCallback(() => {
     if (markerRef.current) {
-      // console.log("useMapMarker: Removing marker");
       markerRef.current.remove();
       (markerRef as React.RefObject<LeafletMarkerType | null>).current = null; // Explicitly set to null
     }

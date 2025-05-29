@@ -5,10 +5,11 @@ export default function AuthLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  console.log('[AuthLayout] Rendering AuthLayout...'); // ADDED THIS LOG
   return (
     <div className="nohemi-font">
       <AuthContextProvider>
-      {children}
+        {children}
       </AuthContextProvider>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { cn, formatArea } from "@/lib/utils"
 import Image from "next/image";
@@ -19,7 +19,7 @@ import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-di
 import { useMapContext } from "@/context/map-context";
 import { useMapMarker } from "@/hooks/use-map-marker";
 import EditDetailsCard from "@/components/user/edit-details-card";
-import L from "leaflet";
+import type LType from "leaflet"; // Import LType for type annotation
 import { useUserContext } from "@/context/user-context";
 import { convertLatLngToArea } from "@/lib/geocoding";
 
@@ -35,15 +35,23 @@ export default function ProfileCard({
   const { state: { user }, updateUser } = useUserContext();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingLocation, setIsEditingLocation] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<L.LatLng | null>(
-    user?.location?.coordinates ? 
-    new L.LatLng(user.location.coordinates.lat, user.location.coordinates.lng) : 
-    null
-  );
   
-  const { mapInstanceRef } = useMapContext();
+  // Get L from useMapContext
+  const { mapInstanceRef, L } = useMapContext(); 
   const { addMarker, removeMarker, getMarkerPosition, initializeMarker } = useMapMarker();
   const router = useRouter();
+
+  // Initialize selectedLocation to null and set it in useEffect when L and user data are available
+  const [selectedLocation, setSelectedLocation] = useState<LType.LatLng | null>(null);
+
+  useEffect(() => {
+    if (L && user?.location?.coordinates) {
+      setSelectedLocation(new L.LatLng(user.location.coordinates.lat, user.location.coordinates.lng));
+    } else {
+      // Ensure selectedLocation is null if L or user coordinates are not available
+      setSelectedLocation(null); 
+    }
+  }, [L, user?.location?.coordinates]); // Dependencies: L and user's location coordinates
 
   const navigateToEditProfile = () => {
     router.push(`/${user?.username}/account/edit`);
@@ -67,10 +75,10 @@ export default function ProfileCard({
   const handleEditLocation = () => {
     setIsEditingLocation(true);
 
-    if (mapInstanceRef.current) {
+    if (mapInstanceRef.current && L) { // Ensure L is available
       // Initialize marker at current location if exists
       if (selectedLocation) {
-        const marker = initializeMarker(selectedLocation);
+        const marker = initializeMarker(selectedLocation, { draggable: true }); // Make marker draggable
         
         if (marker) {
           marker.on('dragend', () => {
@@ -83,8 +91,8 @@ export default function ProfileCard({
       }
 
       // Add click handler to map
-      mapInstanceRef.current.on('click', (e) => {
-        const marker = addMarker(e.latlng);
+      mapInstanceRef.current.on('click', (e: LType.LeafletMouseEvent) => { // Type the event
+        const marker = addMarker(e.latlng, { draggable: true }); // Make new marker draggable
         
         if (marker) {
           marker.on('dragend', () => {
@@ -101,7 +109,7 @@ export default function ProfileCard({
   }
 
   const handleConfirmLocation = async () => {
-    if (selectedLocation) {
+    if (selectedLocation && L) { // Ensure L is available for convertLatLngToArea if it uses L
       const address = await convertLatLngToArea(selectedLocation);
 
       if (!address) {
