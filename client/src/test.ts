@@ -36,7 +36,7 @@ export const sampleResults: Report[] = [
           city: 'Cebu City',
           province: 'Cebu',
         },
-        coordinates: { lat: 10, lng: 123 }
+        coordinates: { lat: 10, lng: 124 }
       },
       description: 'Power outage expected from 1 PM to 5 PM today for urgent maintenance work. Please prepare accordingly.',
       category: 'Utility Work',
@@ -58,7 +58,7 @@ export const sampleResults: Report[] = [
           city: 'Cebu City',
           province: 'Cebu',
         },
-        coordinates: { lat: 10, lng: 123 }
+        coordinates: { lat: 10, lng: 125 }
       },
       description: 'Risk of landslides due to heavy rains. Residents advised to evacuate to safer ground immediately.',
       category: 'Geohazard',
@@ -80,7 +80,7 @@ export const sampleResults: Report[] = [
           city: 'Cebu City',
           province: 'Cebu',
         },
-        coordinates: { lat: 10, lng: 123 }
+        coordinates: { lat: 10, lng: 126 }
       },
       description: 'Street festival today, Mango Avenue closed to traffic until 10 PM. Plan alternate routes to avoid congestion.',
       category: 'Traffic',
@@ -102,7 +102,7 @@ export const sampleResults: Report[] = [
           city: 'Cebu City',
           province: 'Cebu',
         },
-        coordinates: { lat: 10, lng: 123 }
+        coordinates: { lat: 10, lng: 127 }
       },
       description: 'Risk of landslides due to heavy rains. Residents advised to evacuate to safer ground immediately.',
       category: 'Geohazard',
@@ -124,7 +124,7 @@ export const sampleResults: Report[] = [
           city: 'Cebu City',
           province: 'Cebu',
         },
-        coordinates: { lat: 10, lng: 123 }
+        coordinates: { lat: 10, lng: 128 }
       },
       description: 'Street festival today, Mango Avenue closed to traffic until 10 PM. Plan alternate routes to avoid congestion.',
       category: 'Traffic',

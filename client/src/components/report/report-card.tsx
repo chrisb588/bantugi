@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from "next/image";
 import { MapPin, MessageSquare, ChevronRight, AlertTriangle, ChevronLeft } from "lucide-react";
 
@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import Report from "@/interfaces/report";
 import urgencyIcon from '@/constants/urgency-icon';
 import { formatArea } from '@/lib/utils';
+import { useMapContext } from '@/context/map-context';
+import { Marker } from 'leaflet';
 
 interface ReportCardProps {
   report: Report;
@@ -25,6 +27,43 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
   const [showComments, setShowComments] = useState(true);
   const [commentText, setCommentText] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isViewingMap, setIsViewingMap] = useState(false);
+  
+  const { mapInstanceRef } = useMapContext();
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !isViewingMap) return;
+
+    let marker: Marker | null = null;
+
+    if (report.location && report.location.coordinates && mapInstanceRef.current) {
+      const { coordinates } = report.location;
+
+      // Create and add new marker
+      marker = new Marker([coordinates.lat, coordinates.lng], {
+        draggable: false,
+        title: report.title
+      });
+
+      marker.addTo(mapInstanceRef.current);
+      mapInstanceRef.current.setView([coordinates.lat, coordinates.lng], 18);
+    }
+
+    return () => {
+      if (marker) {
+        marker.remove();
+      }
+    };
+  }, [isViewingMap, report, mapInstanceRef]);
+
+  const handleViewMap = () => {
+    setIsViewingMap(true);
+    if (onViewMap) onViewMap();
+  };
+
+  const handleBackFromMap = () => {
+    setIsViewingMap(false);
+  };
   
   const toggleComments = () => {
     setShowComments(!showComments);
@@ -53,7 +92,10 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
 
   return (
     <div className={cn("w-full max-w-lg flex flex-col gap-4 -mt-12", className)} {...props}>
-      <Card className="h-[85vh] min-h-[400px] max-h-[800px]"> {/* Set fixed height here */}
+      <Card className={cn(
+        "h-[85vh] min-h-[400px] max-h-[800px]",
+        isViewingMap ? "pointer-events-none hidden" : "pointer-events-auto"
+        )}> {/* Set fixed height here */}
         <ScrollArea className="h-full"> {/* Make ScrollArea full height of card */}
           <CardContent className="flex flex-col items-start py-4">
             {/* Back button */}
@@ -156,7 +198,7 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
                   variant="outline" 
                   size="sm" 
                   className="text-xs flex items-center gap-1.5 px-3 py-1 h-7"
-                  onClick={onViewMap}
+                  onClick={handleViewMap}
                 >
                   <MapPin className="h-3 w-3" />
                   View in Map
@@ -261,6 +303,17 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
           </CardContent>
         </ScrollArea> 
       </Card>
+      {/* Map back button */}
+      {isViewingMap && (
+        <div className="fixed bottom-20 left-4 z-[1000] flex gap-2 pointer-events-auto">
+          <Button
+            variant="outline"
+            onClick={handleBackFromMap}
+          >
+            Back to Report
+          </Button>
+        </div>
+      )}
     </div>
   );
 } 

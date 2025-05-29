@@ -1,20 +1,22 @@
-import React, { createContext, useContext, useRef, ReactNode } from 'react';
-import L from 'leaflet';
-import { LatLngExpression } from 'leaflet';
+'use client';
+
+import { createContext, useContext, useRef, ReactNode } from 'react';
+import type { Map, Marker, LatLngExpression, LatLngBounds, LatLng } from 'leaflet';
 
 interface MapContextType {
-  mapInstanceRef: React.RefObject<L.Map | null>;
-  markerRef: React.RefObject<L.Marker | null>;
+  mapInstanceRef: React.RefObject<Map | null>;
+  markerRef: React.RefObject<Marker | null>;
   updateMapView: (center: LatLngExpression, zoom: number) => void;
   centerOnLocation: (location: LatLngExpression) => void;
-  getBounds: () => L.LatLngBounds | null;
+  getBounds: () => LatLngBounds | null;
+  getReportsWithinRadius: (center: LatLng, radiusKm: number) => Promise<void>;
 }
 
 const MapContext = createContext<MapContextType | null>(null);
 
 export function MapProvider({ children }: { children: ReactNode }) {
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const markerRef = useRef<L.Marker | null>(null);
+  const mapInstanceRef = useRef<Map | null>(null);
+  const markerRef = useRef<Marker | null>(null);
 
   const updateMapView = (center: LatLngExpression, zoom: number) => {
     if (mapInstanceRef.current) {
@@ -24,12 +26,28 @@ export function MapProvider({ children }: { children: ReactNode }) {
 
   const centerOnLocation = (location: LatLngExpression) => {
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.setView(location, 18); // Zoom level 18 for detailed view
+      mapInstanceRef.current.setView(location, 18);
     }
   };
 
   const getBounds = () => {
     return mapInstanceRef.current?.getBounds() || null;
+  };
+
+  const getReportsWithinRadius = async (center: LatLng, radiusKm: number) => {
+    if (!mapInstanceRef.current) return;
+
+    // TODO: Implement API call here
+    // Example API endpoint structure:
+    // GET /api/reports?lat=${center.lat}&lng=${center.lng}&radius=${radiusKm}
+    
+    try {
+      // const response = await fetch(`/api/reports?lat=${center.lat}&lng=${center.lng}&radius=${radiusKm}`);
+      // const data = await response.json();
+      // return data;
+    } catch (error) {
+      console.error('Failed to fetch reports within radius:', error);
+    }
   };
 
   return (
@@ -38,7 +56,8 @@ export function MapProvider({ children }: { children: ReactNode }) {
       markerRef, 
       updateMapView,
       centerOnLocation,
-      getBounds
+      getBounds,
+      getReportsWithinRadius
     }}>
       {children}
     </MapContext.Provider>

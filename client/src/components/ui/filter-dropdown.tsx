@@ -14,14 +14,25 @@ import {
 interface FilterDropdownProps {
   isOpen: boolean;
   onClose: () => void;
+  onApplyFilters: (filters: FilterOptions) => void;
+  initialFilters?: FilterOptions;
 }
 
-export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
-  const [urgency, setUrgency] = useState("Low");
-  const [category, setCategory] = useState("Miscellaneous");
-  const [status, setStatus] = useState("In Progress");
+export interface FilterOptions {
+  urgency: string;
+  category: string;
+  status: string;
+}
 
-  if (!isOpen) return null;
+export function FilterDropdown({ 
+  isOpen, 
+  onClose,
+  onApplyFilters,
+  initialFilters
+ }: FilterDropdownProps) {
+  const [urgency, setUrgency] = useState(initialFilters?.urgency || "All");
+  const [category, setCategory] = useState(initialFilters?.category || "All");
+  const [status, setStatus] = useState(initialFilters?.status || "All");
 
   // Get urgency circle background color
   const getUrgencyCircleColor = (urgencyValue: string) => {
@@ -32,17 +43,31 @@ export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
         return "bg-urgency-medium";
       case "Low":
         return "bg-urgency-low";
+      case "All":
+        return "bg-gray-400";
       default:
         return "bg-gray-400";
     }
   };
+
+  const handleClose = () => {
+    // Apply filters when closing
+    onApplyFilters({
+      urgency,
+      category,
+      status
+    });
+    onClose();
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 pointer-events-auto md:hidden">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/20" 
-        onClick={onClose}
+        onClick={handleClose}
       />
       
       {/* Filter Card */}
@@ -70,6 +95,12 @@ export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-32 shadow-lg">
+                  <DropdownMenuItem onClick={() => setUrgency("All")}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-gray-400 drop-shadow-sm"></div>
+                      <span className="drop-shadow-sm">All</span>
+                    </div>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setUrgency("High")}>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-urgency-high drop-shadow-sm"></div>
@@ -103,6 +134,9 @@ export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-40 shadow-lg">
+                  <DropdownMenuItem onClick={() => setCategory("All")}>
+                    <span className="drop-shadow-sm">All</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setCategory("Environment")}>
                     <span className="drop-shadow-sm">Environment</span>
                   </DropdownMenuItem>
@@ -133,6 +167,9 @@ export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-32 shadow-lg">
+                  <DropdownMenuItem onClick={() => setStatus("All")}>
+                    <span className="drop-shadow-sm">All</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setStatus("Unresolved")}>
                     <span className="drop-shadow-sm">Unresolved</span>
                   </DropdownMenuItem>

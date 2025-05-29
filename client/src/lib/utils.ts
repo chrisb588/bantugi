@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import L from "leaflet";
 
 import Area from "@/interfaces/area";
 
