@@ -1,53 +1,44 @@
-import Location from "@/interfaces/location"; 
-import { createServerClient } from "@/lib/supabase/server";
-import { SupabaseClient } from "@supabase/supabase-js";
-import Report from "@/interfaces/report";
-// Get all reports X distance away from the center of the map view
-export async function getAllReportsByDistance(
-    server: SupabaseClient,
-  centerLocation: Location,
-  maxDistanceMeters: number = 5000 // Default 5km
-) {
-  const { data, error } = await server.rpc(
-    'get_locations_within_distance',
-    {
-      center_lat: centerLocation.coordinates.lat,
-      center_lng: centerLocation.coordinates.lng,
-      max_distance_meters: maxDistanceMeters
-    }
-  );
+import type { SupabaseClient } from '@supabase/supabase-js';
+import Pin from '@/interfaces/pin';
 
-  if (error) {
-    console.error('Error fetching locations by distance:', error.message);
-    return [];
-  }
 
-  return data || [];
-}
-
-export async function fetchLocations(
+// Server-side function
+export async function fetchLocationsServer(
+  supabase: SupabaseClient, // Accepts the Supabase client
   swLat: number,
   swLng: number,
   neLat: number,
   neLng: number
-): Promise<Report[]> { // Ensure return type is Promise<Report[]>
-  console.log(`Attempting to fetch reports for bounds: SW(${swLat},${swLng}), NE(${neLat},${neLng})`);
+) { // Or Promise<DbReportRow[]> if you return minimal data
+  console.log(`[Server fetchLocations] Fetching for bounds: SW(${swLat},${swLng}), NE(${neLat},${neLng})`);
+
   try {
-    const response = await fetch(`/api/location?sw_lat=${swLat}&sw_lng=${swLng}&ne_lat=${neLat}&ne_lng=${neLng}`);
-    if (!response.ok) {
-      let errorData = null;
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        errorData = await response.text();
-      }
-      console.error(`Error fetching reports by bounds: ${response.status} ${response.statusText}`, errorData);
-      throw new Error(`Failed to fetch reports by bounds: ${response.status} ${response.statusText}`);
+    const { data, error } = await supabase
+      .rpc('get_reports_within_bounds', { // Ensure this is your RPC name
+        p_sw_lat: swLat,
+        p_sw_lng: swLng,
+        p_ne_lat: neLat,
+        p_ne_lng: neLng,
+      });
+
+    if (error) {
+      console.error("[Server fetchLocations] RPC Error:", error);
+      throw new Error(`Failed to fetch server locations: ${error.message}`);
     }
-    const data = await response.json();
-    return data as Report[]; // Cast to Report[]
-  } catch (error) {
-    console.error("fetchLocations (by bounds) caught an error:", error);
-    return [];
+
+    // Map the minimal data to your Report[] type IF your RPC returns minimal data
+    // If your RPC returns full data matching Report[], just return 'data || []'
+    const pins: Pin[] = (data as Pin[] || []).map(dbRow => ({
+      report_id: dbRow.report_id,
+      urgency: dbRow.urgency,
+      lat: dbRow.lat,
+      lng: dbRow.lng,
+    }));
+    
+    return pins;
+
+  } catch (error: any) {
+    console.error("[Server fetchLocations] Caught an error:", error.message, error);
+    throw error; // Re-throw to be caught by the API route
   }
 }

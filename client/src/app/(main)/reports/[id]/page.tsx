@@ -4,7 +4,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertTriangle } from "lucide-react";
 import { ReportCard } from "@/components/report/report-card";
-import { Report } from "@/interfaces/report";
+import Report from "@/interfaces/report";
 import { MobileNavbar } from "@/components/generic/mobile-navbar";
 import { useEffect, useState, use } from "react";
 // using tempreport until everything can be represented in the database

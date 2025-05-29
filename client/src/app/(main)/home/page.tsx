@@ -8,7 +8,7 @@ import { FilterButton } from "@/components/ui/filter-button";
 import { FilterDropdown } from "@/components/ui/filter-dropdown";
 import { sampleResults } from "@/test";
 import { useReportMarkers } from "@/hooks/use-report-markers";
-import { Report } from "@/interfaces/report";
+import Report from "@/interfaces/report";
 import { useVisibleReports } from "@/hooks/use-visible-reports";
 
 export default function HomePage() {

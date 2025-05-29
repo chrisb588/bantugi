@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
-  const supabase = createServerClient();
-
+  
   try {
     const formData = await req.formData();
+    const response = NextResponse.next();
+    const supabase = createServerClient(req, response);
     const file = formData.get('file') as File;
 
     if (!file) {

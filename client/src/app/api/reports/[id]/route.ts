@@ -1,6 +1,7 @@
 // app/api/reports/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getReport, deleteReport } from '@/lib/supabase/reports';
+import { createServerClient } from '@/lib/supabase/server';
 
 export async function GET(
   req: NextRequest,
@@ -15,7 +16,9 @@ export async function GET(
 
   try {
     console.log(`[API GET /api/reports/${id}] Attempting to fetch report for ID: ${id}`);
-    const reportData = await getReport(id);
+    const response = NextResponse.next();
+    const supabase = createServerClient(req, response);
+    const reportData = await getReport(supabase,id);
 
     if (!reportData) {
       console.warn(`[API GET /api/reports/${id}] Report not found for ID: ${id}.`);
