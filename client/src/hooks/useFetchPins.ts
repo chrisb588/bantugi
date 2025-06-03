@@ -41,7 +41,7 @@ async function fetchPinsDataFromApi(bounds: LatLngBounds, signal?: AbortSignal):
 }
 
 export function useFetchPins() {
-  const { mapInstanceRef, isMapReady, L } = useMapContext();
+  const { mapInstanceRef, isMapReady, L, resetMapInstance } = useMapContext();
   // ADD THIS LOG to see if the hook re-renders when isMapReady changes:
   console.log(`[useFetchPins] HOOK BODY EXECUTING. isMapReady: ${isMapReady}, mapInstanceRef.current: ${!!mapInstanceRef.current}, L: ${!!L}`);
 
@@ -54,11 +54,30 @@ export function useFetchPins() {
   const initialLoadSetupDoneRef = useRef(false); // To prevent re-running setup logic within map.whenReady
   const initialFetchTriggeredRef = useRef(false); // To ensure the initial fetch action runs only once
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Track if we're in recovery mode to force initial fetch after reset
+  const isRecoveringRef = useRef(false);
 
   // ADDED: useEffect to watch isMapReady specifically
   useEffect(() => {
     console.log(`[useFetchPins] isMapReady WATCHER effect: isMapReady is now ${isMapReady}. L is ${!!L}. Map instance is ${!!mapInstanceRef.current}`);
   }, [isMapReady, L, mapInstanceRef]); // Watch all relevant context values
+
+  // Reset refs when map is reset to allow fresh initialization
+  useEffect(() => {
+    console.log(`[useFetchPins] Reset detection effect triggered - isMapReady: ${isMapReady}, isRecoveringRef.current: ${isRecoveringRef.current}`);
+    if (!isMapReady) {
+      // Map has been reset, clear initialization refs to allow re-setup
+      initialLoadSetupDoneRef.current = false;
+      initialFetchTriggeredRef.current = false;
+      isRecoveringRef.current = true; // Mark as recovering
+      console.log("[useFetchPins] Map reset detected, clearing initialization refs and marking as recovering");
+    } else if (isRecoveringRef.current && isMapReady) {
+      // Map has recovered, reset the recovery flag
+      isRecoveringRef.current = false;
+      console.log("[useFetchPins] Map recovery completed, reset recovery flag");
+    }
+  }, [isMapReady]);
 
   // Effect to abort ongoing fetch if the component using this hook unmounts
   useEffect(() => {
@@ -86,7 +105,39 @@ export function useFetchPins() {
       console.warn("[useFetchPins] fetchPinsInBounds: currentMap is invalid or not a Leaflet map instance. Bailing.");
       return;
     }
-    const bounds = currentMap.getBounds();
+
+    // ADDED: Check if map container exists and is properly initialized
+    const container = currentMap.getContainer();
+    if (!container) {
+      console.warn("[useFetchPins] fetchPinsInBounds: Map container not available. Bailing.");
+      return;
+    }
+
+    // ADDED: Check if map has valid size
+    const size = currentMap.getSize();
+    if (!size || size.x === 0 || size.y === 0) {
+      console.warn("[useFetchPins] fetchPinsInBounds: Map has invalid size. Bailing.");
+      return;
+    }
+
+    let bounds;
+    try {
+      bounds = currentMap.getBounds();
+    } catch (error) {
+      console.warn("[useFetchPins] fetchPinsInBounds: Error getting bounds:", error);
+      
+      // Check if this is the "el is undefined" error
+      if (error instanceof Error && (error.message.includes('el is undefined') || error.message.includes('Cannot read properties of undefined'))) {
+        console.warn("[useFetchPins] fetchPinsInBounds: Detected map container error. Triggering map reset.");
+        // Mark as recovering and trigger map reset to allow re-initialization
+        isRecoveringRef.current = true;
+        if (resetMapInstance) {
+          resetMapInstance();
+        }
+      }
+      return;
+    }
+    
     if (!bounds) {
       console.warn("[useFetchPins] fetchPinsInBounds: Map bounds not available. Bailing.");
       return;
@@ -137,6 +188,26 @@ export function useFetchPins() {
     }
   }, [L]); // Stable reference with only L dependency
 
+  // Special effect to trigger immediate fetch after recovery
+  useEffect(() => {
+    console.log(`[useFetchPins] Recovery effect triggered - isMapReady: ${isMapReady}, mapInstance: ${!!mapInstanceRef.current}, L: ${!!L}, isRecovering: ${isRecoveringRef.current}`);
+    if (isMapReady && mapInstanceRef.current && L && isRecoveringRef.current) {
+      console.log("[useFetchPins] Recovery mode: Map is ready after reset, triggering immediate fetch");
+      const map = mapInstanceRef.current;
+      
+      // Trigger immediate fetch after recovery
+      setTimeout(() => {
+        if (map && mapInstanceRef.current === map) {
+          console.log("[useFetchPins] Recovery mode: Executing recovery fetch");
+          fetchPinsInBounds(map, true);
+          isRecoveringRef.current = false;
+        } else {
+          console.log("[useFetchPins] Recovery mode: Map instance changed, skipping recovery fetch");
+        }
+      }, 100); // Small delay to ensure map is fully ready
+    }
+  }, [isMapReady, mapInstanceRef, L, fetchPinsInBounds]);
+
   // MODIFIED: Effect to fetch pins on map ready, map 'load' (for initial), and map 'moveend'
   useEffect(() => {
     console.log(`[useFetchPins] Main effect: ENTRY. isMapReady: ${isMapReady}, mapInstance: ${!!mapInstanceRef.current}, L: ${!!L}, initialLoadSetupDone: ${initialLoadSetupDoneRef.current}, initialFetchTriggered: ${initialFetchTriggeredRef.current}`);
@@ -145,10 +216,29 @@ export function useFetchPins() {
       console.log("[useFetchPins] Main effect: Prerequisites NOT MET. Returning.");
       return;
     }
-    // CRITICAL LOG: Confirm prerequisites are met
-    console.log("[useFetchPins] Main effect: Prerequisites MET. Proceeding with map interaction setup.");
 
     const map = mapInstanceRef.current;
+
+    // ADDED: Additional safety check for map readiness
+    try {
+      const container = map.getContainer();
+      if (!container) {
+        console.log("[useFetchPins] Main effect: Map container not available. Returning.");
+        return;
+      }
+      
+      const size = map.getSize();
+      if (!size || size.x === 0 || size.y === 0) {
+        console.log("[useFetchPins] Main effect: Map has invalid size. Returning.");
+        return;
+      }
+    } catch (error) {
+      console.log("[useFetchPins] Main effect: Error checking map state:", error);
+      return;
+    }
+
+    // CRITICAL LOG: Confirm prerequisites are met
+    console.log("[useFetchPins] Main effect: Prerequisites MET. Proceeding with map interaction setup.");
 
     const handleInitialMapLoad = () => {
       // CRITICAL LOG: Confirm this handler is called
@@ -236,7 +326,7 @@ export function useFetchPins() {
       // For now, they are not reset here, assuming they are for the lifetime of the hook instance
       // unless the map context fully resets.
     };
-  }, [isMapReady, mapInstanceRef, L, fetchPinsInBounds]);
+  }, [isMapReady, mapInstanceRef, L, fetchPinsInBounds, resetMapInstance]);
 
   console.log('[useFetchPins] Hook rendering. isLoading:', isLoading, 'Pins count:', pins.length, 'Error:', error);
   return { pins, isLoading, error };

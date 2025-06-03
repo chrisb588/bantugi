@@ -1,5 +1,5 @@
 import { Trash2, Bookmark, MapPin, Pencil } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { cn, formatArea } from '@/lib/utils';
@@ -8,29 +8,49 @@ import Report from '@/interfaces/report';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { DeleteConfirmationDialog } from '../ui/delete-confirmation-dialog';
+import useIsReportSaved from '@/hooks/useIsReportSaved';
 
 interface ReportItemProps {
   report: Report;
+  className?: string;
   isSaved?: boolean;
   deletable?: boolean;
   editable?: boolean;
+  showSaveButton?: boolean; // Whether to show save/unsave functionality
   onDelete?: (reportId: string) => void;
   onUpdate?: (reportId: string, updatedReport: Report) => void;
   onEdit?: (report: Report) => void;
+  onReportClick?: (report: Report) => void;
+  onSaveToggle?: (reportId: string, isSaved: boolean) => void;
 }
 
 export default function ReportItem({ 
   report, 
+  className,
   isSaved = false, 
   deletable = false, 
   editable = false,
+  showSaveButton = true,
   onDelete,
   onUpdate,
-  onEdit
+  onEdit,
+  onReportClick,
+  onSaveToggle
 }: ReportItemProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Use the hook to get real-time save status
+  const { 
+    isSaved: actualIsSaved, 
+    isLoading: isSaveStatusLoading, 
+    refetch: refetchSaveStatus 
+  } = useIsReportSaved(report.id);
+  
+  // Use actual save status from hook, fallback to prop if loading
+  const reportSaved = isSaveStatusLoading ? isSaved : actualIsSaved;
   
   // Darker shadow color 
   const shadowColor = 'rgba(160, 150, 130, 0.95)'; // Much darker shadow with higher opacity
@@ -130,8 +150,63 @@ export default function ReportItem({
     }
   };
 
+  const handleSaveToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    
+    if (isSaving) return; // Prevent multiple save requests
+    
+    setIsSaving(true);
+    
+    try {
+      const endpoint = '/api/reports/save';
+      const method = reportSaved ? 'DELETE' : 'POST';
+      
+      console.log(`${reportSaved ? 'Unsaving' : 'Saving'} report:`, report.id);
+      
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ reportId: report.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to ${reportSaved ? 'unsave' : 'save'} report: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`${reportSaved ? 'Unsave' : 'Save'} response:`, result);
+      
+      // Refetch save status to get updated state
+      refetchSaveStatus();
+      
+      // Show success toast
+      toast.success(`Report ${reportSaved ? 'unsaved' : 'saved'} successfully`);
+      
+      // Call the onSaveToggle callback if provided
+      if (onSaveToggle) {
+        onSaveToggle(report.id, !reportSaved);
+      }
+      
+    } catch (error: any) {
+      console.error(`Error ${reportSaved ? 'unsaving' : 'saving'} report:`, error);
+      toast.error(error.message || `Failed to ${reportSaved ? 'unsave' : 'save'} report`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleClick = () => {
-    router.push(`/reports/${report.id}`)
+    if (onReportClick) {
+      // Use the callback if provided (for search results, etc.)
+      onReportClick(report);
+    } else {
+      // Fallback to navigation for standard report views
+      router.push(`/reports/${report.id}`);
+    }
   }
 
   const handleAction = (e: React.MouseEvent) => {
@@ -145,6 +220,10 @@ export default function ReportItem({
       case 'delete':
         e.stopPropagation(); // Prevent bubbling
         break;
+      case 'save':
+        e.stopPropagation(); // Prevent bubbling
+        handleSaveToggle(e);
+        break;
       case 'view':
         handleClick();
         break;
@@ -152,7 +231,10 @@ export default function ReportItem({
   };
                      
   return (
-    <div className="w-full py-3 px-4 flex flex-col gap-2 items-start rounded-lg bg-background hover:shadow-md transition-shadow duration-200 ease-in-out" 
+    <div className={cn(
+           "w-full py-3 px-4 flex flex-col gap-2 items-start rounded-lg bg-background hover:shadow-md transition-shadow duration-200 ease-in-out",
+           className
+         )} 
          style={{ 
            boxShadow: `0 2px 3px ${shadowColor}`
          }}
@@ -203,14 +285,20 @@ export default function ReportItem({
               onConfirm={handleDelete}
             />
           </div>
-        ) : (
-          <button className={cn(
-            "transition-colors duration-150 ease-in-out p-1 flex-shrink-0",
-            isSaved ? "text-primary hover:text-accent" : "text-slate-400 hover:text-primary"
-          )}>
-            <Bookmark size={20} fill={isSaved ? "currentColor" : "none"} />
+        ) : showSaveButton ? (
+          <button 
+            className={cn(
+              "transition-colors duration-150 ease-in-out p-1 flex-shrink-0",
+              reportSaved ? "text-primary hover:text-accent" : "text-slate-400 hover:text-primary",
+              isSaving && "opacity-50 cursor-not-allowed"
+            )}
+            onClick={handleAction}
+            data-action="save"
+            disabled={isSaving}
+          >
+            <Bookmark size={20} fill={reportSaved ? "currentColor" : "none"} />
           </button>
-        )}
+        ) : null}
       </div>
       <div className="text-xs text-slate-500 flex items-center">
         <MapPin size={14} className="mr-1" />

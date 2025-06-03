@@ -14,6 +14,7 @@ interface SearchResultsListProps {
   onClose: () => void; 
   results?: Report[];
   isLoading?: boolean;
+  onReportClick?: (report: Report) => void;
 }
 
 const SearchResultsList: React.FC<SearchResultsListProps> = ({ 
@@ -22,6 +23,7 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
   onClose: parentOnClose, 
   results = [],
   isLoading = false,
+  onReportClick,
   ...props 
 }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -74,6 +76,7 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
                 <ReportItem
                   key={result.id}
                   report={result}
+                  onReportClick={onReportClick}
                 />
               ))
             ) : (

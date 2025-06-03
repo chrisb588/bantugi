@@ -40,7 +40,7 @@ export default function HomePage() {
   const { pins, isLoading: isLoadingPins, error: fetchPinsError } = useFetchPins();
   const { state: { user } } = useUserContext();
   const router = useRouter();
-  const { mapInstanceRef } = useMapContext(); // Get map instance for flyTo
+  const { mapInstanceRef, resetMapInstance } = useMapContext(); // Get map instance for flyTo and reset function
 
   const openSearchScreen = () => setIsSearchScreenVisible(true);
   const closeSearchScreen = () => {
@@ -179,6 +179,24 @@ export default function HomePage() {
     closeReportCard(); // Close card after flying
   }, [reportForCard, mapInstanceRef, closeReportCard]);
 
+  // Handler for search result clicks - navigate to map location and show report overlay
+  const handleSearchResultClick = useCallback((report: Report) => {
+    // Close search screen first
+    setIsSearchScreenVisible(false);
+    
+    // Navigate to the report location on the map
+    if (report.location?.coordinates && mapInstanceRef.current) {
+      const { lat, lng } = report.location.coordinates;
+      mapInstanceRef.current.flyTo([lat, lng], 18); // Zoom level 18
+    }
+    
+    // Show the report overlay
+    setSelectedReportIdForCard(report.id);
+    setReportForCard(report); // We already have the report data
+    setIsLoadingReportForCard(false); // No need to load since we have the data
+    setIsReportCardVisible(true);
+  }, [mapInstanceRef]);
+
 
   return (
       <div className="relative flex flex-col h-screen">
@@ -217,7 +235,8 @@ export default function HomePage() {
                   title="Search Results" 
                   onClose={closeSearchScreen}
                   results={searchResults}
-                  isLoading={isLoadingSearch} 
+                  isLoading={isLoadingSearch}
+                  onReportClick={handleSearchResultClick}
                 />
               )}
             </div>
@@ -239,6 +258,7 @@ export default function HomePage() {
                       onClick={handleFilterClick}
                       className="flex-shrink-0"
                     />
+
                   </div>
                   
                   {/* Desktop Search Results positioned directly below search bar */}
@@ -251,7 +271,8 @@ export default function HomePage() {
                           setIsLoadingSearch(false);
                         }}
                         results={searchResults}
-                        isLoading={isLoadingSearch} 
+                        isLoading={isLoadingSearch}
+                        onReportClick={handleSearchResultClick}
                       />
                     </div>
                   )}
@@ -283,7 +304,8 @@ export default function HomePage() {
                 title="Search Results" 
                 onClose={closeSearchScreen}
                 results={searchResults}
-                isLoading={isLoadingSearch} 
+                isLoading={isLoadingSearch}
+                onReportClick={handleSearchResultClick}
               />
             </div>
           </div>

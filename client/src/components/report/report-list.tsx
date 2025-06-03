@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { sampleResults } from '@/test';
 import { useUserContext } from "@/context/user-context";
 import { useUserReports } from "@/hooks/useUserReports";
+import { useSavedReports } from "@/hooks/useSavedReports";
 import Report from "@/interfaces/report";
 
 interface ReportListProps {
@@ -35,10 +36,25 @@ const ReportList: React.FC<ReportListProps> = ({
     refetch: refetchUserReports
   } = useUserReports();
 
+  // Use the hook for Saved Reports view
+  const { 
+    reports: savedReports, 
+    isLoading: isLoadingSavedReports, 
+    error: savedReportsError,
+    refetch: refetchSavedReports
+  } = useSavedReports();
+
   const handleReportDelete = (reportId: string) => {
     // Refresh the reports list after successful deletion
     if (isMyReportsView) {
       refetchUserReports();
+    }
+  };
+
+  const handleSaveToggle = (reportId: string, isSaved: boolean) => {
+    // Refresh saved reports if we're in the saved reports view
+    if (isSavedReportsView) {
+      refetchSavedReports();
     }
   };
 
@@ -51,13 +67,13 @@ const ReportList: React.FC<ReportListProps> = ({
       // Use sample data for other views (temporary)
       setReports(sampleResults);
     } else if (isSavedReportsView && user) {
-      // TODO: Implement saved reports API call
-      setReports(sampleResults);
+      // Use saved reports from the hook
+      setReports(savedReports);
     } else {
       // No user or unsupported view
       setReports([]);
     }
-  }, [isMyReportsView, isSavedReportsView, user, userReports]);
+  }, [isMyReportsView, isSavedReportsView, user, userReports, savedReports]);
 
   if (isMyReportsView && !user) {
     return (
@@ -107,6 +123,14 @@ const ReportList: React.FC<ReportListProps> = ({
                 <p className="text-muted-foreground">Loading your reports...</p>
               </div>
             )}
+
+            {/* Loading state for Saved Reports */}
+            {isSavedReportsView && isLoadingSavedReports && (
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+                <p className="text-muted-foreground">Loading saved reports...</p>
+              </div>
+            )}
             
             {/* Error state for My Reports */}
             {isMyReportsView && userReportsError && (
@@ -115,9 +139,17 @@ const ReportList: React.FC<ReportListProps> = ({
                 <p className="text-muted-foreground text-sm">{userReportsError}</p>
               </div>
             )}
+
+            {/* Error state for Saved Reports */}
+            {isSavedReportsView && savedReportsError && (
+              <div className="flex flex-col items-center justify-center py-8">
+                <p className="text-destructive mb-2">Error loading saved reports</p>
+                <p className="text-muted-foreground text-sm">{savedReportsError}</p>
+              </div>
+            )}
             
             {/* Empty state */}
-            {reports && reports.length === 0 && !isLoadingUserReports && !userReportsError && (
+            {reports && reports.length === 0 && !isLoadingUserReports && !isLoadingSavedReports && !userReportsError && !savedReportsError && (
               <div className="flex flex-col items-center justify-center py-8">
                 <p className="text-muted-foreground">
                   {isMyReportsView ? "You haven't created any reports yet." : 
@@ -128,7 +160,7 @@ const ReportList: React.FC<ReportListProps> = ({
             )}
             
             {/* Reports list */}
-            {reports && reports.length > 0 && !isLoadingUserReports && (
+            {reports && reports.length > 0 && !isLoadingUserReports && !isLoadingSavedReports && (
               reports.map((result, index) => (
                 <ReportItem
                   key={result.id || index}
@@ -136,7 +168,9 @@ const ReportList: React.FC<ReportListProps> = ({
                   deletable={isMyReportsView} // only allow deletion of own reports in my reports page
                   editable={isMyReportsView} // only allow editing of own reports in my reports page
                   isSaved={isSavedReportsView} // indicate if this is a saved report
+                  showSaveButton={true} // show save button in all views
                   onDelete={isMyReportsView ? handleReportDelete : undefined}
+                  onSaveToggle={handleSaveToggle}
                 />
               ))
             )}

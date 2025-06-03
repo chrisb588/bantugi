@@ -36,15 +36,10 @@ export function MobileNavbar({ onCreateReport, onSavedReports, onMyReports }: Na
       return;
     }
     
-    // If onSavedReports is provided (from home page), use it instead of navigation
+    // Always use the overlay system via callback
     if (onSavedReports) {
       onSavedReports();
-      return;
     }
-    
-    // Otherwise, navigate to saved-reports page (for other pages)
-    if (currentPath === `/${user?.username}/saved-reports`) return; 
-    router.push(`/${user?.username}/saved-reports`);
   }
 
   const navigateToCreateReport = () => {
@@ -72,15 +67,10 @@ export function MobileNavbar({ onCreateReport, onSavedReports, onMyReports }: Na
       return;
     }
     
-    // If onMyReports is provided (from home page), use it instead of navigation
+    // Always use the overlay system via callback
     if (onMyReports) {
       onMyReports();
-      return;
     }
-    
-    // Otherwise, navigate to my-reports page (for other pages)
-    if (currentPath === `/${user?.username}/my-reports`) return;
-    router.push(`/${user?.username}/my-reports`);
   }
 
   const navigateToAccount = () => {

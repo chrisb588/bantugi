@@ -6,7 +6,7 @@ import { MobileNavbar } from "@/components/generic/mobile-navbar";
 import { CreateReportOverlay } from "@/components/report/create-report-overlay";
 import { SavedReportsOverlay } from "@/components/report/saved-reports-overlay";
 import { CreatedReportsOverlay } from "@/components/report/created-reports-overlay";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUserContext } from "@/context/user-context";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -82,8 +82,8 @@ function MainLayoutContentInner({ children }: { children: React.ReactNode }) {
     <>
       <MobileNavbar 
         onCreateReport={openCreateReport}
-        onSavedReports={isHomePage ? openSavedReports : undefined}
-        onMyReports={isHomePage ? openMyReports : undefined}
+        onSavedReports={openSavedReports}
+        onMyReports={openMyReports}
       />
       <div className="fixed inset-0">
         {children}

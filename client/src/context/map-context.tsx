@@ -11,6 +11,8 @@ interface MapContextType {
   getBounds: () => LatLngBounds | null;
   L: typeof import('leaflet') | null; // <<< ADDED: To provide the Leaflet module instance
   isMapReady: boolean;
+  resetMapInstance: () => void; // Add recovery function
+  mapResetKey: number; // Add reset key for forcing MapContainer remount
 }
 
 const MapContext = createContext<MapContextType | undefined>(undefined);
@@ -22,6 +24,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
   const [L, setL] = useState<typeof import('leaflet') | null>(null); // <<< ADDED: State for Leaflet module
   const [isLModuleLoaded, setIsLModuleLoaded] = useState(false);
   const [isMapInstanceSet, setIsMapInstanceSet] = useState(false);
+  const [mapResetKey, setMapResetKey] = useState(0); // Add reset key to force MapContainer remount
 
   useEffect(() => {
     // Dynamically import Leaflet
@@ -76,6 +79,16 @@ export function MapProvider({ children }: { children: ReactNode }) {
     return mapInstanceRef.current?.getBounds() || null;
   }, []);
 
+  // Add recovery function to reset map instance when it becomes broken
+  const resetMapInstance = useCallback(() => {
+    console.log("MapContext: resetMapInstance called - resetting map state");
+    console.log("MapContext: Before reset - mapInstanceRef.current:", !!mapInstanceRef.current, "isMapInstanceSet:", isMapInstanceSet);
+    mapInstanceRef.current = null;
+    setIsMapInstanceSet(false);
+    setMapResetKey(prev => prev + 1); // Increment key to force MapContainer remount
+    console.log("MapContext: After reset - mapInstanceRef.current:", !!mapInstanceRef.current, "isMapInstanceSet will become:", false, "mapResetKey incremented");
+  }, [isMapInstanceSet]);
+
   // Restore useMemo
   const contextValue = React.useMemo(() => ({
     mapInstanceRef,
@@ -86,7 +99,9 @@ export function MapProvider({ children }: { children: ReactNode }) {
     getBounds,
     L, 
     isMapReady,
-  }), [L, setMapInstance, updateMapView, centerOnLocation, getBounds, isMapReady, /* mapInstanceRef is stable, markerRef is stable */]);
+    resetMapInstance,
+    mapResetKey,
+  }), [L, setMapInstance, updateMapView, centerOnLocation, getBounds, isMapReady, resetMapInstance, mapResetKey, /* mapInstanceRef is stable, markerRef is stable */]);
 
 
   return (

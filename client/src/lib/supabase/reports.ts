@@ -819,3 +819,179 @@ export async function updateReport(
         return { success: false, error: 'Internal server error' };
     }
 }
+
+// Saved Reports Functions
+export async function saveReport(supabase: SupabaseClient, userId: string, reportId: string) {
+    try {
+        // Check if already saved
+        const { data: existingSave } = await supabase
+            .from('saved_reports')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('report_id', reportId)
+            .maybeSingle();
+
+        if (existingSave) {
+            return { success: false, error: 'Report is already saved' };
+        }
+
+        const { data, error } = await supabase
+            .from('saved_reports')
+            .insert({
+                user_id: userId,
+                report_id: reportId
+            })
+            .select('id, created_at')
+            .single();
+
+        if (error) {
+            console.error('[saveReport] Error saving report:', error);
+            return { success: false, error: 'Failed to save report' };
+        }
+
+        return { success: true, data };
+    } catch (error) {
+        console.error('[saveReport] Unexpected error:', error);
+        return { success: false, error: 'Internal server error' };
+    }
+}
+
+export async function unsaveReport(supabase: SupabaseClient, userId: string, reportId: string) {
+    try {
+        const { error } = await supabase
+            .from('saved_reports')
+            .delete()
+            .eq('user_id', userId)
+            .eq('report_id', reportId);
+
+        if (error) {
+            console.error('[unsaveReport] Error unsaving report:', error);
+            return { success: false, error: 'Failed to unsave report' };
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('[unsaveReport] Unexpected error:', error);
+        return { success: false, error: 'Internal server error' };
+    }
+}
+
+export async function getSavedReports(supabase: SupabaseClient, userId: string, page: number = 1, limit: number = 10) {
+    try {
+        const offset = (page - 1) * limit;
+
+        const reportQuery = `
+            id,
+            created_at,
+            report:report_id (
+                id,
+                created_at,
+                created_by,
+                title,
+                description,
+                status,
+                images,
+                category,
+                urgency,
+                location:location_id (
+                    location_id,
+                    latitude,
+                    longitude,
+                    area:area_id (
+                        id,
+                        province,
+                        city,
+                        barangay
+                    )
+                )
+            )
+        `;
+
+        const { data: savedReports, error, count } = await supabase
+            .from('saved_reports')
+            .select(reportQuery, { count: 'exact' })
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
+
+        if (error) {
+            console.error('[getSavedReports] Error fetching saved reports:', error);
+            return { success: false, error: 'Failed to fetch saved reports' };
+        }
+
+        // Transform the data
+        const transformedReports = savedReports?.map(savedReport => {
+            const report = savedReport.report as any;
+            if (!report) return null;
+
+            return {
+                id: report.id,
+                title: report.title,
+                description: report.description,
+                status: report.status,
+                images: report.images || [],
+                createdAt: report.created_at,
+                category: report.category,
+                urgency: report.urgency,
+                createdBy: report.created_by,
+                location: report.location ? {
+                    locationId: report.location.location_id,
+                    coordinates: {
+                        lat: report.location.latitude,
+                        lng: report.location.longitude
+                    },
+                    area: report.location.area ? {
+                        id: report.location.area.id,
+                        province: report.location.area.province,
+                        city: report.location.area.city,
+                        barangay: report.location.area.barangay
+                    } : null
+                } : null,
+                savedAt: savedReport.created_at
+            };
+        }).filter(Boolean);
+
+        return {
+            success: true,
+            data: {
+                reports: transformedReports || [],
+                pagination: {
+                    page,
+                    limit,
+                    total: count || 0,
+                    totalPages: Math.ceil((count || 0) / limit)
+                }
+            }
+        };
+    } catch (error) {
+        console.error('[getSavedReports] Unexpected error:', error);
+        return { success: false, error: 'Internal server error' };
+    }
+}
+
+export async function isReportSaved(supabase: SupabaseClient, userId: string, reportId: string) {
+    try {
+        const { data: savedReport, error } = await supabase
+            .from('saved_reports')
+            .select('id, created_at')
+            .eq('user_id', userId)
+            .eq('report_id', reportId)
+            .maybeSingle();
+
+        if (error) {
+            console.error('[isReportSaved] Error checking saved status:', error);
+            return { success: false, error: 'Failed to check saved status' };
+        }
+
+        return {
+            success: true,
+            data: {
+                isSaved: !!savedReport,
+                savedAt: savedReport?.created_at || null
+            }
+        };
+    } catch (error) {
+        console.error('[isReportSaved] Unexpected error:', error);
+        return { success: false, error: 'Internal server error' };
+    }
+}

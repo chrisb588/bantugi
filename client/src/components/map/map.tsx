@@ -79,7 +79,7 @@ interface MapFeaturesLoaderProps {
 
 function MapFeaturesLoader({ pinsToDraw, isLoadingInitialPins, fetchInitialPinsError, onPinClick }: MapFeaturesLoaderProps) {
   const reactLeafletMapInstance = useLeafletMap();
-  const { setMapInstance, mapInstanceRef: contextMapRef, L, isMapReady } = useMapContext();
+  const { setMapInstance, mapInstanceRef: contextMapRef, L, isMapReady, resetMapInstance } = useMapContext();
 
   useEffect(() => {
     if (!L) {
@@ -100,6 +100,26 @@ function MapFeaturesLoader({ pinsToDraw, isLoadingInitialPins, fetchInitialPinsE
       console.log("MapFeaturesLoader: reactLeafletMapInstance is null, and context map is already null.");
     }
 
+    // Check if the current map instance has issues and needs recovery
+    if (reactLeafletMapInstance && contextMapRef.current === reactLeafletMapInstance) {
+      try {
+        // Test map functionality
+        const container = reactLeafletMapInstance.getContainer();
+        const size = reactLeafletMapInstance.getSize();
+        if (!container || !size || size.x === 0 || size.y === 0) {
+          console.warn("MapFeaturesLoader: Map instance appears to be in invalid state, triggering reset");
+          resetMapInstance();
+          return;
+        }
+        // Test bounds to catch "el is undefined" error
+        reactLeafletMapInstance.getBounds();
+      } catch (error) {
+        console.error("MapFeaturesLoader: Error testing map instance, triggering reset:", error);
+        resetMapInstance();
+        return;
+      }
+    }
+
     // REMOVE OR COMMENT OUT THE ORIGINAL CLEANUP LOGIC THAT UNCONDITIONALLY SETS MAP TO NULL
     // return () => {
     //   // Only clear the instance if this specific MapFeaturesLoader instance set it
@@ -110,7 +130,7 @@ function MapFeaturesLoader({ pinsToDraw, isLoadingInitialPins, fetchInitialPinsE
     //     // setMapInstance(null); // Problematic line
     //   }
     // };
-  }, [reactLeafletMapInstance, setMapInstance, contextMapRef, L]);
+  }, [reactLeafletMapInstance, setMapInstance, contextMapRef, L, resetMapInstance]);
 
   // Define your marker click handler
   const handleMarkerClick = (reportId: string) => {
@@ -162,7 +182,7 @@ export function MapContents({
   fetchPinsError,
   onPinClick, // Destructure onPinClick
 }: ExtendedMapProps) {
-  const { L, isMapReady } = useMapContext(); // isMapReady can still be used for other conditional logic if needed
+  const { L, isMapReady, mapResetKey } = useMapContext(); // Get mapResetKey for forcing remount
 
   // Ensure component only renders on the client and L is loaded.
   // MapContainer and its children will handle the rest.
@@ -176,10 +196,11 @@ export function MapContents({
   }
 
   // Log when MapContents is actually trying to render MapContainer
-  console.log("MapContents: L is loaded. Rendering MapContainer. isMapReady currently:", isMapReady);
+  console.log("MapContents: L is loaded. Rendering MapContainer. isMapReady currently:", isMapReady, "mapResetKey:", mapResetKey);
 
   return (
     <MapContainer
+      key={mapResetKey} // Use mapResetKey to force remount on reset
       className={className || "h-full w-full z-0"} // Ensure z-index is managed for layering
       center={center}
       zoom={zoom}
