@@ -2,13 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useMapEvents, Marker, Popup, MapContainer, TileLayer, useMap as useLeafletMap } from 'react-leaflet';
-import { createPortal } from 'react-dom';
 import { useMapContext } from '@/context/map-context';
-import type LType from 'leaflet'; // Assuming LType is your alias for Leaflet types
-import { ReportCard } from '@/components/report/report-card'; // CORRECTED IMPORT
-import type Report from '@/interfaces/report';
+import type LType from 'leaflet'; 
+import type Report from '@/interfaces/report'; // Keep for type reference if any, though not directly used now
 import { useDrawPins } from '@/hooks/useDrawPins';
-import type Pin from '@/interfaces/pin'; // ADD: For prop types
+import type Pin from '@/interfaces/pin'; 
 
 function MapController({ centerOnUser = true }) {
   const map = useLeafletMap(); // This gets the map instance from the parent <MapContainer>
@@ -76,16 +74,12 @@ interface MapFeaturesLoaderProps {
   pinsToDraw: Pin[];
   isLoadingInitialPins: boolean;
   fetchInitialPinsError: Error | null;
+  onPinClick?: (reportId: string) => void; // Add onPinClick prop
 }
 
-function MapFeaturesLoader({ pinsToDraw, isLoadingInitialPins, fetchInitialPinsError }: MapFeaturesLoaderProps) {
+function MapFeaturesLoader({ pinsToDraw, isLoadingInitialPins, fetchInitialPinsError, onPinClick }: MapFeaturesLoaderProps) {
   const reactLeafletMapInstance = useLeafletMap();
   const { setMapInstance, mapInstanceRef: contextMapRef, L, isMapReady } = useMapContext();
-  // State for the selected report and loading state
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  // isLoading state for report details, useFetchPins has its own isLoading for pins
-  const [isReportDetailsLoading, setIsReportDetailsLoading] = useState(false);
-  const [showReportCard, setShowReportCard] = useState(false);
 
   useEffect(() => {
     if (!L) {
@@ -118,49 +112,15 @@ function MapFeaturesLoader({ pinsToDraw, isLoadingInitialPins, fetchInitialPinsE
     // };
   }, [reactLeafletMapInstance, setMapInstance, contextMapRef, L]);
 
-  // Function to fetch report details
-  const fetchReportDetails = async (reportId: string) => {
-    setIsReportDetailsLoading(true);
-    try {
-      const response = await fetch(`/api/reports/${reportId}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch report: ${response.status}`);
-      }
-      const data = await response.json();
-      setSelectedReport(data);
-      setShowReportCard(true);
-    } catch (error) {
-      console.error("Error fetching report details:", error);
-      // Optionally, show a toast or error message to the user
-    } finally {
-      setIsReportDetailsLoading(false);
-    }
-  };
-
-
-  // Close the report card
-  const handleCloseReportCard = () => {
-    setShowReportCard(false);
-    setSelectedReport(null);
-  };
-
-  // Function to center the map on the report's location
-  const handleViewMap = () => {
-    if (selectedReport?.location?.coordinates && contextMapRef.current) {
-      const { lat, lng } = selectedReport.location.coordinates;
-      contextMapRef.current.flyTo([lat, lng], 18);
-    }
-    setShowReportCard(false);
-  };
-
   // Define your marker click handler
   const handleMarkerClick = (reportId: string) => {
-    console.log("Marker clicked:", reportId);
-    // All pins are now from the API, so directly fetch details.
-    fetchReportDetails(reportId);
+    console.log("Marker clicked in MapFeaturesLoader:", reportId);
+    if (onPinClick) {
+      onPinClick(reportId); // Call the passed-in handler
+    }
   };
 
-  // Use pins from props
+  // Use pins from props, pass the modified handleMarkerClick
   useDrawPins(pinsToDraw, handleMarkerClick);
 
   // Optional: Display loading state for pins or error messages using props
@@ -175,33 +135,8 @@ function MapFeaturesLoader({ pinsToDraw, isLoadingInitialPins, fetchInitialPinsE
     // Consider showing a toast notification for this error
   }
 
-  // Create portal for the ReportCard to ensure it appears above the map
-  return (
-    <>
-      {showReportCard && selectedReport && typeof window !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-          <ReportCard 
-            report={selectedReport} 
-            onBack={handleCloseReportCard}
-            onViewMap={handleViewMap}
-          />
-        </div>,
-        document.body
-      )}
-      {/* Use isReportDetailsLoading for the specific loading state of the report card */}
-      {isReportDetailsLoading && typeof window !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center space-x-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <p>Loading report...</p>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-    </>
-  );
+  // Remove createPortal logic for ReportCard and its loading indicator
+  return null; // This component now only handles drawing pins via useDrawPins
 }
 
 // Define new props interface for MapContents that includes pin data
@@ -213,6 +148,7 @@ interface ExtendedMapProps {
   centerOnUser?: boolean;
   center?: [number, number];
   zoom?: number;
+  onPinClick?: (reportId: string) => void; // Add onPinClick to MapContents props
 }
 
 // Export MapContents which will be used in the homepage
@@ -224,6 +160,7 @@ export function MapContents({
   pins,
   isLoadingPins,
   fetchPinsError,
+  onPinClick, // Destructure onPinClick
 }: ExtendedMapProps) {
   const { L, isMapReady } = useMapContext(); // isMapReady can still be used for other conditional logic if needed
 
@@ -260,8 +197,9 @@ export function MapContents({
       {/* MapFeaturesLoader handles drawing pins and displaying report cards */}
       <MapFeaturesLoader
         pinsToDraw={pins}
-        isLoadingInitialPins={isLoadingPins} // Prop name matches MapFeaturesLoaderProps
-        fetchInitialPinsError={fetchPinsError}   // Prop name matches MapFeaturesLoaderProps
+        isLoadingInitialPins={isLoadingPins} 
+        fetchInitialPinsError={fetchPinsError}   
+        onPinClick={onPinClick} // Pass onPinClick to MapFeaturesLoader
       />
     </MapContainer>
   );

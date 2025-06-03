@@ -247,9 +247,6 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
                         <div className="flex-1">
                           <div className="flex flex-col">
                             <span className="font-medium text-sm">{comment.creator.username}</span>
-                            {comment.creator.location && (
-                              <span className="text-xs text-gray-500">{formatArea(comment.creator.location.address)}</span>
-                            )}
                             <p className="text-sm mt-1">{comment.content}</p>
                           </div>
                         </div>
@@ -265,4 +262,4 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
       </Card>
     </div>
   );
-} 
+}

@@ -7,27 +7,36 @@ import Report from '@/interfaces/report';
 import Location from '@/interfaces/location';
 import Area from '@/interfaces/area';
 import User from '@/interfaces/user';
-import { report } from 'process';
 
 export async function getReport(server: SupabaseClient, reportId: string) {
   const supabase: SupabaseClient = server;
 
-  const expectedColumns = `
+  const reportQuery = `
     id,
-    created_at, 
+    created_at,
+    created_by,
     title,
     description,
     status,
     images,
     category,
     urgency,
-    location_id,
-    created_by
+    location:location_id (
+      location_id,
+      latitude,
+      longitude,
+      area:area_id (
+        id,
+        province,
+        city,
+        barangay
+      )
+    )
   `;
 
   const { data: dbReportData, error } = await supabase
     .from('reports')
-    .select(expectedColumns)
+    .select(reportQuery)
     .eq('id', reportId)
     .maybeSingle();
 
@@ -41,7 +50,110 @@ export async function getReport(server: SupabaseClient, reportId: string) {
     return null;
   }
 
-  return dbReportData;
+  // Fetch creator separately using created_by field
+  const { data: creatorData, error: creatorError } = await supabase
+    .from('profiles')
+    .select('user_id, email, avatar_url')
+    .eq('user_id', dbReportData.created_by)
+    .maybeSingle();
+
+  if (creatorError) {
+    console.error('Error fetching report creator:', creatorError);
+  }
+
+  // Fetch comments separately since there's no FK constraint for comment.creatorid
+  const { data: commentsData, error: commentsError } = await supabase
+    .from('comment')
+    .select(`
+      id,
+      content,
+      created_at,
+      creatorid
+    `)
+    .eq('report_id', reportId);
+
+  if (commentsError) {
+    console.error('Error fetching comments:', commentsError);
+  }
+
+  // Fetch creator profiles for comments if comments exist
+  let commentsWithCreators: (DbCommentRow & { creator: DbUserRow | null })[] = [];
+  if (commentsData && commentsData.length > 0) {
+    const creatorIds = commentsData.map(comment => comment.creatorid).filter(Boolean);
+    
+    if (creatorIds.length > 0) {
+      const { data: creatorsData, error: creatorsError } = await supabase
+        .from('profiles')
+        .select('user_id, email, avatar_url') // Select only existing fields
+        .in('user_id', creatorIds);
+
+      if (creatorsError) {
+        console.error('Error fetching comment creators:', creatorsError);
+      }
+
+      // Map comments with their creators
+      commentsWithCreators = commentsData.map(comment => ({
+        ...comment,
+        creator: creatorsData?.find(creator => creator.user_id === comment.creatorid) || null
+      }));
+    } else {
+      commentsWithCreators = commentsData.map(comment => ({
+        ...comment,
+        creator: null
+      }));
+    }
+  }
+
+  // Process location data to match DbLocationRow structure
+  let processedLocationForDbReport: DbLocationRow | null = null;
+  if (dbReportData.location) {
+    // Normalize dbReportData.location to a single object or null.
+    const rawLocationObject = Array.isArray(dbReportData.location) && dbReportData.location.length > 0
+      ? dbReportData.location[0]
+      : (!Array.isArray(dbReportData.location) && typeof dbReportData.location === 'object' && dbReportData.location !== null)
+        ? dbReportData.location
+        : null;
+
+    if (rawLocationObject && typeof rawLocationObject.location_id !== 'undefined') {
+      // Normalize rawLocationObject.area to a single DbAreaRow object or null.
+      let areaForDbLocationRow: DbAreaRow | null = null;
+      if (rawLocationObject.area) {
+        const rawAreaObject = Array.isArray(rawLocationObject.area) && rawLocationObject.area.length > 0
+          ? rawLocationObject.area[0]
+          : (!Array.isArray(rawLocationObject.area) && typeof rawLocationObject.area === 'object' && rawLocationObject.area !== null)
+            ? rawLocationObject.area
+            : null;
+
+        if (rawAreaObject && typeof rawAreaObject.id !== 'undefined') {
+          areaForDbLocationRow = {
+            id: rawAreaObject.id,
+            province: rawAreaObject.province,
+            city: rawAreaObject.city,
+            barangay: rawAreaObject.barangay,
+          };
+        }
+      }
+
+      processedLocationForDbReport = {
+        location_id: rawLocationObject.location_id,
+        latitude: rawLocationObject.latitude,
+        longitude: rawLocationObject.longitude,
+        area: areaForDbLocationRow,
+      };
+    }
+  }
+
+  const combinedDbReport: DbReportRow = {
+    ...dbReportData,
+    creator: creatorData || null,
+    comments: commentsWithCreators,
+    location: processedLocationForDbReport,
+  };
+
+  // Transform the combined data using our transformation function
+  const transformedReport = transformDbReportToReport(combinedDbReport);
+  console.log("Transformed Report:", transformedReport);
+  return transformedReport;
 }
 
 export async function createReport(server: SupabaseClient, data: {
@@ -50,7 +162,7 @@ export async function createReport(server: SupabaseClient, data: {
   description: string;
   images: string[];
   urgency: "Low" | "Medium" | "High";
-  status: "Unresolved" | "In Progress" | "Resolved"; 
+  status: "Unresolved" | "Being Addressed" | "Resolved"; // Updated status type
 
   latitude: number;
   longitude: number;
@@ -206,13 +318,17 @@ export async function getCommentsByReportId(
   reportId: string
 ): Promise<Comment[]> {
   const { data, error } = await server
-    .from("comments")
+    .from("comment") // Changed from "comments" to "comment" to match schema table name
     .select(`
       id,
-      text,
-      datePosted,
-      user:user_id (username, location, profile_pic_url)
-    `)
+      content,      
+      created_at,
+      creator:creatorid ( 
+        user_id,
+        email,
+        avatar_url
+      )
+    `) // Corrected select for creator, assuming creatorid is FK to profiles.user_id
     .eq("report_id", reportId);
 
   if (error) {
@@ -221,24 +337,25 @@ export async function getCommentsByReportId(
   }
 
   // Transform the data to match the Comment interface
-  const comments: Comment[] = convertToComments();
+  const comments: Comment[] = convertToComments(data); // Pass data to convertToComments
 
   return comments;
 
-  function convertToComments(): Comment[] {
-    return (data || []).map((item) => {
-      const userObject = item.user && item.user.length > 0 ? item.user[0] : null
+  function convertToComments(dbComments: any[] | null): Comment[] { // Added type for dbComments
+    return (dbComments || []).map((item) => {
+      // item.creator is now the object fetched from profiles
+      const userObject = item.creator; 
 
       return {
         id: item.id,
         creator: {
-          username: userObject ? userObject.username : "Anon User",
-          password: "", // Password is not returned from the database for security reasons
-          profilePicture: userObject ? userObject.profile_pic_url : null,
-          location: userObject ? userObject.location : null,
+          // Use email as username, as profiles table doesn't have a username field
+          username: userObject ? userObject.email : "Anon User", 
+          profilePicture: userObject ? userObject.avatar_url : null,
+          // location is not available in profiles table as per schema.txt
         },
-        content: item.text,
-        createdAt: new Date(item.datePosted),
+        content: item.content, // Changed from item.text to item.content
+        createdAt: new Date(item.created_at), // Changed from item.datePosted to item.created_at
       }
     })
   }
@@ -250,10 +367,9 @@ export async function getCommentsByReportId(
 
 // Define placeholder types for DB row structures based on DDL.
 interface DbAreaRow {
-  id: number; // Matches area.id PK
+  id: number;
   province: string;
   city?: string | null;
-  // area_municipality?: string | null; // Removed
   barangay: string;
 }
 
@@ -261,13 +377,20 @@ interface DbLocationRow {
   location_id: number;
   latitude: number | null;
   longitude: number | null;
-  area?: DbAreaRow | null; 
+  area?: DbAreaRow | null; // area_id join should result in one area object or null
 }
 
 interface DbUserRow {
-  id: string; 
-  username?: string | null;
-  profile_pic_url?: string | null;
+  user_id: string;
+  email?: string | null;
+  avatar_url?: string | null;
+}
+
+interface DbCommentRow {
+  id: string;
+  content: string;
+  created_at: string;
+  creator?: DbUserRow | null;
 }
 
 interface DbReportRow {
@@ -276,13 +399,13 @@ interface DbReportRow {
   description: string;
   status: "Unresolved" | "Being Addressed" | "Resolved";
   images?: string[] | null;
-  created_at: string; 
+  created_at: string; // Should always be present as per DB schema (NOT NULL DEFAULT now())
   category: string;
   urgency: "Low" | "Medium" | "High";
-  location_id?: number | null;
-  location?: DbLocationRow | null;
   created_by: string; 
+  location?: DbLocationRow | null;
   creator?: DbUserRow | null;
+  comments?: DbCommentRow[] | null;
 }
 
 export function transformDbAreaToArea(dbArea: DbAreaRow | null | undefined): Area | undefined {
@@ -298,17 +421,27 @@ export function transformDbAreaToArea(dbArea: DbAreaRow | null | undefined): Are
 }
 
 export function transformDbLocationToLocation(dbLocation: DbLocationRow | null | undefined): Location | undefined {
-  if (!dbLocation || dbLocation.latitude === null || dbLocation.longitude === null) {
+  if (!dbLocation) {
+    console.warn("transformDbLocationToLocation: Received null or undefined dbLocation.");
     return undefined;
   }
 
+  // Check for valid coordinates
+  if (typeof dbLocation.latitude !== 'number' || typeof dbLocation.longitude !== 'number') {
+    console.warn("transformDbLocationToLocation: Missing or invalid latitude/longitude for location_id:", dbLocation.location_id);
+    return undefined; // Coordinates are mandatory for a Location object
+  }
+
+  // Check and transform area
+  // dbLocation.area is now expected to be DbAreaRow | null
   const area = dbLocation.area ? transformDbAreaToArea(dbLocation.area) : undefined;
   
   if (!area) {
-    console.warn("Could not transform area for location_id:", dbLocation.location_id);
-    return undefined;
+    console.warn("transformDbLocationToLocation: Could not transform area for location_id:", dbLocation.location_id, "or area data is missing.");
+    return undefined; // Address (Area) is mandatory for a Location object
   }
 
+  // If all checks pass, create and return the Location object
   return {
     coordinates: {
       lat: dbLocation.latitude,
@@ -319,12 +452,39 @@ export function transformDbLocationToLocation(dbLocation: DbLocationRow | null |
 }
 
 export function transformDbUserToUser(dbUser: DbUserRow | null | undefined): User | undefined {
-  if (!dbUser || !dbUser.username) {
+  if (!dbUser || !dbUser.email) {
     return undefined; 
   }
   return {
-    username: dbUser.username,
-    profilePicture: dbUser.profile_pic_url ?? undefined,
+    username: dbUser.email, // Use email as username since schema doesn't have username field
+    profilePicture: dbUser.avatar_url ?? undefined,
+  };
+}
+
+export function transformDbCommentToComment(dbComment: DbCommentRow | null | undefined): Comment | undefined {
+  if (!dbComment) {
+    return undefined;
+  }
+
+  let creator: User;
+  const transformedCreator = dbComment.creator ? transformDbUserToUser(dbComment.creator) : undefined;
+
+  if (transformedCreator) {
+    creator = transformedCreator;
+  } else {
+    // Provide a default "Unknown User" if creator data is missing
+    console.warn(`Comment ${dbComment.id} is missing valid creator information. Using default.`);
+    creator = {
+      username: "Unknown User",
+      profilePicture: undefined,
+    };
+  }
+
+  return {
+    id: dbComment.id,
+    content: dbComment.content,
+    createdAt: new Date(dbComment.created_at),
+    creator: creator,
   };
 }
 
@@ -333,13 +493,48 @@ export function transformDbReportToReport(dbReport: DbReportRow | null | undefin
     return undefined;
   }
 
+  // Ensure dbReport.created_at is present before creating a Date object
+  // This check is more for robustness; schema says it's NOT NULL.
+  if (!dbReport.created_at) {
+    console.error(`Critical: Report ${dbReport.id} is missing created_at field, which is unexpected.`);
+    // Depending on strictness, you might return undefined or use a fallback.
+    // For now, using a fallback to prevent crashes, but this signals a data integrity issue.
+    // dbReport.created_at = new Date().toISOString(); // Fallback if absolutely necessary, but investigate why it's missing
+    return undefined; // More strict: if critical data is missing, don't form the report.
+  }
+
   const location = dbReport.location ? transformDbLocationToLocation(dbReport.location) : undefined;
   const creator = dbReport.creator ? transformDbUserToUser(dbReport.creator) : undefined;
 
   if (!creator) {
-    console.warn(`Report ${dbReport.id} is missing valid creator information or creator could not be transformed.`);
-    return undefined;
+    console.warn(`Report ${dbReport.id} is missing valid creator information or creator could not be transformed. Using default.`);
+    const defaultCreator: User = {
+      username: "Unknown User",
+      profilePicture: undefined,
+    };
+    
+    const comments = dbReport.comments
+      ?.map(transformDbCommentToComment)
+      .filter((comment): comment is Comment => comment !== undefined) ?? [];
+
+    return {
+      id: dbReport.id,
+      title: dbReport.title,
+      description: dbReport.description,
+      category: dbReport.category,
+      urgency: dbReport.urgency,
+      status: dbReport.status,
+      images: dbReport.images ?? undefined,
+      createdAt: new Date(dbReport.created_at), // dbReport.created_at is now guaranteed by the check above or schema
+      location: location,
+      creator: defaultCreator,
+      comments: comments.length > 0 ? comments : undefined,
+    };
   }
+
+  const comments = dbReport.comments
+    ?.map(transformDbCommentToComment)
+    .filter((comment): comment is Comment => comment !== undefined) ?? [];
 
   return {
     id: dbReport.id,
@@ -349,8 +544,9 @@ export function transformDbReportToReport(dbReport: DbReportRow | null | undefin
     urgency: dbReport.urgency,
     status: dbReport.status,
     images: dbReport.images ?? undefined,
-    createdAt: new Date(dbReport.created_at),
+    createdAt: new Date(dbReport.created_at), // dbReport.created_at is now guaranteed
     location: location,
     creator: creator,
+    comments: comments.length > 0 ? comments : undefined,
   };
 }

@@ -1,21 +1,24 @@
 "use client";
 
 import SearchBar from "@/components/search/search-bar";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import SearchResultsList from "@/components/search/search-results-list";
 import { debounce } from "lodash";
 import { FilterButton } from "@/components/ui/filter-button";
 import { FilterDropdown } from "@/components/ui/filter-dropdown";
 import Report from "@/interfaces/report";
 import { useFetchPins } from "@/hooks/useFetchPins";
-import { MobileNavbar } from "@/components/generic/mobile-navbar";
-import { ReportForm } from "@/components/report/report-form/report-form";
+// MobileNavbar is now in MainLayout
+// import { ReportForm } from "@/components/report/report-form/report-form"; // Not used directly here anymore for overlay
 import { CreateReportOverlay } from "@/components/report/create-report-overlay";
+import { ReportCard } from "@/components/report/report-card"; // Import ReportCard
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserContext } from "@/context/user-context";
 import { useRouter } from "next/navigation";
 import dynamic from 'next/dynamic';
+import { useMapContext } from "@/context/map-context"; // Import useMapContext
+import { toast } from "sonner"; // Import toast for error notifications
 
 // Dynamically import MapContents with ssr: false
 const MapContents = dynamic(() => import('@/components/map/map').then(mod => mod.MapContents), {
@@ -30,9 +33,16 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<Report[]>([]);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
+  // State for ReportCard overlay
+  const [selectedReportIdForCard, setSelectedReportIdForCard] = useState<string | null>(null);
+  const [reportForCard, setReportForCard] = useState<Report | null>(null);
+  const [isReportCardVisible, setIsReportCardVisible] = useState(false);
+  const [isLoadingReportForCard, setIsLoadingReportForCard] = useState(false);
+
   const { pins, isLoading: isLoadingPins, error: fetchPinsError } = useFetchPins();
   const { state: { user } } = useUserContext();
   const router = useRouter();
+  const { mapInstanceRef } = useMapContext(); // Get map instance for flyTo
 
   const openSearchScreen = () => setIsSearchScreenVisible(true);
   const closeSearchScreen = () => {
@@ -115,6 +125,60 @@ export default function HomePage() {
     setIsCreateReportVisible(false);
   };
 
+  // Handler for pin click from the map
+  const handlePinClick = useCallback((reportId: string) => {
+    setSelectedReportIdForCard(reportId);
+    setReportForCard(null); // Clear previous report
+    setIsLoadingReportForCard(true);
+    setIsReportCardVisible(true);
+  }, []);
+
+  // Effect to fetch report details when selectedReportIdForCard changes
+  useEffect(() => {
+    if (!selectedReportIdForCard) {
+      return;
+    }
+
+    const fetchReportDetails = async () => {
+      try {
+        const response = await fetch(`/api/reports/${selectedReportIdForCard}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to fetch report: ${response.status}`);
+        }
+        const data: Report = await response.json();
+        if (!data || !data.id) { // Basic validation of the fetched report data
+          throw new Error("Fetched report data is invalid or missing ID.");
+        }
+        setReportForCard(data);
+      } catch (error: any) {
+        console.error("Error fetching report details for card:", error);
+        toast.error(`Error loading report: ${error.message}`);
+        setReportForCard(null);
+        setIsReportCardVisible(false); // Close card on error
+      } finally {
+        setIsLoadingReportForCard(false);
+      }
+    };
+
+    fetchReportDetails();
+  }, [selectedReportIdForCard]);
+
+  const closeReportCard = useCallback(() => {
+    setIsReportCardVisible(false);
+    setSelectedReportIdForCard(null);
+    setReportForCard(null);
+  }, []);
+
+  const handleViewOnMapFromCard = useCallback(() => {
+    if (reportForCard?.location?.coordinates && mapInstanceRef.current) {
+      const { lat, lng } = reportForCard.location.coordinates;
+      mapInstanceRef.current.flyTo([lat, lng], 18); // Zoom level 18
+    }
+    closeReportCard(); // Close card after flying
+  }, [reportForCard, mapInstanceRef, closeReportCard]);
+
+
   return (
       <div className="relative flex flex-col h-screen">
         {/* Map Layer - Background, interactive */}
@@ -124,6 +188,7 @@ export default function HomePage() {
             isLoadingPins={isLoadingPins} 
             fetchPinsError={fetchPinsError}
             className="h-full w-full"
+            onPinClick={handlePinClick} // Pass the handler to MapContents
           />
         </div>
 
@@ -237,6 +302,37 @@ export default function HomePage() {
 
         {/* Create Report Overlay */}
         {isCreateReportVisible && <CreateReportOverlay onClose={closeCreateReport} />}
+
+        {/* Report Card Overlay */}
+        {isReportCardVisible && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 pointer-events-auto">
+            {isLoadingReportForCard && (
+              <div className="bg-background p-6 rounded-lg shadow-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <p>Loading report...</p>
+                </div>
+              </div>
+            )}
+            {!isLoadingReportForCard && reportForCard && (
+              <ReportCard
+                report={reportForCard}
+                onBack={closeReportCard}
+                onViewMap={handleViewOnMapFromCard}
+              />
+            )}
+            {!isLoadingReportForCard && !reportForCard && (
+               // This case handles if fetching failed and reportForCard is null
+               // Error toast is already shown, so we might not need specific UI here,
+               // or a simple message if the card remains visible due to some logic.
+               // Since `closeReportCard` is called on error, this part might not be reached often.
+              <div className="bg-background p-6 rounded-lg shadow-lg text-destructive">
+                <p>Could not load report details.</p>
+                <Button onClick={closeReportCard} variant="outline" className="mt-2">Close</Button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
   );
 }

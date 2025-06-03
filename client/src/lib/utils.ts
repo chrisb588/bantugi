@@ -9,9 +9,25 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // formats area object into a string
-export function formatArea(area: Area) {
-  if (!area || !area.barangay || !area.city || !area.province) {
+export function formatArea(area: Area | undefined | null): string {
+  if (!area) {
     return "Unknown Location";
   }
-  return `${area.barangay}, ${area.city}, ${area.province}`;
+
+  const parts: string[] = [];
+  if (area.barangay) {
+    parts.push(area.barangay);
+  }
+  if (area.city) {
+    parts.push(area.city);
+  }
+  if (area.province) {
+    parts.push(area.province);
+  }
+
+  if (parts.length === 0) {
+    return "Unknown Location";
+  }
+  
+  return parts.join(", ");
 }

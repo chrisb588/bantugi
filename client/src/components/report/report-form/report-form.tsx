@@ -156,7 +156,12 @@ export function ReportForm({
   };
 
   const handleImagesChange = (images: string[]) => {
-    setFormData(prev => ({ ...prev, images }));
+    console.log('ReportForm - handleImagesChange received images:', JSON.stringify(images, null, 2)); // Log received images
+    setFormData(prev => {
+      const updatedFormData = { ...prev, images };
+      console.log('ReportForm - formData after images update:', JSON.stringify(updatedFormData, null, 2)); // Log formData after update
+      return updatedFormData;
+    });
   };
 
   const handleSetLocation = () => {
@@ -249,6 +254,8 @@ export function ReportForm({
       toast.error("Validation failed: Title, category, urgency, and a confirmed location are required.");
       return;
     }
+
+    console.log('ReportForm - handleSubmit - formData.images before API call:', JSON.stringify(formData.images, null, 2)); // Log images before sending
 
     // Prepare the data for the /api/reports endpoint
     const reportDataForApi = {

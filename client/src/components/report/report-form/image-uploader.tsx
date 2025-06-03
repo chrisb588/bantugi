@@ -50,6 +50,8 @@ export default function ImageUploader({ images = [], onChange }: ImageUploaderPr
           }
 
           const result = await response.json();
+          // THIS IS THE IMPORTANT LOG TO CHECK:
+          console.log('ImageUploader - /api/upload response result:', JSON.stringify(result, null, 2)); 
           if (result.fileUrl) {
             uploadedImageUrls.push(result.fileUrl);
           } else {
