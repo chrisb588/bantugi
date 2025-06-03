@@ -77,7 +77,7 @@ export function MobileNavbar({ onCreateReport }: MobileNavbarProps) {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4 md:hidden">
+    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-35 w-full max-w-md px-4 md:hidden"> {/* Changed z-50 to z-35 */}
       <div className="relative flex items-center justify-between h-14 bg-white dark:bg-gray-900 rounded-full shadow-lg border border-gray-100 dark:border-gray-800">
         {/* Map/Home button - always available */}
         <button

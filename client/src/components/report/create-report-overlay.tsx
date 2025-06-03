@@ -13,7 +13,7 @@ export function CreateReportOverlay({ onClose }: CreateReportOverlayProps) {
 
   return (
     <div className={cn(
-      "fixed inset-0 z-[60] flex items-center justify-center p-6 md:p-10",
+      "fixed inset-0 z-40 flex items-center justify-center p-6 md:p-10", // Changed z-[60] to z-40
       isChoosingLocation ? "pointer-events-none" : "pointer-events-auto"
     )}>
       {/* Transparent backdrop that allows map clicks when choosing location */}
