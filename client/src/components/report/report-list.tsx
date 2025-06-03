@@ -7,6 +7,7 @@ import ReportItem from "@/components/report/report-item";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { sampleResults } from '@/test';
 import { useUserContext } from "@/context/user-context";
+import { useUserReports } from "@/hooks/useUserReports";
 import Report from "@/interfaces/report";
 
 interface ReportListProps {
@@ -24,18 +25,60 @@ const ReportList: React.FC<ReportListProps> = ({
   ...props 
 }) => {
   const [reports, setReports] = useState<Report[] | null>(null);
-
-  // temporary
-  useEffect(() => {
-    setReports(sampleResults);
-  }, []);
-  
   const { state: { user } } = useUserContext();
+  
+  // Use the new hook for My Reports view
+  const { 
+    reports: userReports, 
+    isLoading: isLoadingUserReports, 
+    error: userReportsError 
+  } = useUserReports();
+
+  // Handle different report sources based on view type
+  useEffect(() => {
+    if (isMyReportsView && user) {
+      // Use reports from the hook for My Reports view
+      setReports(userReports);
+    } else if (!isMyReportsView && !isSavedReportsView) {
+      // Use sample data for other views (temporary)
+      setReports(sampleResults);
+    } else if (isSavedReportsView && user) {
+      // TODO: Implement saved reports API call
+      setReports(sampleResults);
+    } else {
+      // No user or unsupported view
+      setReports([]);
+    }
+  }, [isMyReportsView, isSavedReportsView, user, userReports]);
 
   if (isMyReportsView && !user) {
-    // TODO: api call to fetch reports made by the user (backend)
-  } else if (isSavedReportsView && !user) {
-    // TODO: api call to fetch reports saved by the user (backend)
+    return (
+      <div className={cn("w-full max-w-lg flex flex-col gap-4 -mt-15", className)} {...props}>
+        <Card className="h-[85vh] min-h-[400px] max-h-[800px]">
+          <CardHeader className="text-left">
+            <CardTitle className="text-2xl">{title}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <p className="text-muted-foreground">Please log in to view your reports.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isSavedReportsView && !user) {
+    return (
+      <div className={cn("w-full max-w-lg flex flex-col gap-4 -mt-15", className)} {...props}>
+        <Card className="h-[85vh] min-h-[400px] max-h-[800px]">
+          <CardHeader className="text-left">
+            <CardTitle className="text-2xl">{title}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <p className="text-muted-foreground">Please log in to view your saved reports.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -49,15 +92,45 @@ const ReportList: React.FC<ReportListProps> = ({
             <Separator />
           </div>
           <CardContent className="flex flex-col items-center py-4">
-            {reports && (reports.map((result, index) => (
-              <ReportItem
-                key={index}
-                report={result}
-                deletable={isMyReportsView} // only allow deletion of own reports in my reports page
-                editable={isMyReportsView} // only allow editing of own reports in my reports page
-                isSaved={isSavedReportsView} // indicate if this is a saved report
-              />
-            )))}
+            {/* Loading state for My Reports */}
+            {isMyReportsView && isLoadingUserReports && (
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+                <p className="text-muted-foreground">Loading your reports...</p>
+              </div>
+            )}
+            
+            {/* Error state for My Reports */}
+            {isMyReportsView && userReportsError && (
+              <div className="flex flex-col items-center justify-center py-8">
+                <p className="text-destructive mb-2">Error loading reports</p>
+                <p className="text-muted-foreground text-sm">{userReportsError}</p>
+              </div>
+            )}
+            
+            {/* Empty state */}
+            {reports && reports.length === 0 && !isLoadingUserReports && !userReportsError && (
+              <div className="flex flex-col items-center justify-center py-8">
+                <p className="text-muted-foreground">
+                  {isMyReportsView ? "You haven't created any reports yet." : 
+                   isSavedReportsView ? "You haven't saved any reports yet." : 
+                   "No reports found."}
+                </p>
+              </div>
+            )}
+            
+            {/* Reports list */}
+            {reports && reports.length > 0 && !isLoadingUserReports && (
+              reports.map((result, index) => (
+                <ReportItem
+                  key={result.id || index}
+                  report={result}
+                  deletable={isMyReportsView} // only allow deletion of own reports in my reports page
+                  editable={isMyReportsView} // only allow editing of own reports in my reports page
+                  isSaved={isSavedReportsView} // indicate if this is a saved report
+                />
+              ))
+            )}
           </CardContent>
         </ScrollArea> 
       </Card>

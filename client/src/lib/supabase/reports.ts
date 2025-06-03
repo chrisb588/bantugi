@@ -550,3 +550,95 @@ export function transformDbReportToReport(dbReport: DbReportRow | null | undefin
     comments: comments.length > 0 ? comments : undefined,
   };
 }
+
+export async function getUserCreatedReports(server: SupabaseClient, userId?: string): Promise<Report[]> {
+  const supabase: SupabaseClient = server;
+
+  // If no userId provided, get the current user's ID
+  const targetUserId = userId || await getUserID(server);
+  if (!targetUserId) {
+    console.error('[getUserCreatedReports] Authentication required: No user ID found');
+    return [];
+  }
+
+  console.log(`[getUserCreatedReports] Fetching reports created by user: ${targetUserId}`);
+
+  // Query for multiple reports filtered by created_by
+  const reportQuery = `
+    id,
+    created_at,
+    created_by,
+    title,
+    description,
+    status,
+    images,
+    category,
+    urgency,
+    location:location_id (
+      location_id,
+      latitude,
+      longitude,
+      area:area_id (
+        id,
+        province,
+        city,
+        barangay
+      )
+    )
+  `;
+
+  const { data: dbReportsData, error: reportsError } = await supabase
+    .from('reports')
+    .select(reportQuery)
+    .eq('created_by', targetUserId)
+    .order('created_at', { ascending: false }); // Get newest reports first
+
+  if (reportsError) {
+    console.error('[getUserCreatedReports] Supabase error fetching reports:', reportsError);
+    return [];
+  }
+
+  if (!dbReportsData || dbReportsData.length === 0) {
+    console.log(`[getUserCreatedReports] No reports found for user: ${targetUserId}`);
+    return [];
+  }
+
+  // Fetch the creator's profile once since all reports are by the same user
+  const { data: creatorProfile, error: profileError } = await supabase
+    .from('profiles')
+    .select('user_id, email, avatar_url')
+    .eq('user_id', targetUserId)
+    .single();
+  
+  if (profileError) {
+    console.warn(`[getUserCreatedReports] Could not fetch profile for user ${targetUserId}:`, profileError);
+  }
+
+  const reports: Report[] = [];
+
+  for (const dbReport of dbReportsData) {
+    // Process location to ensure it's a single object, not an array
+    let processedLocation = null;
+    if (dbReport.location && !Array.isArray(dbReport.location)) {
+      processedLocation = dbReport.location;
+    } else if (Array.isArray(dbReport.location) && dbReport.location.length > 0) {
+      processedLocation = dbReport.location[0];
+    }
+
+    // Create combined DbReport structure for transformation
+    const combinedDbReport: DbReportRow = {
+      ...(dbReport as any), // Cast to satisfy TypeScript
+      creator: creatorProfile as DbUserRow | null,
+      comments: [], // Empty comments for list view to avoid large payloads
+      location: processedLocation,
+    };
+    
+    const transformed = transformDbReportToReport(combinedDbReport);
+    if (transformed) {
+      reports.push(transformed);
+    }
+  }
+  
+  console.log(`[getUserCreatedReports] Successfully fetched ${reports.length} reports for user: ${targetUserId}`);
+  return reports;
+}

@@ -2,6 +2,7 @@ import { MapPin, Bookmark, CopyCheck, Plus, LogIn } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUserContext } from '@/context/user-context';
 import { useAuthContext } from '@/context/auth-context';
+import { useUserReports } from '@/hooks/useUserReports';
 import Image from 'next/image';
 
 interface MobileNavbarProps {
@@ -11,6 +12,7 @@ interface MobileNavbarProps {
 export function MobileNavbar({ onCreateReport }: MobileNavbarProps) {
   const { state: { user } } = useUserContext();
   const { state: authState } = useAuthContext();
+  const { reportCount, isLoading } = useUserReports();
   const router = useRouter();
   const currentPath = usePathname();
 
@@ -107,11 +109,16 @@ export function MobileNavbar({ onCreateReport }: MobileNavbarProps) {
         
         {/* My Reports - shows login hint for guests */}
         <button
-          className="flex-1 flex justify-center p-2 text-gray-500 dark:text-gray-400 hover:text-primary"
+          className="flex-1 flex justify-center p-2 text-gray-500 dark:text-gray-400 hover:text-primary relative"
           onClick={navigateToMyReports}
           title={!user ? "Login to view your reports" : "My Reports"}
         >
           <CopyCheck className="w-5 h-5" />
+          {user && reportCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] font-medium">
+              {reportCount > 99 ? '99+' : reportCount}
+            </span>
+          )}
         </button>
         
         {/* Account/Login button */}
