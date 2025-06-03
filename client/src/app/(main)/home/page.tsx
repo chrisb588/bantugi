@@ -1,11 +1,11 @@
 "use client";
 
 import SearchBar from "@/components/search/search-bar";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import SearchResultsList from "@/components/search/search-results-list";
+import { debounce } from "lodash";
 import { FilterButton } from "@/components/ui/filter-button";
 import { FilterDropdown } from "@/components/ui/filter-dropdown";
-import { sampleResults } from "@/test"; // TODO: Remove if API is fully integrated
 import Report from "@/interfaces/report";
 import { useFetchPins } from "@/hooks/useFetchPins";
 import { MobileNavbar } from "@/components/generic/mobile-navbar";
@@ -32,7 +32,8 @@ export default function HomePage() {
     }
   };
 
-  const handleSearch = async (query: string) => {
+  // Separate the actual search API call from the debounced handler
+  const performSearch = async (query: string) => {
     const trimmedQuery = query.trim();
 
     if (!trimmedQuery) {
@@ -42,21 +43,46 @@ export default function HomePage() {
 
     setIsLoadingSearch(true);
     try {
-      // TODO: Implement API call here
-      // const results = await searchReports(trimmedQuery); 
-      console.log("Search query:", trimmedQuery); // Log query
-      // For now, using sampleResults. Replace with actual API call.
-      const filteredResults = sampleResults.filter(report => 
-        report.title.toLowerCase().includes(trimmedQuery.toLowerCase()) ||
-        report.description?.toLowerCase().includes(trimmedQuery.toLowerCase())
-      );
-      setSearchResults(filteredResults); 
+      console.log("Search query:", trimmedQuery);
+      
+      // Call the search API
+      const response = await fetch(`/api/search?q=${encodeURIComponent(trimmedQuery)}`);
+      
+      if (!response.ok) {
+        throw new Error(`Search API error: ${response.status}`);
+      }
+      
+      const results: Report[] = await response.json();
+      setSearchResults(results);
     } catch (error) {
       console.error('Failed to search reports:', error);
       setSearchResults([]);
     } finally {
       setIsLoadingSearch(false);
     }
+  };
+
+  // Debounced search function - waits 500ms after user stops typing
+  const debouncedSearch = useCallback(
+    debounce((query: string) => {
+      performSearch(query);
+    }, 500),
+    []
+  );
+
+  const handleSearch = (query: string) => {
+    // If query is empty, clear results immediately without debouncing
+    if (!query.trim()) {
+      setSearchResults([]);
+      setIsLoadingSearch(false);
+      return;
+    }
+    
+    // Set loading state immediately for better UX
+    setIsLoadingSearch(true);
+    
+    // Call the debounced search
+    debouncedSearch(query);
   };
 
   const handleFilterClick = () => {

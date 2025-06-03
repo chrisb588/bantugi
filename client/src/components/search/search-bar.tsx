@@ -2,8 +2,7 @@ import { Search } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useCallback, useState } from "react";
-import { debounce } from "lodash";
+import { useState } from "react";
 
 // Complete: Search bar is now highlighted when focused
 interface SearchBarProps {
@@ -14,18 +13,11 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
 
-  // Debounce search to avoid too many API calls
-  const debouncedSearch = useCallback(
-    debounce((query: string) => {
-      onSearch?.(query);
-    }, 300),
-    [onSearch]
-  );
-
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
-    debouncedSearch(query);
+    // Call onSearch immediately - debouncing is handled at parent level
+    onSearch?.(query);
   };
   
   return (
