@@ -1,12 +1,14 @@
 'use client';
 
 import { X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+// Remove unused imports
+// import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+// import { Separator } from '@/components/ui/separator';
 import ReportItem from '@/components/report/report-item';
-import { useUserContext } from '@/context/user-context';
+// Remove unused import
+// import { useUserContext } from '@/context/user-context';
 import Report from '@/interfaces/report';
 import { useSavedReports } from '@/hooks/useSavedReports';
 
@@ -15,7 +17,8 @@ interface SavedReportsOverlayProps {
 }
 
 export function SavedReportsOverlay({ onClose }: SavedReportsOverlayProps) {
-  const { state: { user } } = useUserContext();
+  // Remove unused variable 
+  // const { state: { user } } = useUserContext();
   const { reports: savedReports, isLoading, error, refetch } = useSavedReports();
 
   return (

@@ -104,10 +104,11 @@ export async function POST(req: NextRequest) {
     
     return jsonResponse;
 
-  } catch (error: any) {
-    console.error("[API/reports/save] Internal server error:", error.message, error);
+  } catch (error: unknown) {
+    console.error("[API/reports/save] Internal server error:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: "Internal server error", message: error.message || 'Unknown error' },
+      { error: "Internal server error", message: errorMessage },
       { status: 500 }
     );
   }
@@ -190,10 +191,11 @@ export async function DELETE(req: NextRequest) {
     
     return jsonResponse;
 
-  } catch (error: any) {
-    console.error("[API/reports/save] Internal server error in DELETE:", error.message, error);
+  } catch (error: unknown) {
+    console.error("[API/reports/save] Internal server error in DELETE:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: "Internal server error", message: error.message || 'Unknown error' },
+      { error: "Internal server error", message: errorMessage },
       { status: 500 }
     );
   }

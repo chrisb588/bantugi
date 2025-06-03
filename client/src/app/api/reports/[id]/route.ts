@@ -101,10 +101,11 @@ export async function DELETE(
     
     return jsonResponse;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[API DELETE /api/reports] Internal server error:`, error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: "Internal server error", message: error.message || 'Unknown error' },
+      { error: "Internal server error", message: errorMessage },
       { status: 500 }
     );
   }
@@ -197,10 +198,11 @@ export async function PUT(
     
     return jsonResponse;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[API PUT /api/reports] Internal server error:`, error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: "Internal server error", message: error.message || 'Unknown error' },
+      { error: "Internal server error", message: errorMessage },
       { status: 500 }
     );
   }

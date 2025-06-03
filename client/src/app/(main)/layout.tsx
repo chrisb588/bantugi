@@ -6,9 +6,10 @@ import { MobileNavbar } from "@/components/generic/mobile-navbar";
 import { CreateReportOverlay } from "@/components/report/create-report-overlay";
 import { SavedReportsOverlay } from "@/components/report/saved-reports-overlay";
 import { CreatedReportsOverlay } from "@/components/report/created-reports-overlay";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useUserContext } from "@/context/user-context";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation"; // Remove unused usePathname
+// import { usePathname } from "next/navigation";
 
 export default function MainLayout({
   children,
@@ -34,10 +35,11 @@ function MainLayoutContentInner({ children }: { children: React.ReactNode }) {
   const [isCreatedReportsVisible, setIsCreatedReportsVisible] = useState(false);
   const { state: { user } } = useUserContext();
   const router = useRouter();
-  const pathname = usePathname();
+  // Remove unused variable
+  // const pathname = usePathname();
 
   // Only show overlay callbacks on the home page
-  const isHomePage = pathname === '/home';
+  // const isHomePage = pathname === '/home'; // Not used in current implementation
 
   const openCreateReport = () => {
     if (!user) {

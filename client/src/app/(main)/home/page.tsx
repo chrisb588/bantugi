@@ -1,7 +1,7 @@
 "use client";
 
 import SearchBar from "@/components/search/search-bar";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
 import SearchResultsList from "@/components/search/search-results-list";
 import { debounce } from "lodash";
 import { FilterButton } from "@/components/ui/filter-button";
@@ -10,11 +10,13 @@ import Report from "@/interfaces/report";
 import { useFetchPins } from "@/hooks/useFetchPins";
 // MobileNavbar is now in MainLayout
 // import { ReportForm } from "@/components/report/report-form/report-form"; // Not used directly here anymore for overlay
-import { SavedReportsOverlay } from "@/components/report/saved-reports-overlay";
+// import { SavedReportsOverlay } from "@/components/report/saved-reports-overlay"; // Not used in this component
 import { ReportCard } from "@/components/report/report-card"; // Import ReportCard
 import { Button } from "@/components/ui/button";
-import { useUserContext } from "@/context/user-context";
-import { useRouter, useSearchParams } from "next/navigation";
+// Remove unused imports
+// import { useUserContext } from "@/context/user-context";
+// import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import dynamic from 'next/dynamic';
 import { useMapContext } from "@/context/map-context"; // Import useMapContext
 import { toast } from "sonner"; // Import toast for error notifications
@@ -25,7 +27,7 @@ const MapContents = dynamic(() => import('@/components/map/map').then(mod => mod
   loading: () => <div className="h-full w-full bg-gray-200 flex items-center justify-center"><p>Loading map...</p></div>
 });
 
-export default function HomePage() {
+function HomePageContent() {
   const [isSearchScreenVisible, setIsSearchScreenVisible] = useState(false);
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<Report[]>([]);
@@ -38,10 +40,11 @@ export default function HomePage() {
   const [isLoadingReportForCard, setIsLoadingReportForCard] = useState(false);
 
   const { pins, isLoading: isLoadingPins, error: fetchPinsError } = useFetchPins();
-  const { state: { user } } = useUserContext();
-  const router = useRouter();
+  // Remove unused variables - keeping for potential future use
+  // const { state: { user } } = useUserContext();
+  // const router = useRouter();
   const searchParams = useSearchParams();
-  const { mapInstanceRef, resetMapInstance } = useMapContext(); // Get map instance for flyTo and reset function
+  const { mapInstanceRef } = useMapContext(); // Get map instance for flyTo
 
   // Handle URL parameters for automatic navigation and report display
   useEffect(() => {
@@ -78,7 +81,7 @@ export default function HomePage() {
     }
   }, [searchParams, mapInstanceRef]);
 
-  const openSearchScreen = () => setIsSearchScreenVisible(true);
+  // const openSearchScreen = () => setIsSearchScreenVisible(true); // Not used in current implementation
   const closeSearchScreen = () => {
     if (isSearchScreenVisible) {
       setIsSearchScreenVisible(false);
@@ -86,7 +89,7 @@ export default function HomePage() {
   };
 
   // Separate the actual search API call from the debounced handler
-  const performSearch = async (query: string) => {
+  const performSearch = useCallback(async (query: string) => {
     const trimmedQuery = query.trim();
 
     if (!trimmedQuery) {
@@ -113,14 +116,12 @@ export default function HomePage() {
     } finally {
       setIsLoadingSearch(false);
     }
-  };
+  }, []);
 
   // Debounced search function - waits 500ms after user stops typing
   const debouncedSearch = useCallback(
-    debounce((query: string) => {
-      performSearch(query);
-    }, 500),
-    []
+    debounce((query: string) => performSearch(query), 500),
+    [performSearch]
   );
 
   const handleSearch = (query: string) => {
@@ -152,15 +153,15 @@ export default function HomePage() {
     setIsFilterDropdownOpen(false);
   };
 
-  const openCreateReport = () => {
-    if (!user) {
-      // Redirect to login for guest users
-      router.push('/login');
-      return;
-    }
-    // Navigate to create report page for desktop
-    router.push('/create-report');
-  };
+  // const openCreateReport = () => {
+  //   if (!user) {
+  //     // Redirect to login for guest users
+  //     router.push('/login');
+  //     return;
+  //   }
+  //   // Navigate to create report page for desktop
+  //   router.push('/create-report');
+  // };
 
   // Handler for pin click from the map
   const handlePinClick = useCallback((reportId: string) => {
@@ -188,9 +189,10 @@ export default function HomePage() {
           throw new Error("Fetched report data is invalid or missing ID.");
         }
         setReportForCard(data);
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error fetching report details for card:", error);
-        toast.error(`Error loading report: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+        toast.error(`Error loading report: ${errorMessage}`);
         setReportForCard(null);
         setIsReportCardVisible(false); // Close card on error
       } finally {
@@ -384,5 +386,13 @@ export default function HomePage() {
           </div>
         )}
       </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="h-full w-full bg-gray-200 flex items-center justify-center"><p>Loading...</p></div>}>
+      <HomePageContent />
+    </Suspense>
   );
 }

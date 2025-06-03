@@ -1,5 +1,5 @@
 import { Trash2, Bookmark, MapPin, Pencil } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { cn, formatArea } from '@/lib/utils';
@@ -71,46 +71,47 @@ export default function ReportItem({
     }
   };
 
-  const handleUpdate = async (updateData: any) => {
-    if (isUpdating) return; // Prevent multiple update requests
-    
-    setIsUpdating(true);
-    
-    try {
-      console.log("Updating report:", report.id, updateData);
-      
-      const response = await fetch(`/api/reports/${report.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include cookies for authentication
-        body: JSON.stringify(updateData),
-      });
+  // const handleUpdate = async (updateData: Record<string, unknown>) => {
+  //   if (isUpdating) return; // Prevent multiple update requests
+  //   
+  //   setIsUpdating(true);
+  //   
+  //   try {
+  //     console.log("Updating report:", report.id, updateData);
+  //     
+  //     const response = await fetch(`/api/reports/${report.id}`, {
+  //       method: 'PUT',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       credentials: 'include', // Include cookies for authentication
+  //       body: JSON.stringify(updateData),
+  //     });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Failed to update report: ${response.status}`);
-      }
+  //     if (!response.ok) {
+  //       const errorData = await response.json().catch(() => ({}));
+  //       throw new Error(errorData.error || `Failed to update report: ${response.status}`);
+  //     }
 
-      const result = await response.json();
-      console.log("Update response:", result);
-      
-      // Show success toast
-      toast.success("Report updated successfully");
-      
-      // Call the onUpdate callback to refresh the list with updated data
-      if (onUpdate && result.data) {
-        onUpdate(report.id, result.data);
-      }
-      
-    } catch (error: any) {
-      console.error("Error updating report:", error);
-      toast.error(error.message || "Failed to update report");
-    } finally {
-      setIsUpdating(false);
-    }
-  };
+  //     const result = await response.json();
+  //     console.log("Update response:", result);
+  //     
+  //     // Show success toast
+  //     toast.success("Report updated successfully");
+  //     
+  //     // Call the onUpdate callback to refresh the list with updated data
+  //     if (onUpdate && result.data) {
+  //       onUpdate(report.id, result.data);
+  //     }
+  //     
+  //   } catch (error) {
+  //     console.error("Error updating report:", error);
+  //     const errorMessage = error instanceof Error ? error.message : "Failed to update report";
+  //     toast.error(errorMessage);
+  //   } finally {
+  //     setIsUpdating(false);
+  //   }
+  // };
 
   const handleDelete = async () => {
     if (isDeleting) return; // Prevent multiple delete requests
@@ -144,9 +145,10 @@ export default function ReportItem({
         onDelete(report.id);
       }
       
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting report:", error);
-      toast.error(error.message || "Failed to delete report");
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete report";
+      toast.error(errorMessage);
     } finally {
       setIsDeleting(false);
     }
@@ -193,9 +195,10 @@ export default function ReportItem({
         onSaveToggle(report.id, !reportSaved);
       }
       
-    } catch (error: any) {
+    } catch (error) {
       console.error(`Error ${reportSaved ? 'unsaving' : 'saving'} report:`, error);
-      toast.error(error.message || `Failed to ${reportSaved ? 'unsave' : 'save'} report`);
+      const errorMessage = error instanceof Error ? error.message : `Failed to ${reportSaved ? 'unsave' : 'save'} report`;
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }

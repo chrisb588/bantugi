@@ -1,7 +1,7 @@
 'use client';
 
 import { ReportForm } from "@/components/report/report-form/report-form";
-import { useState, useEffect } from "react";
+import { useState } from "react"; // Remove unused useEffect
 import { cn } from "@/lib/utils"; // Import cn utility
 
 interface CreateReportOverlayProps {

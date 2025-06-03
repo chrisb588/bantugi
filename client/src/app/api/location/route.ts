@@ -45,10 +45,11 @@ export async function GET(request: NextRequest) {
     // because we pass its headers.
     return NextResponse.json(reports, { status: 200, headers: baseResponse.headers });
 
-  } catch (error: any) {
-    console.error("[API/location] Internal server error in GET handler:", error.message, error);
+  } catch (error: unknown) {
+    console.error("[API/location] Internal server error in GET handler:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-        { error: "Internal server error", message: error.message || 'Unknown error' },
+        { error: "Internal server error", message: errorMessage },
         { status: 500 }
     );
   }

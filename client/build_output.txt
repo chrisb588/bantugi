@@ -1,0 +1,36 @@
+
+> client@0.1.0 build
+> next build
+
+   ▲ Next.js 15.3.2
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 6.0s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/15) ...
+   Generating static pages (3/15) 
+   Generating static pages (7/15) 
+[AuthLayout] Rendering AuthLayout...
+[AuthContextProvider] AuthContextProvider function body executing...
+[AuthLayout] Rendering AuthLayout...
+[AuthContextProvider] AuthContextProvider function body executing...
+[AuthContextProvider] AuthContextProvider function body executing...
+[AuthContextProvider] AuthContextProvider function body executing...
+[useFetchPins] HOOK BODY EXECUTING. isMapReady: false, mapInstanceRef.current: false, L: false
+[useFetchPins] Hook rendering. isLoading: false Pins count: 0 Error: null
+ ⨯ useSearchParams() should be wrapped in a suspense boundary at page "/home". Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at a (/home/depyter/Documents/development/bantugi/client/.next/server/chunks/615.js:3:11441)
+    at f (/home/depyter/Documents/development/bantugi/client/.next/server/chunks/615.js:5:28704)
+    at B (/home/depyter/Documents/development/bantugi/client/.next/server/app/(main)/home/page.js:1:17589)
+    at nF (/home/depyter/Documents/development/bantugi/client/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:46843)
+    at nH (/home/depyter/Documents/development/bantugi/client/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:48618)
+    at nW (/home/depyter/Documents/development/bantugi/client/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:67762)
+    at nz (/home/depyter/Documents/development/bantugi/client/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:65337)
+    at nB (/home/depyter/Documents/development/bantugi/client/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:47195)
+    at nH (/home/depyter/Documents/development/bantugi/client/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:48664)
+    at nH (/home/depyter/Documents/development/bantugi/client/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:64688)
+Error occurred prerendering page "/home". Read more: https://nextjs.org/docs/messages/prerender-error
+Export encountered an error on /(main)/home/page: /home, exiting the build.
+ ⨯ Next.js build worker exited with code: 1 and signal: null

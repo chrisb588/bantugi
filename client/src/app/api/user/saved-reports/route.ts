@@ -119,10 +119,11 @@ export async function GET(req: NextRequest) {
     
     return jsonResponse;
 
-  } catch (error: any) {
-    console.error("[API/user/saved-reports] Internal server error:", error.message, error);
+  } catch (error: unknown) {
+    console.error("[API/user/saved-reports] Internal server error:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: "Internal server error", message: error.message || 'Unknown error' },
+      { error: "Internal server error", message: errorMessage },
       { status: 500 }
     );
   }

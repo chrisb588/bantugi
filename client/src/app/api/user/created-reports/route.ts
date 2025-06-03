@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { getUserID } from '@/lib/supabase/user.server';
 import { getUserCreatedReports } from '@/lib/supabase/reports';
-import Report from '@/interfaces/report';
+// Remove unused import
+// import Report from '@/interfaces/report';
 
 export async function GET(req: NextRequest) {
   try {
@@ -28,10 +29,11 @@ export async function GET(req: NextRequest) {
     
     return jsonResponse;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API/user/created-reports] Internal server error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error', message: error.message || 'Unknown error' },
+      { error: 'Internal server error', message: errorMessage },
       { status: 500 }
     );
   }

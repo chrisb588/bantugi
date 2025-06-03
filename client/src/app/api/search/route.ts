@@ -133,10 +133,11 @@ export async function GET(req: NextRequest) {
 
     return jsonResponse;
 
-  } catch (error: any) {
-    console.error("[API/search] Exception caught in search API:", error.message, error);
+  } catch (error) {
+    console.error("[API/search] Exception caught in search API:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", details: errorMessage },
       { status: 500 }
     );
   }

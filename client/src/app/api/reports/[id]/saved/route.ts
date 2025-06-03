@@ -5,9 +5,10 @@ import { getAuthenticatedUserID } from '@/lib/supabase/auth-utils';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await paramsPromise;
     const response = new NextResponse();
     const supabase = createServerClient(req, response);
     
@@ -63,10 +64,11 @@ export async function GET(
     
     return jsonResponse;
 
-  } catch (error: any) {
-    console.error("[API/reports/[id]/saved] Internal server error:", error.message, error);
+  } catch (error: unknown) {
+    console.error("[API/reports/[id]/saved] Internal server error:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: "Internal server error", message: error.message || 'Unknown error' },
+      { error: "Internal server error", message: errorMessage },
       { status: 500 }
     );
   }

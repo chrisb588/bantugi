@@ -15,7 +15,7 @@ export function MobileNavbar({ onCreateReport, onSavedReports, onMyReports }: Na
   // Keep the same function name for backwards compatibility, but this now works on all screen sizes
   const { state: { user } } = useUserContext();
   const { state: authState } = useAuthContext();
-  const { reportCount, isLoading } = useUserReports();
+  const { reportCount } = useUserReports(); // Remove unused isLoading
   const router = useRouter();
   const currentPath = usePathname();
 

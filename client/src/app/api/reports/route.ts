@@ -41,10 +41,11 @@ export async function POST(req: NextRequest) {
     
     return jsonResponse;
 
-  } catch (error: any) {
-    console.error("[API/reports] Internal server error in POST handler:", error.message, error);
+  } catch (error: unknown) {
+    console.error("[API/reports] Internal server error in POST handler:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: "Internal server error", message: error.message || 'Unknown error' },
+      { error: "Internal server error", message: errorMessage },
       { status: 500 }
     );
   }

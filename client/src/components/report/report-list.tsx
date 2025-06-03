@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
@@ -44,15 +43,15 @@ const ReportList: React.FC<ReportListProps> = ({
     refetch: refetchSavedReports
   } = useSavedReports();
 
-  const handleReportDelete = (reportId: string) => {
+  const handleReportDelete = () => {
     // Refresh the reports list after successful deletion
     if (isMyReportsView) {
       refetchUserReports();
     }
   };
 
-  const handleSaveToggle = (reportId: string, isSaved: boolean) => {
-    // Refresh saved reports if we're in the saved reports view
+  const handleSaveToggle = () => {
+    // Refresh saved reports if needed
     if (isSavedReportsView) {
       refetchSavedReports();
     }
