@@ -9,6 +9,12 @@ import { FilterDropdown } from "@/components/ui/filter-dropdown";
 import Report from "@/interfaces/report";
 import { useFetchPins } from "@/hooks/useFetchPins";
 import { MobileNavbar } from "@/components/generic/mobile-navbar";
+import { ReportForm } from "@/components/report/report-form/report-form";
+import { CreateReportOverlay } from "@/components/report/create-report-overlay";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useUserContext } from "@/context/user-context";
+import { useRouter } from "next/navigation";
 import dynamic from 'next/dynamic';
 
 // Dynamically import MapContents with ssr: false
@@ -20,10 +26,13 @@ const MapContents = dynamic(() => import('@/components/map/map').then(mod => mod
 export default function HomePage() {
   const [isSearchScreenVisible, setIsSearchScreenVisible] = useState(false);
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const [isCreateReportVisible, setIsCreateReportVisible] = useState(false);
   const [searchResults, setSearchResults] = useState<Report[]>([]);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
   const { pins, isLoading: isLoadingPins, error: fetchPinsError } = useFetchPins();
+  const { state: { user } } = useUserContext();
+  const router = useRouter();
 
   const openSearchScreen = () => setIsSearchScreenVisible(true);
   const closeSearchScreen = () => {
@@ -93,6 +102,19 @@ export default function HomePage() {
     setIsFilterDropdownOpen(false);
   };
 
+  const openCreateReport = () => {
+    if (!user) {
+      // Redirect to login for guest users
+      router.push('/login');
+      return;
+    }
+    setIsCreateReportVisible(true);
+  };
+
+  const closeCreateReport = () => {
+    setIsCreateReportVisible(false);
+  };
+
   return (
       <div className="relative flex flex-col h-screen">
         {/* Map Layer - Background, interactive */}
@@ -110,9 +132,15 @@ export default function HomePage() {
           {/* --- Mobile View Container --- */}
           <div className="md:hidden flex flex-col flex-1 min-h-0 pointer-events-none">
             {/* Mobile Header (Sticky) */}
-            <div className="sticky top-0 left-0 right-0 bg-background/80 backdrop-blur-sm py-4 flex flex-col items-start space-y-2 z-20 pointer-events-none px-4">
-              <div className="w-full pointer-events-auto" onClick={openSearchScreen} onFocus={openSearchScreen}>
-                <SearchBar onSearch={handleSearch} />
+            <div className="sticky top-0 left-0 right-0 py-4 z-20 pointer-events-none px-4">
+              <div className="flex items-center justify-center gap-3 w-full">
+                <div className="flex-1 pointer-events-auto" onClick={openSearchScreen} onFocus={openSearchScreen}>
+                  <SearchBar onSearch={handleSearch} />
+                </div>
+                <FilterButton 
+                  onClick={handleFilterClick}
+                  className="pointer-events-auto flex-shrink-0"
+                />
               </div>
             </div>
 
@@ -128,34 +156,20 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Filter Button - positioned above mobile navbar */}
-            <div className="sticky bottom-20 left-0 right-0 z-30 pointer-events-none">
-              <div className="flex justify-start pl-4">
-                <FilterButton 
-                  onClick={handleFilterClick}
-                  className="pointer-events-auto"
-                />
-              </div>
-            </div>
-
-            {/* Mobile Navbar (Sticky at the bottom of the mobile view container) */}
-            <div className="sticky bottom-0 left-0 right-0 z-20 pointer-events-auto">
-              <MobileNavbar />
-            </div>
+            {/* Mobile Navbar is handled by the main layout, no need to render it here */}
           </div>
 
           {/* --- Desktop View Container --- */}
           <div className="hidden md:flex flex-col flex-1 min-h-0 pointer-events-none">
             {/* Desktop Header */}
-            <div className="sticky top-0 left-0 right-0 bg-background/80 backdrop-blur-sm py-4 px-6 z-20 pointer-events-none">
-              <div className="flex items-center justify-between">
-                <div className="w-full max-w-md pointer-events-auto">
+            <div className="sticky top-0 left-0 right-0 py-4 px-6 z-20 pointer-events-none">
+              <div className="flex items-center justify-center">
+                <div className="flex items-center gap-4 pointer-events-auto">
                   <SearchBar onSearch={handleSearch} />
+                  <FilterButton 
+                    onClick={handleFilterClick}
+                  />
                 </div>
-                <FilterButton 
-                  onClick={handleFilterClick}
-                  className="pointer-events-auto ml-4"
-                />
               </div>
             </div>
 
@@ -171,6 +185,18 @@ export default function HomePage() {
                   />
                 </div>
               )}
+            </div>
+
+            {/* Floating Create Report Button for Desktop */}
+            <div className="fixed bottom-6 right-6 z-30 pointer-events-auto">
+              <Button
+                onClick={openCreateReport}
+                size="lg"
+                className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 bg-primary hover:bg-primary/90"
+              >
+                <Plus className="h-6 w-6" />
+                <span className="sr-only">Create Report</span>
+              </Button>
             </div>
           </div>
         </div>
@@ -208,6 +234,9 @@ export default function HomePage() {
           isOpen={isFilterDropdownOpen} 
           onClose={closeFilterDropdown} 
         />
+
+        {/* Create Report Overlay */}
+        {isCreateReportVisible && <CreateReportOverlay onClose={closeCreateReport} />}
       </div>
   );
 }

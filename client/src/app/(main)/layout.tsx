@@ -1,8 +1,12 @@
 "use client";
 
 import Provider from "@/provider/provider";
-import { MobileNavbar } from "@/components/generic/mobile-navbar";
 import { MapProvider } from "@/context/map-context";
+import { MobileNavbar } from "@/components/generic/mobile-navbar";
+import { CreateReportOverlay } from "@/components/report/create-report-overlay";
+import { useState } from "react";
+import { useUserContext } from "@/context/user-context";
+import { useRouter } from "next/navigation";
 
 export default function MainLayout({
   children,
@@ -13,12 +17,41 @@ export default function MainLayout({
     <div className="font-satoshi">
       <Provider>
         <MapProvider>
-          <MobileNavbar />
-          <div className="fixed inset-0 pointer-events-none">
+          <MainLayoutContentInner>
             {children}
-          </div>
+          </MainLayoutContentInner>
         </MapProvider>
       </Provider>
     </div>
+  );
+}
+
+function MainLayoutContentInner({ children }: { children: React.ReactNode }) {
+  const [isCreateReportVisible, setIsCreateReportVisible] = useState(false);
+  const { state: { user } } = useUserContext();
+  const router = useRouter();
+
+  const openCreateReport = () => {
+    if (!user) {
+      // Redirect to login for guest users
+      router.push('/login');
+      return;
+    }
+    setIsCreateReportVisible(true);
+  };
+
+  const closeCreateReport = () => {
+    setIsCreateReportVisible(false);
+  };
+
+  return (
+    <>
+      <MobileNavbar onCreateReport={openCreateReport} />
+      <div className="fixed inset-0">
+        {children}
+      </div>
+      {/* Create Report Overlay */}
+      {isCreateReportVisible && <CreateReportOverlay onClose={closeCreateReport} />}
+    </>
   );
 }

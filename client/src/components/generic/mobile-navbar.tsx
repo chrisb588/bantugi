@@ -4,7 +4,11 @@ import { useUserContext } from '@/context/user-context';
 import { useAuthContext } from '@/context/auth-context';
 import Image from 'next/image';
 
-export function MobileNavbar() {
+interface MobileNavbarProps {
+  onCreateReport?: () => void;
+}
+
+export function MobileNavbar({ onCreateReport }: MobileNavbarProps) {
   const { state: { user } } = useUserContext();
   const { state: authState } = useAuthContext();
   const router = useRouter();
@@ -36,6 +40,14 @@ export function MobileNavbar() {
       router.push('/login');
       return;
     }
+    
+    // If onCreateReport is provided (from home page), use it instead of navigation
+    if (onCreateReport) {
+      onCreateReport();
+      return;
+    }
+    
+    // Otherwise, navigate to create-report page (for other pages)
     if (currentPath === '/create-report') return;
     router.push('/create-report');
   }

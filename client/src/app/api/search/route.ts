@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
     // Call the fuzzy_search_reports RPC function
     const { data, error, status, statusText } = await supabase
       .rpc('fuzzy_search_reports', {
-        search_query: query.trim()
+        p_search_term: query.trim()
       });
 
     console.log("[API/search] RPC Response Status:", status, statusText);

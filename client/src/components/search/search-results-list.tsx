@@ -49,9 +49,6 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
     }, 300);
   };
 
-  // temporary
-  results = sampleResults;
-
   return (
     <div ref={resultsContainerRef} className={cn(
       "w-full max-w-lg flex flex-col gap-4", 
@@ -59,15 +56,15 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
       isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-8",
       className
     )} {...props}>
-      <Card className="h-[80vh] min-h-[400px] max-h-[800px]">
+      <Card className="h-[80vh] min-h-[400px] max-h-[800px] bg-transparent border-none shadow-none">
         <ScrollArea className="h-full">
-          <CardHeader className="text-left sticky top-0 bg-background z-10">
+          <CardHeader className="text-left sticky top-0 bg-background/80 backdrop-blur-sm z-10 rounded-t-lg">
             <CardTitle className="text-2xl">{title}</CardTitle>
           </CardHeader>
           <div className="px-6">
-            <Separator />
+            <Separator className="bg-border/50" />
           </div>
-          <CardContent className="flex flex-col items-center py-4">
+          <CardContent className="flex flex-col items-center py-4 bg-background/60 backdrop-blur-sm rounded-b-lg">
             {isLoading ? (
               <div className="flex items-center justify-center h-32">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />

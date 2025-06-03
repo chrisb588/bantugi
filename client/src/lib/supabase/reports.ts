@@ -7,6 +7,7 @@ import Report from '@/interfaces/report';
 import Location from '@/interfaces/location';
 import Area from '@/interfaces/area';
 import User from '@/interfaces/user';
+import { report } from 'process';
 
 export async function getReport(server: SupabaseClient, reportId: string) {
   const supabase: SupabaseClient = server;
@@ -53,7 +54,6 @@ export async function createReport(server: SupabaseClient, data: {
 
   latitude: number;
   longitude: number;
-  locationAddressText: string;
 
   areaProvince: string;
   areaCity?: string;
@@ -78,7 +78,7 @@ export async function createReport(server: SupabaseClient, data: {
     // areaMunicipality: data.areaMunicipality, // Removed
     areaBarangay: data.areaBarangay,
   });
-  const area_id = createdAreaData.area_id;
+  const area_id = createdAreaData.id;
 
   const createdLocationData = await createLocationRecord(supabase, {
     latitude: data.latitude,
@@ -86,8 +86,16 @@ export async function createReport(server: SupabaseClient, data: {
     area_id: area_id, 
   });
 
-  const location_id = createdLocationData.location_id;
-
+  const report_location_id = Array.isArray(createdLocationData) 
+    ? createdLocationData[0]?.location_id 
+    : createdLocationData?.location_id;
+    
+  console.log("Report location ID:", report_location_id);
+  
+  if (!report_location_id) {
+    console.error('Could not extract location_id from RPC response:', createdLocationData);
+    throw new Error('Failed to get location_id from created location');
+  }
   const { data: createdReportRow, error: reportError } = await supabase
   .from('reports')
   .insert({
@@ -98,7 +106,7 @@ export async function createReport(server: SupabaseClient, data: {
       category: data.category,
       urgency: data.urgency,
       created_by: user_id, // Changed from creator_id to match DB schema
-      location_id: location_id, // from createLocationRecord
+      location_id: report_location_id, // from createLocationRecord
   })
   .select('id, title, description, category, urgency, status, images, created_at, created_by, location_id') // Changed creator_id to created_by
   .single();
@@ -117,19 +125,17 @@ async function createAreaRecord(
   areaData: {
     areaProvince: string;
     areaCity?: string;
-    // areaMunicipality?: string; // Removed
     areaBarangay: string;
   }
 ) {
   const { data: createdAreaData, error: areaError } = await supabase
     .from('area')
     .insert({
-      area_province: areaData.areaProvince,
-      area_city: areaData.areaCity,
-      // area_municipality: areaData.areaMunicipality, // Removed
-      area_barangay: areaData.areaBarangay,
+      province: areaData.areaProvince,
+      city: areaData.areaCity,
+      barangay: areaData.areaBarangay,
     })
-    .select('area_id, area_province, area_city, area_barangay') // Removed area_municipality
+    .select('id, province, city, barangay')
     .single();
 
   if (areaError) {
@@ -155,16 +161,23 @@ async function createLocationRecord(
   const rpcParams = {
     lat: locationData.latitude,
     lon: locationData.longitude,
-    p_area_id: locationData.area_id,
+    area_id: locationData.area_id,
   };
 
   const { data: createdLocationData, error: locationError } = await supabase
     .rpc('insert_location_with_point', rpcParams);
+    
   if (locationError) {
     console.error('Error creating location in helper:', locationError.message);
     throw locationError; // Or return an error object
   }
-  return createdLocationData; // This might be null or a status if RPC doesn't return the row
+  
+  if (!createdLocationData) {
+    console.error('No data returned from RPC function');
+    throw new Error('No data returned from insert_location_with_point RPC');
+  }
+  
+  return createdLocationData;
 }
 
 // needs the current user data to delete a report
@@ -238,10 +251,10 @@ export async function getCommentsByReportId(
 // Define placeholder types for DB row structures based on DDL.
 interface DbAreaRow {
   id: number; // Matches area.id PK
-  area_province: string;
-  area_city?: string | null;
+  province: string;
+  city?: string | null;
   // area_municipality?: string | null; // Removed
-  area_barangay: string;
+  barangay: string;
 }
 
 interface DbLocationRow {
@@ -278,9 +291,9 @@ export function transformDbAreaToArea(dbArea: DbAreaRow | null | undefined): Are
   }
   return {
     id: dbArea.id, // Use id from DbAreaRow
-    province: dbArea.area_province,
-    city: dbArea.area_city ?? undefined,
-    barangay: dbArea.area_barangay,
+    province: dbArea.province,
+    city: dbArea.city ?? undefined,
+    barangay: dbArea.barangay,
   };
 }
 

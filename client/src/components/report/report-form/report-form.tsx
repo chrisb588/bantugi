@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from "react"; // Added useMemo
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner"; // Import toast
@@ -33,6 +33,8 @@ import type Location from "@/interfaces/location";
 interface ReportFormProps {
   className?: string;
   report?: Report;
+  onClose?: () => void;
+  onLocationModeChange?: (isChoosing: boolean) => void;
 }
 
 const SELECTION_PIN_ID = "report-form-selection-pin";
@@ -40,6 +42,8 @@ const SELECTION_PIN_ID = "report-form-selection-pin";
 export function ReportForm({
   className,
   report,
+  onClose,
+  onLocationModeChange,
   ...props
 }: ReportFormProps) {
   const [choosingLocation, setChoosingLocation] = useState(false);
@@ -95,27 +99,42 @@ export function ReportForm({
   // Use useDrawPins to show the temporary selection pin
   useDrawPins(pinForSelection);
 
+  // Notify parent component when choosingLocation changes
+  useEffect(() => {
+    if (onLocationModeChange) {
+      onLocationModeChange(choosingLocation);
+    }
+  }, [choosingLocation, onLocationModeChange]);
+
 
   // Cleanup map click listener on unmount or when choosingLocation changes
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map) return;
+    if (!map) {
+      console.log("No map instance available for click listener");
+      return;
+    }
 
     // Define mapClickHandler here or ensure it's stable if defined outside
     const currentMapClickHandler = (e: LeafletMouseEvent) => {
         if (choosingLocation) { // Only act if we are in choosing mode
-            console.log("Map clicked at:", e.latlng);
+            console.log("Map clicked at:", e.latlng, "choosingLocation:", choosingLocation);
             setSelectedLocation(e.latlng);
+        } else {
+            console.log("Map clicked but not in choosing location mode");
         }
     };
 
     if (choosingLocation) {
+      console.log("Adding map click listener for location selection");
       map.on('click', currentMapClickHandler);
     } else {
+      console.log("Removing map click listener");
       map.off('click', currentMapClickHandler);
     }
 
     return () => {
+      console.log("Cleanup: removing map click listener");
       map.off('click', currentMapClickHandler);
     };
   }, [choosingLocation, mapInstanceRef, L]); // L dependency to ensure mapClickHandler can use L if needed
@@ -142,29 +161,37 @@ export function ReportForm({
 
   const handleSetLocation = () => {
     setChoosingLocation(true);
-    console.log("handleSetLocation: Choosing location. Map instance:", !!mapInstanceRef.current, "L loaded:", !!L);
+    console.log("handleSetLocation: Choosing location. Map instance:", !!mapInstanceRef.current, "L loaded:", !!L, "isMapReady:", isMapReady);
 
     if (isMapReady && mapInstanceRef.current && L) {
+      console.log("Map is ready, setting up location selection");
       if (selectedLocation) {
         // If a location is already selected (e.g., from form data or previous interaction),
         // ensure the map is centered there. The pin will be drawn by useDrawPins.
         mapInstanceRef.current.setView(selectedLocation, mapInstanceRef.current.getZoom() || 15);
+        console.log("Centered map on existing selected location:", selectedLocation);
       } else {
+        console.log("No previous location, trying to get user location or use map center");
         // If no location selected yet, try to center on user's current location or map center
         navigator.geolocation.getCurrentPosition(
           pos => {
+            console.log("Got user location:", pos.coords);
             mapInstanceRef.current?.setView([pos.coords.latitude, pos.coords.longitude], 15);
           },
-          () => { // Fallback to current map center if geolocation fails or is denied
+          (error) => { 
+            console.log("Geolocation failed:", error, "Using map center");
+            // Fallback to current map center if geolocation fails or is denied
             if (mapInstanceRef.current) {
-                mapInstanceRef.current.setView(mapInstanceRef.current.getCenter(), mapInstanceRef.current.getZoom() || 13);
+                const center = mapInstanceRef.current.getCenter();
+                console.log("Using map center:", center);
+                mapInstanceRef.current.setView(center, mapInstanceRef.current.getZoom() || 13);
             }
           }
         );
       }
       // Map click listener is now managed by the useEffect hook based on choosingLocation
     } else {
-      console.error("Map instance or Leaflet (L) not available in handleSetLocation.");
+      console.error("Map instance or Leaflet (L) not available in handleSetLocation. isMapReady:", isMapReady, "mapInstance:", !!mapInstanceRef.current, "L:", !!L);
     }
   };
 
@@ -197,29 +224,33 @@ export function ReportForm({
         setFormData(prev => ({
           ...prev,
           location: {
-            coordinates: { lat: selectedLocation.lat, lng: selectedLocation.lng },
             address: addressDetails,
-          }
+            coordinates: {
+              lat: selectedLocation.lat,
+              lng: selectedLocation.lng,
+            },
+          },
         }));
-        setChoosingLocation(false); // This will also remove the pin via useDrawPins
-        console.log("Location confirmed:", selectedLocation, "Address:", addressDetails);
+
+        setChoosingLocation(false);
+        
+        console.log("Location confirmed:", addressDetails);
       } catch (error) {
-        console.error('Failed to process location:', error);
-        toast.error('Failed to process location. Please try again.');
+        console.error('Error converting LatLng to area:', error);
+        toast.error('Failed to determine address. Please try again.');
       }
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.location?.address || !formData.location?.coordinates || !formData.category || !formData.urgency) {
-      console.error("Validation failed: Title, category, urgency, and a confirmed location (with coordinates and address) are required.");
+    if (!formData.title || !formData.location?.coordinates || !formData.category || !formData.urgency) {
+      console.error("Validation failed: Title, category, urgency, and a confirmed location are required.");
       toast.error("Validation failed: Title, category, urgency, and a confirmed location are required.");
       return;
     }
 
     // Prepare the data for the /api/reports endpoint
-    // This should match the expected structure in `lib/supabase/reports.ts` createReport function
     const reportDataForApi = {
       title: formData.title,
       description: formData.description || '',
@@ -229,16 +260,12 @@ export function ReportForm({
       images: formData.images || [],
       latitude: formData.location.coordinates.lat,
       longitude: formData.location.coordinates.lng,
-      // locationAddressText: // This is not directly used by createReport, but good to have if your geocoding/area creation needs it.
-      // For now, createReport reconstructs area from lat/lng if needed or uses existing.
-      // We pass the components of the address directly as expected by createReport
-      areaProvince: formData.location.address.province,
-      areaCity: formData.location.address.city,
-      areaBarangay: formData.location.address.barangay,
-      // locationAddressText is not explicitly in createReport input,
-      // but it's good practice to ensure all data for area/location creation is present.
-      // The backend `createReport` will handle creating/finding area and location records.
-      locationAddressText: `${formData.location.address.barangay}, ${formData.location.address.city ? formData.location.address.city + ', ' : ''}${formData.location.address.province}`
+      areaProvince: formData.location?.address?.province || '',
+      areaCity: formData.location?.address?.city || '',
+      areaBarangay: formData.location?.address?.barangay || '',
+      locationAddressText: formData.location?.address ? 
+        `${formData.location.address.barangay}, ${formData.location.address.city ? formData.location.address.city + ', ' : ''}${formData.location.address.province}` : 
+        ''
 
     };
 
@@ -263,12 +290,18 @@ export function ReportForm({
       const newReport = await response.json();
       console.log('Report created successfully:', newReport);
       toast.success('Report created successfully!');
-      // Navigate to the new report's page
-      if (newReport.id) {
-        router.push(`/reports/${newReport.id}`);
+      
+      if (onClose) {
+        // If in overlay mode, close the overlay
+        onClose();
       } else {
-        // Fallback if ID is not in the response, though it should be
-        router.push('/home');
+        // Navigate to the new report's page
+        if (newReport.id) {
+          router.push(`/reports/${newReport.id}`);
+        } else {
+          // Fallback if ID is not in the response, though it should be
+          router.push('/home');
+        }
       }
     } catch (error) {
       console.error('Error submitting report:', error);
@@ -277,19 +310,26 @@ export function ReportForm({
   };
 
   const handleCancel = () => {
-    router.back();
+    if (onClose) {
+      // If onClose is provided (overlay mode), use it
+      onClose();
+    } else {
+      // Otherwise use router navigation (page mode)
+      router.back();
+    }
   };
-
-  // console.log("[ReportForm Render] isMapReady:", isMapReady, "L:", !!L, "choosingLocation:", choosingLocation, "selectedLocation:", selectedLocation);
 
   return (
     <div className={cn("w-full max-w-lg flex flex-col gap-4 -mt-12", className)} {...props}>
       <Card className={cn(
         "h-[85vh] min-h-[400px] max-h-[800px] transition-all duration-300 ease-in-out",
+        "px-4 py-4 md:px-6 md:py-6", // Moderate padding - not too excessive, not too narrow
         choosingLocation ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto",
       )}>
         <CardHeader>
-          <CardTitle>{report ? "Edit Report" : "Create New Report"}</CardTitle>
+          <CardTitle>
+            {report ? "Edit Report" : "Create New Report"}
+          </CardTitle>
         </CardHeader>
         <ScrollArea className="h-[calc(85vh-150px)]">
           <CardContent>
@@ -351,10 +391,10 @@ export function ReportForm({
 
       {choosingLocation && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[1001] flex gap-4 p-4 bg-background shadow-lg rounded-lg pointer-events-auto">
-          <Button onClick={handleConfirmLocation} disabled={!selectedLocation}>
+          <Button onClick={handleConfirmLocation} disabled={!selectedLocation} className="pointer-events-auto">
             Confirm Location
           </Button>
-          <Button variant="outline" onClick={handleCancelSetLocation}>
+          <Button variant="outline" onClick={handleCancelSetLocation} className="pointer-events-auto">
             Cancel
           </Button>
         </div>
@@ -362,3 +402,5 @@ export function ReportForm({
     </div>
   );
 }
+
+ReportForm.displayName = 'ReportForm';

@@ -218,7 +218,7 @@ interface ExtendedMapProps {
 // Export MapContents which will be used in the homepage
 export function MapContents({
   className,
-  centerOnUser = true,
+  centerOnUser = false,
   center = [10.3157, 123.8854], // Default to Cebu City, Philippines
   zoom = 13,
   pins,
