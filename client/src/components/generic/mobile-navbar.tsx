@@ -5,11 +5,14 @@ import { useAuthContext } from '@/context/auth-context';
 import { useUserReports } from '@/hooks/useUserReports';
 import Image from 'next/image';
 
-interface MobileNavbarProps {
+interface NavigationBarProps {
   onCreateReport?: () => void;
+  onSavedReports?: () => void;
+  onMyReports?: () => void;
 }
 
-export function MobileNavbar({ onCreateReport }: MobileNavbarProps) {
+export function MobileNavbar({ onCreateReport, onSavedReports, onMyReports }: NavigationBarProps) {
+  // Keep the same function name for backwards compatibility, but this now works on all screen sizes
   const { state: { user } } = useUserContext();
   const { state: authState } = useAuthContext();
   const { reportCount, isLoading } = useUserReports();
@@ -32,6 +35,14 @@ export function MobileNavbar({ onCreateReport }: MobileNavbarProps) {
       router.push('/login');
       return;
     }
+    
+    // If onSavedReports is provided (from home page), use it instead of navigation
+    if (onSavedReports) {
+      onSavedReports();
+      return;
+    }
+    
+    // Otherwise, navigate to saved-reports page (for other pages)
     if (currentPath === `/${user?.username}/saved-reports`) return; 
     router.push(`/${user?.username}/saved-reports`);
   }
@@ -60,6 +71,14 @@ export function MobileNavbar({ onCreateReport }: MobileNavbarProps) {
       router.push('/login');
       return;
     }
+    
+    // If onMyReports is provided (from home page), use it instead of navigation
+    if (onMyReports) {
+      onMyReports();
+      return;
+    }
+    
+    // Otherwise, navigate to my-reports page (for other pages)
     if (currentPath === `/${user?.username}/my-reports`) return;
     router.push(`/${user?.username}/my-reports`);
   }
@@ -79,43 +98,44 @@ export function MobileNavbar({ onCreateReport }: MobileNavbarProps) {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-35 w-full max-w-md px-4 md:hidden"> {/* Changed z-50 to z-35 */}
-      <div className="relative flex items-center justify-between h-14 bg-white dark:bg-gray-900 rounded-full shadow-lg border border-gray-100 dark:border-gray-800">
+    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-35 w-full max-w-md md:max-w-lg px-4"> {/* Increased max-width for desktop */}
+      <div className="relative flex items-center justify-between h-14 md:h-16 bg-white dark:bg-gray-900 rounded-full shadow-lg border border-gray-100 dark:border-gray-800"> {/* Slightly taller on desktop */}
         {/* Map/Home button - always available */}
         <button
-          className="flex-1 flex justify-center p-2 text-gray-500 dark:text-gray-400"
+          className="flex-1 flex justify-center p-2 md:p-3 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors"
           onClick={navigateToHome}
+          title="Home"
         >
-          <MapPin className="w-5 h-5" />
+          <MapPin className="w-5 h-5 md:w-6 md:h-6" />
         </button>
         
         {/* Saved Reports - shows login hint for guests */}
         <button
-          className="flex-1 flex justify-center p-2 text-gray-500 dark:text-gray-400 hover:text-primary"
+          className="flex-1 flex justify-center p-2 md:p-3 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors"
           onClick={navigateToSaveReports}
           title={!user ? "Login to save reports" : "Saved Reports"}
         >
-          <Bookmark className="w-5 h-5" />
+          <Bookmark className="w-5 h-5 md:w-6 md:h-6" />
         </button>
         
         {/* Create Report - shows login hint for guests */}
         <button
-          className="flex-1 flex items-center justify-center w-10 h-10 rounded-full bg-primary shadow-md hover:bg-accent text-white"
+          className="flex-1 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary shadow-md hover:bg-accent text-white transition-colors"
           onClick={navigateToCreateReport}
           title={!user ? "Login to create reports" : "Create Report"}
         >
-          <Plus className="w-6 h-6" />
+          <Plus className="w-6 h-6 md:w-7 md:h-7" />
         </button>
         
         {/* My Reports - shows login hint for guests */}
         <button
-          className="flex-1 flex justify-center p-2 text-gray-500 dark:text-gray-400 hover:text-primary relative"
+          className="flex-1 flex justify-center p-2 md:p-3 text-gray-500 dark:text-gray-400 hover:text-primary relative transition-colors"
           onClick={navigateToMyReports}
           title={!user ? "Login to view your reports" : "My Reports"}
         >
-          <CopyCheck className="w-5 h-5" />
+          <CopyCheck className="w-5 h-5 md:w-6 md:h-6" />
           {user && reportCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] font-medium">
+            <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full h-5 w-5 md:h-6 md:w-6 flex items-center justify-center min-w-[20px] md:min-w-[24px] font-medium">
               {reportCount > 99 ? '99+' : reportCount}
             </span>
           )}
@@ -123,12 +143,12 @@ export function MobileNavbar({ onCreateReport }: MobileNavbarProps) {
         
         {/* Account/Login button */}
         <button
-          className="flex-1 flex justify-center p-2 text-gray-500 dark:text-gray-400 hover:text-primary"
+          className="flex-1 flex justify-center p-2 md:p-3 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors"
           onClick={user ? navigateToAccount : navigateToLogin}
           title={user ? "Account" : "Login"}
         >
           {user ? (
-            <div className="h-5 w-5 overflow-hidden rounded-full">
+            <div className="h-5 w-5 md:h-7 md:w-7 overflow-hidden rounded-full">
               <Image
                 src={user?.profilePicture || '/img/avatar.png'}
                 alt="Profile"
@@ -138,7 +158,7 @@ export function MobileNavbar({ onCreateReport }: MobileNavbarProps) {
               />
             </div>
           ) : (
-            <LogIn className="w-5 h-5" />
+            <LogIn className="w-5 h-5 md:w-6 md:h-6" />
           )}
         </button>
       </div>

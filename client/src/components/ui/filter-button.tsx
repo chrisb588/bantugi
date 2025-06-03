@@ -18,11 +18,10 @@ export function FilterButton({ onClick, className }: FilterButtonProps) {
   return (
     <Button 
       variant="default" 
-      size="lg" 
-      className={`rounded-full shadow-lg drop-shadow-md h-14 w-14 ${className || ''}`}
+      className={`rounded-full shadow-lg h-14 w-14 md:h-12 md:w-12 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 ${className || ''}`}
       onClick={handleClick}
     >
-      <ListFilter className="h-12 w-12 drop-shadow-sm" />
+      <ListFilter className="h-5 w-5 md:h-4 md:w-4 text-gray-500 dark:text-gray-400" />
     </Button>
   );
 } 

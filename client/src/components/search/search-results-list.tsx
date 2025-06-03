@@ -56,17 +56,17 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
       isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-8",
       className
     )} {...props}>
-      <Card className="h-[80vh] min-h-[400px] max-h-[800px] bg-transparent border-none shadow-none">
+      <Card className="h-[80vh] md:h-auto md:max-h-[400px] min-h-[400px] md:min-h-[200px] max-h-[800px] bg-transparent border-none shadow-none">
         <ScrollArea className="h-full">
           <CardHeader className="text-left sticky top-0 bg-background/80 backdrop-blur-sm z-10 rounded-t-lg">
-            <CardTitle className="text-2xl">{title}</CardTitle>
+            <CardTitle className="text-2xl md:text-xl">{title}</CardTitle>
           </CardHeader>
-          <div className="px-6">
+          <div className="px-6 md:px-4">
             <Separator className="bg-border/50" />
           </div>
-          <CardContent className="flex flex-col items-center py-4 bg-background/60 backdrop-blur-sm rounded-b-lg">
+          <CardContent className="flex flex-col items-center py-4 md:py-3 bg-background/60 backdrop-blur-sm rounded-b-lg">
             {isLoading ? (
-              <div className="flex items-center justify-center h-32">
+              <div className="flex items-center justify-center h-32 md:h-24">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
               </div>
             ) : results.length > 0 ? (
@@ -77,8 +77,8 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
                 />
               ))
             ) : (
-              <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
-                <p>No results found</p>
+              <div className="flex flex-col items-center justify-center h-32 md:h-24 text-muted-foreground">
+                <p className="md:text-sm">No results found</p>
               </div>
             )}
           </CardContent>

@@ -4,9 +4,11 @@ import Provider from "@/provider/provider";
 import { MapProvider } from "@/context/map-context";
 import { MobileNavbar } from "@/components/generic/mobile-navbar";
 import { CreateReportOverlay } from "@/components/report/create-report-overlay";
+import { SavedReportsOverlay } from "@/components/report/saved-reports-overlay";
+import { CreatedReportsOverlay } from "@/components/report/created-reports-overlay";
 import { useState } from "react";
 import { useUserContext } from "@/context/user-context";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function MainLayout({
   children,
@@ -28,8 +30,14 @@ export default function MainLayout({
 
 function MainLayoutContentInner({ children }: { children: React.ReactNode }) {
   const [isCreateReportVisible, setIsCreateReportVisible] = useState(false);
+  const [isSavedReportsVisible, setIsSavedReportsVisible] = useState(false);
+  const [isCreatedReportsVisible, setIsCreatedReportsVisible] = useState(false);
   const { state: { user } } = useUserContext();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Only show overlay callbacks on the home page
+  const isHomePage = pathname === '/home';
 
   const openCreateReport = () => {
     if (!user) {
@@ -44,14 +52,50 @@ function MainLayoutContentInner({ children }: { children: React.ReactNode }) {
     setIsCreateReportVisible(false);
   };
 
+  const openSavedReports = () => {
+    if (!user) {
+      // Redirect to login for guest users
+      router.push('/login');
+      return;
+    }
+    setIsSavedReportsVisible(true);
+  };
+
+  const closeSavedReports = () => {
+    setIsSavedReportsVisible(false);
+  };
+
+  const openMyReports = () => {
+    if (!user) {
+      // Redirect to login for guest users
+      router.push('/login');
+      return;
+    }
+    setIsCreatedReportsVisible(true);
+  };
+
+  const closeMyReports = () => {
+    setIsCreatedReportsVisible(false);
+  };
+
   return (
     <>
-      <MobileNavbar onCreateReport={openCreateReport} />
+      <MobileNavbar 
+        onCreateReport={openCreateReport}
+        onSavedReports={isHomePage ? openSavedReports : undefined}
+        onMyReports={isHomePage ? openMyReports : undefined}
+      />
       <div className="fixed inset-0">
         {children}
       </div>
       {/* Create Report Overlay */}
       {isCreateReportVisible && <CreateReportOverlay onClose={closeCreateReport} />}
+      
+      {/* Saved Reports Overlay */}
+      {isSavedReportsVisible && <SavedReportsOverlay onClose={closeSavedReports} />}
+      
+      {/* Created Reports Overlay */}
+      {isCreatedReportsVisible && <CreatedReportsOverlay isVisible={true} onClose={closeMyReports} />}
     </>
   );
 }

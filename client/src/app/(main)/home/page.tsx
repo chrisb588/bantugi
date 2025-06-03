@@ -10,9 +10,8 @@ import Report from "@/interfaces/report";
 import { useFetchPins } from "@/hooks/useFetchPins";
 // MobileNavbar is now in MainLayout
 // import { ReportForm } from "@/components/report/report-form/report-form"; // Not used directly here anymore for overlay
-import { CreateReportOverlay } from "@/components/report/create-report-overlay";
+import { SavedReportsOverlay } from "@/components/report/saved-reports-overlay";
 import { ReportCard } from "@/components/report/report-card"; // Import ReportCard
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserContext } from "@/context/user-context";
 import { useRouter } from "next/navigation";
@@ -29,7 +28,6 @@ const MapContents = dynamic(() => import('@/components/map/map').then(mod => mod
 export default function HomePage() {
   const [isSearchScreenVisible, setIsSearchScreenVisible] = useState(false);
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-  const [isCreateReportVisible, setIsCreateReportVisible] = useState(false);
   const [searchResults, setSearchResults] = useState<Report[]>([]);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
@@ -94,7 +92,13 @@ export default function HomePage() {
     if (!query.trim()) {
       setSearchResults([]);
       setIsLoadingSearch(false);
+      setIsSearchScreenVisible(false); // Close search screen when query is empty
       return;
+    }
+    
+    // Open search screen when user starts typing
+    if (!isSearchScreenVisible) {
+      setIsSearchScreenVisible(true);
     }
     
     // Set loading state immediately for better UX
@@ -118,11 +122,8 @@ export default function HomePage() {
       router.push('/login');
       return;
     }
-    setIsCreateReportVisible(true);
-  };
-
-  const closeCreateReport = () => {
-    setIsCreateReportVisible(false);
+    // Navigate to create report page for desktop
+    router.push('/create-report');
   };
 
   // Handler for pin click from the map
@@ -199,7 +200,7 @@ export default function HomePage() {
             {/* Mobile Header (Sticky) */}
             <div className="sticky top-0 left-0 right-0 py-4 z-20 pointer-events-none px-4">
               <div className="flex items-center justify-center gap-3 w-full">
-                <div className="flex-1 pointer-events-auto" onClick={openSearchScreen} onFocus={openSearchScreen}>
+                <div className="flex-1 pointer-events-auto">
                   <SearchBar onSearch={handleSearch} />
                 </div>
                 <FilterButton 
@@ -228,40 +229,34 @@ export default function HomePage() {
           <div className="hidden md:flex flex-col flex-1 min-h-0 pointer-events-none">
             {/* Desktop Header */}
             <div className="sticky top-0 left-0 right-0 py-4 px-6 z-20 pointer-events-none">
-              <div className="flex items-center justify-center">
-                <div className="flex items-center gap-4 pointer-events-auto">
-                  <SearchBar onSearch={handleSearch} />
-                  <FilterButton 
-                    onClick={handleFilterClick}
-                  />
+              <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-2 pointer-events-auto max-w-md w-full">
+                  <div className="flex items-center gap-3 w-full">
+                    <div className="flex-1">
+                      <SearchBar onSearch={handleSearch} />
+                    </div>
+                    <FilterButton 
+                      onClick={handleFilterClick}
+                      className="flex-shrink-0"
+                    />
+                  </div>
+                  
+                  {/* Desktop Search Results positioned directly below search bar */}
+                  {(searchResults.length > 0 || isLoadingSearch) && (
+                    <div className="w-full">
+                      <SearchResultsList 
+                        title="Search Results" 
+                        onClose={() => { 
+                          setSearchResults([]);
+                          setIsLoadingSearch(false);
+                        }}
+                        results={searchResults}
+                        isLoading={isLoadingSearch} 
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-
-            {/* Desktop Search Results Area */}
-            <div className="flex-1 overflow-y-auto z-20 px-6 pointer-events-none">
-              {searchResults.length > 0 && (
-                <div className="pointer-events-auto">
-                  <SearchResultsList 
-                    title="Search Results" 
-                    onClose={() => setSearchResults([])}
-                    results={searchResults}
-                    isLoading={isLoadingSearch} 
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Floating Create Report Button for Desktop */}
-            <div className="fixed bottom-6 right-6 z-30 pointer-events-auto">
-              <Button
-                onClick={openCreateReport}
-                size="lg"
-                className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 bg-primary hover:bg-primary/90"
-              >
-                <Plus className="h-6 w-6" />
-                <span className="sr-only">Create Report</span>
-              </Button>
             </div>
           </div>
         </div>
@@ -299,9 +294,6 @@ export default function HomePage() {
           isOpen={isFilterDropdownOpen} 
           onClose={closeFilterDropdown} 
         />
-
-        {/* Create Report Overlay */}
-        {isCreateReportVisible && <CreateReportOverlay onClose={closeCreateReport} />}
 
         {/* Report Card Overlay */}
         {isReportCardVisible && (

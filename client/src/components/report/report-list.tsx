@@ -31,8 +31,16 @@ const ReportList: React.FC<ReportListProps> = ({
   const { 
     reports: userReports, 
     isLoading: isLoadingUserReports, 
-    error: userReportsError 
+    error: userReportsError,
+    refetch: refetchUserReports
   } = useUserReports();
+
+  const handleReportDelete = (reportId: string) => {
+    // Refresh the reports list after successful deletion
+    if (isMyReportsView) {
+      refetchUserReports();
+    }
+  };
 
   // Handle different report sources based on view type
   useEffect(() => {
@@ -83,14 +91,14 @@ const ReportList: React.FC<ReportListProps> = ({
 
   return (
     <div className={cn("w-full max-w-lg flex flex-col gap-4 -mt-15", className)} {...props}>
-      <Card className="h-[85vh] min-h-[400px] max-h-[800px]"> {/* Set fixed height here */}
-        <ScrollArea className="h-full"> {/* Make ScrollArea full height of card */}
-          <CardHeader className="text-left sticky top-0 bg-background z-10">
-            <CardTitle className="text-2xl">{title}</CardTitle>
-          </CardHeader>
-          <div className="px-6">
-            <Separator />
-          </div>
+      <Card className="h-[85vh] min-h-[400px] max-h-[800px] flex flex-col"> {/* Set fixed height here */}
+        <CardHeader className="text-left bg-background z-10 flex-shrink-0">
+          <CardTitle className="text-2xl">{title}</CardTitle>
+        </CardHeader>
+        <div className="px-6 flex-shrink-0">
+          <Separator />
+        </div>
+        <ScrollArea className="flex-1 min-h-0"> {/* Make ScrollArea fill remaining space */}
           <CardContent className="flex flex-col items-center py-4">
             {/* Loading state for My Reports */}
             {isMyReportsView && isLoadingUserReports && (
@@ -128,6 +136,7 @@ const ReportList: React.FC<ReportListProps> = ({
                   deletable={isMyReportsView} // only allow deletion of own reports in my reports page
                   editable={isMyReportsView} // only allow editing of own reports in my reports page
                   isSaved={isSavedReportsView} // indicate if this is a saved report
+                  onDelete={isMyReportsView ? handleReportDelete : undefined}
                 />
               ))
             )}

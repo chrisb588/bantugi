@@ -35,6 +35,7 @@ interface ReportFormProps {
   report?: Report;
   onClose?: () => void;
   onLocationModeChange?: (isChoosing: boolean) => void;
+  onSuccess?: (report: Report, isEdit: boolean) => void;
 }
 
 const SELECTION_PIN_ID = "report-form-selection-pin";
@@ -44,6 +45,7 @@ export function ReportForm({
   report,
   onClose,
   onLocationModeChange,
+  onSuccess,
   ...props
 }: ReportFormProps) {
   const [choosingLocation, setChoosingLocation] = useState(false);
@@ -63,19 +65,27 @@ export function ReportForm({
 
   // Effect to initialize selectedLocation based on report prop or map center for new reports
   useEffect(() => {
-    if (!L || !isMapReady || !mapInstanceRef.current) {
-      return;
-    }
-
+    // For editing mode, if we have location data, set it up without requiring map
     if (report?.location?.coordinates) {
       if (!selectedLocation) { // Only initialize if not already set
-        const initialLatLng = new L.LatLng(report.location.coordinates.lat, report.location.coordinates.lng);
-        setSelectedLocation(initialLatLng);
-        // Center map on existing report location
-        mapInstanceRef.current.setView(initialLatLng, mapInstanceRef.current.getZoom() || 15);
+        if (L) {
+          const initialLatLng = new L.LatLng(report.location.coordinates.lat, report.location.coordinates.lng);
+          setSelectedLocation(initialLatLng);
+          
+          // Only center map if map is ready and available
+          if (isMapReady && mapInstanceRef.current) {
+            mapInstanceRef.current.setView(initialLatLng, mapInstanceRef.current.getZoom() || 15);
+          }
+        } else {
+          // For editing without Leaflet, create a simple object with lat/lng
+          setSelectedLocation({
+            lat: report.location.coordinates.lat,
+            lng: report.location.coordinates.lng
+          } as any);
+        }
       }
-    } else if (!report && !selectedLocation && !choosingLocation) {
-      // For new reports, if not already choosing a location, set selectedLocation to map center.
+    } else if (!report && !selectedLocation && !choosingLocation && L && isMapReady && mapInstanceRef.current) {
+      // For new reports, only try to set map center if everything is available
       // The pin will only appear if choosingLocation becomes true.
       // const mapCenter = mapInstanceRef.current.getCenter();
       // setSelectedLocation(mapCenter); // Optionally pre-fill, or wait for user interaction
@@ -85,6 +95,7 @@ export function ReportForm({
 
   // Create the pin array for useDrawPins
   const pinForSelection: Pin[] = useMemo(() => {
+    // Only create pins if we're choosing location and have L available
     if (choosingLocation && selectedLocation && L) {
       return [{
         report_id: SELECTION_PIN_ID, // Temporary ID for this selection pin
@@ -96,8 +107,8 @@ export function ReportForm({
     return []; // Empty array if not choosing or no location selected
   }, [choosingLocation, selectedLocation, L, formData.urgency]);
 
-  // Use useDrawPins to show the temporary selection pin
-  useDrawPins(pinForSelection);
+  // Use useDrawPins to show the temporary selection pin (only if L is available)
+  useDrawPins(L ? pinForSelection : []);
 
   // Notify parent component when choosingLocation changes
   useEffect(() => {
@@ -110,8 +121,8 @@ export function ReportForm({
   // Cleanup map click listener on unmount or when choosingLocation changes
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map) {
-      console.log("No map instance available for click listener");
+    if (!map || !L) {
+      console.log("No map instance or L available for click listener");
       return;
     }
 
@@ -165,6 +176,14 @@ export function ReportForm({
   };
 
   const handleSetLocation = () => {
+    // Check if we have existing location data from editing
+    if (report?.location?.coordinates && !choosingLocation) {
+      // For editing, allow re-selection even without map
+      setChoosingLocation(true);
+      console.log("handleSetLocation: Editing mode - allowing location re-selection");
+      return;
+    }
+
     setChoosingLocation(true);
     console.log("handleSetLocation: Choosing location. Map instance:", !!mapInstanceRef.current, "L loaded:", !!L, "isMapReady:", isMapReady);
 
@@ -196,7 +215,11 @@ export function ReportForm({
       }
       // Map click listener is now managed by the useEffect hook based on choosingLocation
     } else {
-      console.error("Map instance or Leaflet (L) not available in handleSetLocation. isMapReady:", isMapReady, "mapInstance:", !!mapInstanceRef.current, "L:", !!L);
+      console.warn("Map instance or Leaflet (L) not available in handleSetLocation. isMapReady:", isMapReady, "mapInstance:", !!mapInstanceRef.current, "L:", !!L);
+      // For editing mode without map, we can still allow manual coordinate input
+      if (report?.location?.coordinates) {
+        console.log("Map not available but we have existing coordinates for editing");
+      }
     }
   };
 
@@ -205,10 +228,18 @@ export function ReportForm({
     // Map click listener is removed by the useEffect hook
 
     // Restore previous selectedLocation if editing, or clear if new
-    if (L && report?.location?.coordinates) {
-      setSelectedLocation(
-        new L.LatLng(report.location.coordinates.lat, report.location.coordinates.lng)
-      );
+    if (report?.location?.coordinates) {
+      if (L) {
+        setSelectedLocation(
+          new L.LatLng(report.location.coordinates.lat, report.location.coordinates.lng)
+        );
+      } else {
+        // Fallback for when L is not available
+        setSelectedLocation({
+          lat: report.location.coordinates.lat,
+          lng: report.location.coordinates.lng
+        } as any);
+      }
     } else if (!report?.location?.coordinates) {
       setSelectedLocation(null);
     }
@@ -257,7 +288,7 @@ export function ReportForm({
 
     console.log('ReportForm - handleSubmit - formData.images before API call:', JSON.stringify(formData.images, null, 2)); // Log images before sending
 
-    // Prepare the data for the /api/reports endpoint
+    // Prepare the data for the API endpoint
     const reportDataForApi = {
       title: formData.title,
       description: formData.description || '',
@@ -269,18 +300,18 @@ export function ReportForm({
       longitude: formData.location.coordinates.lng,
       areaProvince: formData.location?.address?.province || '',
       areaCity: formData.location?.address?.city || '',
-      areaBarangay: formData.location?.address?.barangay || '',
-      locationAddressText: formData.location?.address ? 
-        `${formData.location.address.barangay}, ${formData.location.address.city ? formData.location.address.city + ', ' : ''}${formData.location.address.province}` : 
-        ''
-
+      areaBarangay: formData.location?.address?.barangay || ''
     };
 
-    console.log('Submitting report with data:', reportDataForApi);
+    const isEditing = !!report;
+    const method = isEditing ? 'PUT' : 'POST';
+    const endpoint = isEditing ? `/api/reports/${report.id}` : '/api/reports';
+
+    console.log(`${isEditing ? 'Updating' : 'Creating'} report with data:`, reportDataForApi);
 
     try {
-      const response = await fetch('/api/reports', {
-        method: 'POST',
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -289,30 +320,43 @@ export function ReportForm({
 
       if (!response.ok) {
         const errorResult = await response.json();
-        console.error('Failed to create report:', errorResult.error);
-        toast.error(`Failed to create report: ${errorResult.error || 'Server error'}`);
+        console.error(`Failed to ${isEditing ? 'update' : 'create'} report:`, errorResult.error);
+        toast.error(`Failed to ${isEditing ? 'update' : 'create'} report: ${errorResult.error || 'Server error'}`);
         return;
       }
 
-      const newReport = await response.json();
-      console.log('Report created successfully:', newReport);
-      toast.success('Report created successfully!');
+      const result = await response.json();
+      console.log(`Report ${isEditing ? 'updated' : 'created'} successfully:`, result);
+      toast.success(`Report ${isEditing ? 'updated' : 'created'} successfully!`);
+      
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        const reportData = result.data || result;
+        onSuccess(reportData, isEditing);
+      }
       
       if (onClose) {
         // If in overlay mode, close the overlay
         onClose();
       } else {
-        // Navigate to the new report's page
-        if (newReport.id) {
-          router.push(`/reports/${newReport.id}`);
+        // Navigate appropriately based on mode
+        if (isEditing) {
+          // For editing, go back to the report view using existing reports structure
+          router.push(`/reports/${report.id}`);
         } else {
-          // Fallback if ID is not in the response, though it should be
-          router.push('/home');
+          // For creating, navigate to the new report's page using existing reports structure
+          const reportData = result.data || result;
+          if (reportData?.id) {
+            router.push(`/reports/${reportData.id}`);
+          } else {
+            // Fallback if ID is not in the response
+            router.push('/home');
+          }
         }
       }
     } catch (error) {
-      console.error('Error submitting report:', error);
-      toast.error('An unexpected error occurred while submitting the report.');
+      console.error(`Error ${isEditing ? 'updating' : 'submitting'} report:`, error);
+      toast.error(`An unexpected error occurred while ${isEditing ? 'updating' : 'submitting'} the report.`);
     }
   };
 

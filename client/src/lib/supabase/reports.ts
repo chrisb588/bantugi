@@ -292,24 +292,67 @@ async function createLocationRecord(
   return createdLocationData;
 }
 
-// needs the current user data to delete a report
-// to be updated
+// Delete a report - only the creator can delete their own reports
 export async function deleteReport(
     server: SupabaseClient,
-    id: string
-) {
+    reportId: string
+): Promise<boolean> {
+    const supabase: SupabaseClient = server;
 
-    const { data, error} = await server
-    .from('reports')
-    .delete()
-    .eq('report_no', id);
-
-    if (error) {
-        console.error('Delete report error:', error);
-        return false
+    // Get the current user's ID
+    const userId = await getUserID(server);
+    if (!userId) {
+        console.error('[deleteReport] Authentication required: No user ID found');
+        return false;
     }
 
-    return true;
+    console.log(`[deleteReport] Attempting to delete report ${reportId} by user ${userId}`);
+
+    try {
+        // First, verify that the report exists and the user is the creator
+        const { data: reportData, error: fetchError } = await supabase
+            .from('reports')
+            .select('id, created_by, title')
+            .eq('id', reportId)
+            .single();
+
+        if (fetchError) {
+            console.error('[deleteReport] Error fetching report for verification:', fetchError);
+            return false;
+        }
+
+        if (!reportData) {
+            console.error('[deleteReport] Report not found:', reportId);
+            return false;
+        }
+
+        // Check if the current user is the creator of the report
+        if (reportData.created_by !== userId) {
+            console.error('[deleteReport] Unauthorized: User is not the creator of this report');
+            return false;
+        }
+
+        console.log(`[deleteReport] User ${userId} is authorized to delete report "${reportData.title}"`);
+
+        // Delete the report
+        const { error: deleteError } = await supabase
+            .from('reports')
+            .delete()
+            .eq('id', reportId)
+            .eq('created_by', userId); // Additional safety check
+
+        if (deleteError) {
+            console.error('[deleteReport] Error deleting report:', deleteError);
+            return false;
+        }
+
+        console.log(`[deleteReport] Successfully deleted report ${reportId}`);
+        return true;
+
+    } catch (error) {
+        console.error('[deleteReport] Unexpected error:', error);
+        return false;
+    }
 }
 
 // pinky promise you return an array of comments
@@ -641,4 +684,138 @@ export async function getUserCreatedReports(server: SupabaseClient, userId?: str
   
   console.log(`[getUserCreatedReports] Successfully fetched ${reports.length} reports for user: ${targetUserId}`);
   return reports;
+}
+
+// Update a report - only the creator can update their own reports
+export async function updateReport(
+    server: SupabaseClient,
+    reportId: string,
+    updateData: {
+        title?: string;
+        description?: string;
+        category?: string;
+        urgency?: "Low" | "Medium" | "High";
+        status?: "Unresolved" | "Being Addressed" | "Resolved";
+        images?: string[];
+        // Location updates (optional)
+        latitude?: number;
+        longitude?: number;
+        areaProvince?: string;
+        areaCity?: string;
+        areaBarangay?: string;
+    }
+): Promise<{ success: boolean; data?: Report; error?: string }> {
+    const supabase: SupabaseClient = server;
+
+    // Get the current user's ID
+    const userId = await getUserID(server);
+    if (!userId) {
+        console.error('[updateReport] Authentication required: No user ID found');
+        return { success: false, error: 'Authentication required' };
+    }
+
+    console.log(`[updateReport] Attempting to update report ${reportId} by user ${userId}`);
+
+    try {
+        // First, verify that the report exists and the user is the creator
+        const { data: reportData, error: fetchError } = await supabase
+            .from('reports')
+            .select('id, created_by, title, location_id')
+            .eq('id', reportId)
+            .single();
+
+        if (fetchError) {
+            console.error('[updateReport] Error fetching report for verification:', fetchError);
+            return { success: false, error: 'Failed to fetch report for verification' };
+        }
+
+        if (!reportData) {
+            console.error('[updateReport] Report not found:', reportId);
+            return { success: false, error: 'Report not found' };
+        }
+
+        // Check if the current user is the creator of the report
+        if (reportData.created_by !== userId) {
+            console.error('[updateReport] Unauthorized: User is not the creator of this report');
+            return { success: false, error: 'Unauthorized: You can only update your own reports' };
+        }
+
+        console.log(`[updateReport] User ${userId} is authorized to update report "${reportData.title}"`);
+
+        // Handle location updates if provided
+        let newLocationId = reportData.location_id;
+        if (updateData.latitude && updateData.longitude && updateData.areaProvince && updateData.areaBarangay) {
+            try {
+                // Create new area record
+                const createdAreaData = await createAreaRecord(supabase, {
+                    areaProvince: updateData.areaProvince,
+                    areaCity: updateData.areaCity,
+                    areaBarangay: updateData.areaBarangay,
+                });
+
+                // Create new location record
+                const createdLocationData = await createLocationRecord(supabase, {
+                    latitude: updateData.latitude,
+                    longitude: updateData.longitude,
+                    area_id: createdAreaData.id,
+                });
+
+                newLocationId = Array.isArray(createdLocationData) 
+                    ? createdLocationData[0]?.location_id 
+                    : createdLocationData?.location_id;
+
+                if (!newLocationId) {
+                    console.error('[updateReport] Failed to create new location');
+                    return { success: false, error: 'Failed to update location' };
+                }
+            } catch (locationError) {
+                console.error('[updateReport] Error updating location:', locationError);
+                return { success: false, error: 'Failed to update location' };
+            }
+        }
+
+        // Prepare update object with only provided fields
+        const reportUpdateData: any = {};
+        if (updateData.title !== undefined) reportUpdateData.title = updateData.title;
+        if (updateData.description !== undefined) reportUpdateData.description = updateData.description;
+        if (updateData.category !== undefined) reportUpdateData.category = updateData.category;
+        if (updateData.urgency !== undefined) reportUpdateData.urgency = updateData.urgency;
+        if (updateData.status !== undefined) reportUpdateData.status = updateData.status;
+        if (updateData.images !== undefined) reportUpdateData.images = updateData.images;
+        if (newLocationId !== reportData.location_id) reportUpdateData.location_id = newLocationId;
+
+        // Update the report
+        const { data: updatedReport, error: updateError } = await supabase
+            .from('reports')
+            .update(reportUpdateData)
+            .eq('id', reportId)
+            .eq('created_by', userId) // Additional safety check
+            .select('id, title, description, category, urgency, status, images, created_at, created_by, location_id')
+            .single();
+
+        if (updateError) {
+            console.error('[updateReport] Error updating report:', updateError);
+            return { success: false, error: 'Failed to update report' };
+        }
+
+        if (!updatedReport) {
+            console.error('[updateReport] No data returned after update');
+            return { success: false, error: 'Failed to update report' };
+        }
+
+        console.log(`[updateReport] Successfully updated report ${reportId}`);
+
+        // Fetch the complete updated report to return
+        const completeReport = await getReport(supabase, reportId);
+        if (!completeReport) {
+            console.warn('[updateReport] Could not fetch complete updated report');
+            return { success: true }; // Update was successful, but couldn't fetch complete data
+        }
+
+        return { success: true, data: completeReport };
+
+    } catch (error) {
+        console.error('[updateReport] Unexpected error:', error);
+        return { success: false, error: 'Internal server error' };
+    }
 }

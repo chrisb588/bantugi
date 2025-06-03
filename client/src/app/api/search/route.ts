@@ -38,6 +38,57 @@ interface DbFuzzySearchReportRow {
   similarity?: number;
 }
 
+// Helper function to transform search result to DbReportRow format
+function transformSearchRowToDbRow(searchRow: DbFuzzySearchReportRow): any {
+  // Transform location data if present
+  let dbLocation = null;
+  if (searchRow.location) {
+    let dbArea = null;
+    if (searchRow.location.area) {
+      // Map area field names from search format to DbAreaRow format
+      dbArea = {
+        id: searchRow.location.area.id,
+        province: searchRow.location.area.area_province,
+        city: searchRow.location.area.area_city,
+        barangay: searchRow.location.area.area_barangay,
+      };
+    }
+    
+    dbLocation = {
+      location_id: searchRow.location.location_id,
+      latitude: searchRow.location.latitude,
+      longitude: searchRow.location.longitude,
+      area: dbArea,
+    };
+  }
+
+  // Transform creator data if present
+  let dbCreator = null;
+  if (searchRow.creator) {
+    dbCreator = {
+      user_id: searchRow.creator.id,
+      email: searchRow.creator.username || null, // Use username as email fallback
+      avatar_url: searchRow.creator.profile_pic_url,
+    };
+  }
+
+  // Return in DbReportRow format
+  return {
+    id: searchRow.id,
+    title: searchRow.title,
+    description: searchRow.description,
+    status: searchRow.status,
+    images: searchRow.images,
+    created_at: searchRow.created_at,
+    category: searchRow.category,
+    urgency: searchRow.urgency,
+    created_by: searchRow.created_by,
+    location: dbLocation,
+    creator: dbCreator,
+    comments: [], // Search results don't include comments
+  };
+}
+
 export async function GET(req: NextRequest) {
   try {
     const response = new NextResponse();
@@ -94,19 +145,22 @@ export async function GET(req: NextRequest) {
 
     // Transform database rows to Report objects
     const reports: Report[] = data
-      .map((dbRow: DbFuzzySearchReportRow) => {
+      .map((searchRow: DbFuzzySearchReportRow) => {
         try {
+          // Convert DbFuzzySearchReportRow to DbReportRow format
+          const dbRow = transformSearchRowToDbRow(searchRow);
+          
           // Use the existing transformation function from reports.ts
           const transformedReport = transformDbReportToReport(dbRow);
           
           if (!transformedReport) {
-            console.warn("[API/search] Could not transform report:", dbRow.id);
+            console.warn("[API/search] Could not transform report:", searchRow.id);
             return null;
           }
 
           return transformedReport;
         } catch (error) {
-          console.error("[API/search] Error transforming report:", dbRow.id, error);
+          console.error("[API/search] Error transforming report:", searchRow.id, error);
           return null;
         }
       })
