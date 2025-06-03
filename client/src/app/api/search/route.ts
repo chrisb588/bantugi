@@ -1,91 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
-import { transformDbReportToReport } from '@/lib/supabase/reports';
 import Report from '@/interfaces/report';
 
-// Interface for the database row structure returned by fuzzy_search_reports RPC
-interface DbFuzzySearchReportRow {
-  id: string;
-  title: string;
-  description: string;
-  status: "Unresolved" | "Being Addressed" | "Resolved";
-  images?: string[] | null;
-  created_at: string;
-  category: string;
-  urgency: "Low" | "Medium" | "High";
-  location_id?: number | null;
-  created_by: string;
-  // Nested location data
-  location?: {
-    location_id: number;
-    latitude: number | null;
-    longitude: number | null;
-    area?: {
-      id: number;
-      area_province: string;
-      area_city?: string | null;
-      area_barangay: string;
-    } | null;
-  } | null;
-  // Nested creator data
-  creator?: {
+// Interface for the optimized search result
+interface OptimizedSearchResult {
+  result_json: {
     id: string;
-    username?: string | null;
-    profile_pic_url?: string | null;
-  } | null;
-  // Ranking/similarity score from fuzzy search
-  rank?: number;
-  similarity?: number;
+    title: string;
+    description: string;
+    category: string;
+    urgency: "Low" | "Medium" | "High";
+    location?: {
+      coordinates: {
+        lat: number;
+        lng: number;
+      };
+      address: {
+        id: number;
+        province: string;
+        city?: string;
+        barangay: string;
+      };
+    } | null;
+  };
 }
 
-// Helper function to transform search result to DbReportRow format
-function transformSearchRowToDbRow(searchRow: DbFuzzySearchReportRow): any {
-  // Transform location data if present
-  let dbLocation = null;
-  if (searchRow.location) {
-    let dbArea = null;
-    if (searchRow.location.area) {
-      // Map area field names from search format to DbAreaRow format
-      dbArea = {
-        id: searchRow.location.area.id,
-        province: searchRow.location.area.area_province,
-        city: searchRow.location.area.area_city,
-        barangay: searchRow.location.area.area_barangay,
-      };
-    }
-    
-    dbLocation = {
-      location_id: searchRow.location.location_id,
-      latitude: searchRow.location.latitude,
-      longitude: searchRow.location.longitude,
-      area: dbArea,
-    };
-  }
-
-  // Transform creator data if present
-  let dbCreator = null;
-  if (searchRow.creator) {
-    dbCreator = {
-      user_id: searchRow.creator.id,
-      email: searchRow.creator.username || null, // Use username as email fallback
-      avatar_url: searchRow.creator.profile_pic_url,
-    };
-  }
-
-  // Return in DbReportRow format
+// Transform the optimized search result to Report interface
+function transformOptimizedSearchToReport(searchResult: OptimizedSearchResult): Report {
+  const data = searchResult.result_json;
+  
   return {
-    id: searchRow.id,
-    title: searchRow.title,
-    description: searchRow.description,
-    status: searchRow.status,
-    images: searchRow.images,
-    created_at: searchRow.created_at,
-    category: searchRow.category,
-    urgency: searchRow.urgency,
-    created_by: searchRow.created_by,
-    location: dbLocation,
-    creator: dbCreator,
-    comments: [], // Search results don't include comments
+    id: data.id,
+    title: data.title,
+    description: data.description,
+    category: data.category,
+    urgency: data.urgency,
+    status: "Unresolved", // Default status for search results
+    location: data.location ? {
+      coordinates: {
+        lat: data.location.coordinates.lat,
+        lng: data.location.coordinates.lng,
+      },
+      address: {
+        id: data.location.address.id,
+        province: data.location.address.province,
+        city: data.location.address.city,
+        barangay: data.location.address.barangay,
+      },
+    } : undefined,
+    createdAt: new Date(), // Placeholder date
+    creator: {
+      username: "Unknown User", // Placeholder creator
+    },
   };
 }
 
@@ -105,12 +71,13 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log(`[API/search] Performing fuzzy search for query: "${query}"`);
+    console.log(`[API/search] Performing optimized fuzzy search for query: "${query}"`);
 
-    // Call the fuzzy_search_reports RPC function
+    // Call the optimized fuzzy_search_reports RPC function
     const { data, error, status, statusText } = await supabase
-      .rpc('fuzzy_search_reports', {
-        p_search_term: query.trim()
+      .rpc('fuzzy_search_reports_optimized', {
+        search_term: query.trim(),
+        similarity_threshold: 0.1
       });
 
     console.log("[API/search] RPC Response Status:", status, statusText);
@@ -126,7 +93,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (!data) {
-      console.warn("[API/search] RPC returned no data (data is null or undefined). Returning empty array.");
+      console.warn("[API/search] RPC returned no data. Returning empty array.");
       return NextResponse.json([], { status: 200 });
     }
 
@@ -143,24 +110,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json([], { status: 200 });
     }
 
-    // Transform database rows to Report objects
+    // Transform optimized search results to Report objects
     const reports: Report[] = data
-      .map((searchRow: DbFuzzySearchReportRow) => {
+      .map((searchResult: OptimizedSearchResult) => {
         try {
-          // Convert DbFuzzySearchReportRow to DbReportRow format
-          const dbRow = transformSearchRowToDbRow(searchRow);
-          
-          // Use the existing transformation function from reports.ts
-          const transformedReport = transformDbReportToReport(dbRow);
-          
-          if (!transformedReport) {
-            console.warn("[API/search] Could not transform report:", searchRow.id);
-            return null;
-          }
-
-          return transformedReport;
+          return transformOptimizedSearchToReport(searchResult);
         } catch (error) {
-          console.error("[API/search] Error transforming report:", searchRow.id, error);
+          console.error("[API/search] Error transforming search result:", error);
           return null;
         }
       })

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { DeleteConfirmationDialog } from '../ui/delete-confirmation-dialog';
 import useIsReportSaved from '@/hooks/useIsReportSaved';
+import { useMapContext } from '@/context/map-context';
 
 interface ReportItemProps {
   report: Report;
@@ -38,6 +39,7 @@ export default function ReportItem({
   onSaveToggle
 }: ReportItemProps) {
   const router = useRouter();
+  const { mapInstanceRef } = useMapContext();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -200,11 +202,38 @@ export default function ReportItem({
   };
 
   const handleClick = () => {
+    // First navigate to the map location if coordinates are available
+    if (report.location?.coordinates) {
+      const { lat, lng } = report.location.coordinates;
+      
+      // If we're on the home page (have access to map), navigate to location first
+      if (mapInstanceRef.current) {
+        // Fly to the report location on the map
+        mapInstanceRef.current.flyTo([lat, lng], 18);
+        
+        // If onReportClick is provided, use it to show the report overlay (like pin clicks)
+        if (onReportClick) {
+          onReportClick(report);
+          return;
+        }
+        
+        // Small delay to let the map animation start, then navigate to report page
+        setTimeout(() => {
+          router.push(`/reports/${report.id}`);
+        }, 300);
+        
+        return;
+      }
+      
+      // If not on home page but have coordinates, navigate to home with coordinates
+      router.push(`/home?lat=${lat}&lng=${lng}&zoom=18&reportId=${report.id}`);
+      return;
+    }
+    
+    // Fallback behavior for reports without location
     if (onReportClick) {
-      // Use the callback if provided (for search results, etc.)
       onReportClick(report);
     } else {
-      // Fallback to navigation for standard report views
       router.push(`/reports/${report.id}`);
     }
   }

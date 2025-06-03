@@ -14,7 +14,7 @@ import { SavedReportsOverlay } from "@/components/report/saved-reports-overlay";
 import { ReportCard } from "@/components/report/report-card"; // Import ReportCard
 import { Button } from "@/components/ui/button";
 import { useUserContext } from "@/context/user-context";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from 'next/dynamic';
 import { useMapContext } from "@/context/map-context"; // Import useMapContext
 import { toast } from "sonner"; // Import toast for error notifications
@@ -40,7 +40,43 @@ export default function HomePage() {
   const { pins, isLoading: isLoadingPins, error: fetchPinsError } = useFetchPins();
   const { state: { user } } = useUserContext();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { mapInstanceRef, resetMapInstance } = useMapContext(); // Get map instance for flyTo and reset function
+
+  // Handle URL parameters for automatic navigation and report display
+  useEffect(() => {
+    const lat = searchParams.get('lat');
+    const lng = searchParams.get('lng');
+    const zoom = searchParams.get('zoom');
+    const reportId = searchParams.get('reportId');
+
+    if (lat && lng && mapInstanceRef.current) {
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lng);
+      const zoomLevel = zoom ? parseInt(zoom) : 18;
+
+      if (!isNaN(latitude) && !isNaN(longitude)) {
+        // Navigate to the specified location
+        mapInstanceRef.current.flyTo([latitude, longitude], zoomLevel);
+
+        // If a reportId is provided, show the report card
+        if (reportId) {
+          setSelectedReportIdForCard(reportId);
+          setReportForCard(null);
+          setIsLoadingReportForCard(true);
+          setIsReportCardVisible(true);
+        }
+
+        // Clean up URL parameters after handling them
+        const url = new URL(window.location.href);
+        url.searchParams.delete('lat');
+        url.searchParams.delete('lng');
+        url.searchParams.delete('zoom');
+        url.searchParams.delete('reportId');
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+  }, [searchParams, mapInstanceRef]);
 
   const openSearchScreen = () => setIsSearchScreenVisible(true);
   const closeSearchScreen = () => {
