@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 interface ImageUploaderProps {
   images?: string[];
@@ -16,6 +17,7 @@ interface ImageUploaderProps {
 
 export default function ImageUploader({ images = [], onChange }: ImageUploaderProps) {
   const [previews, setPreviews] = React.useState<string[]>(images);
+  const [imageToDelete, setImageToDelete] = React.useState<number | null>(null);
 
   const onDrop = React.useCallback(
     async (acceptedFiles: File[]) => {
@@ -74,11 +76,49 @@ export default function ImageUploader({ images = [], onChange }: ImageUploaderPr
     [images, onChange]
   );
 
-  const removeImage = (index: number) => {
+  const handleDeleteConfirmation = (index: number) => {
+    setImageToDelete(index);
+  };
+
+  const handleDeleteCancel = () => {
+    setImageToDelete(null);
+  };
+
+  const removeImage = async (index: number) => {
+    const imageToDeleteUrl = images[index];
+    
+    // Only try to delete from storage if it's a Supabase URL (not a local preview)
+    if (imageToDeleteUrl && imageToDeleteUrl.includes('/storage/v1/object/public/')) {
+      try {
+        const response = await fetch('/api/upload/delete', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ imageUrl: imageToDeleteUrl }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          toast.error(`Failed to delete image: ${errorData.error || 'Server error'}`);
+          console.error('Delete failed:', errorData);
+          return; // Don't remove from UI if deletion failed
+        }
+
+        toast.success('Image deleted successfully');
+      } catch (error) {
+        toast.error('Error deleting image');
+        console.error('Error deleting image:', error);
+        return; // Don't remove from UI if deletion failed
+      }
+    }
+
+    // Remove from local state only after successful deletion (or if it's a local preview)
     const newPreviews = previews.filter((_, i) => i !== index);
     const newImages = images.filter((_, i) => i !== index);
     setPreviews(newPreviews);
     onChange(newImages);
+    setImageToDelete(null); // Close the dialog
   };
 
   const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
@@ -101,12 +141,24 @@ export default function ImageUploader({ images = [], onChange }: ImageUploaderPr
                   alt={`Upload ${index + 1}`}
                   className="w-full h-32 object-cover rounded-lg"
                 />
-                <button
-                  onClick={() => removeImage(index)}
-                  className="absolute top-1 right-1 p-1 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="h-4 w-4 text-white" />
-                </button>
+                <DeleteConfirmationDialog
+                  trigger={
+                    <button className="absolute top-1 right-1 p-1 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                      <X className="h-4 w-4 text-white" />
+                    </button>
+                  }
+                  title="Delete this image?"
+                  description="This action cannot be undone. The image will be permanently deleted from storage."
+                  onConfirm={() => removeImage(index)}
+                  isOpen={imageToDelete === index}
+                  onOpenChange={(open) => {
+                    if (!open) {
+                      setImageToDelete(null);
+                    } else {
+                      setImageToDelete(index);
+                    }
+                  }}
+                />
               </div>
             ))}
           </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { getAuthenticatedUserID } from '@/lib/supabase/auth-utils';
+import { deleteUserFoldersFromBuckets } from '@/lib/supabase/storage-utils';
 
 // GET - Fetch user profile
 export async function GET(req: NextRequest) {
@@ -259,36 +260,17 @@ export async function DELETE(req: NextRequest) {
 
     console.log(`[API/user/profile] Deleting profile for user: ${userId}`);
     
-    // First, try to delete the user's avatar from storage if it exists
-    try {
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('avatar_url')
-        .eq('user_id', userId)
-        .single();
-
-      if (profileData?.avatar_url) {
-        // Extract the file path from the avatar URL
-        const avatarUrl = profileData.avatar_url;
-        const pathMatch = avatarUrl.match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/);
-        
-        if (pathMatch) {
-          const filePath = pathMatch[1];
-          console.log(`[API/user/profile] Deleting avatar file: ${filePath}`);
-          
-          const { error: deleteFileError } = await supabase.storage
-            .from('avatars')
-            .remove([filePath]);
-          
-          if (deleteFileError) {
-            console.warn('[API/user/profile] Failed to delete avatar file:', deleteFileError);
-            // Continue with profile deletion even if file deletion fails
-          }
-        }
-      }
-    } catch (avatarError) {
-      console.warn('[API/user/profile] Error during avatar cleanup:', avatarError);
-      // Continue with profile deletion even if avatar cleanup fails
+    // Delete entire user folder from storage buckets
+    console.log(`[API/user/profile] Cleaning up storage for user: ${userId}`);
+    
+    const storageCleanup = await deleteUserFoldersFromBuckets(supabase, userId, ['report-images', 'avatars']);
+    
+    if (!storageCleanup.success) {
+      console.warn('[API/user/profile] Some storage cleanup operations failed:', storageCleanup.results);
+      // Continue with deletion even if storage cleanup partially fails
+    } else {
+      const totalDeleted = storageCleanup.results.reduce((sum, result) => sum + result.deletedCount, 0);
+      console.log(`[API/user/profile] Successfully cleaned up ${totalDeleted} files from storage`);
     }
 
     // First, delete all related data (reports, saved reports, comments)
@@ -316,41 +298,26 @@ export async function DELETE(req: NextRequest) {
       // Continue with deletion even if this fails
     }
 
-    // Get user's reports to clean up images and then delete reports
+    // Delete user's reports from database (storage already cleaned up above)
     const { data: userReports, error: reportsError } = await supabase
       .from('reports')
-      .select('id, images')
+      .select('id')
       .eq('created_by', userId);
 
     if (userReports && userReports.length > 0) {
-      console.log(`[API/user/profile] Found ${userReports.length} reports to clean up`);
+      console.log(`[API/user/profile] Found ${userReports.length} reports to delete from database`);
       
-      // Clean up report images
-      for (const report of userReports) {
-        if (report.images && report.images.length > 0) {
-          for (const imageUrl of report.images) {
-            try {
-              const pathMatch = imageUrl.match(/\/storage\/v1\/object\/public\/report-images\/(.+)$/);
-              if (pathMatch) {
-                const filePath = pathMatch[1];
-                await supabase.storage.from('report-images').remove([filePath]);
-              }
-            } catch (imageError) {
-              console.warn(`[API/user/profile] Failed to delete report image: ${imageUrl}`, imageError);
-            }
-          }
-        }
-      }
-
-      // Delete the reports
+      // Delete the reports from database
       const { error: deleteReportsError } = await supabase
         .from('reports')
         .delete()
         .eq('created_by', userId);
       
       if (deleteReportsError) {
-        console.warn('[API/user/profile] Failed to delete reports:', deleteReportsError);
+        console.warn('[API/user/profile] Failed to delete reports from database:', deleteReportsError);
         // Continue with deletion even if this fails
+      } else {
+        console.log(`[API/user/profile] Successfully deleted ${userReports.length} reports from database`);
       }
     }
 
