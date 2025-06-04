@@ -11,7 +11,8 @@ interface UseUserProfileReturn {
   error: string | null;
   refetchProfile: () => Promise<void>;
   updateProfile: (data: ProfileUpdateData) => Promise<void>;
-  updateEmail: (email: string) => Promise<void>;
+  updateUsername: (username: string) => Promise<void>;
+  updateAddress: (address: string) => Promise<void>;
   updateAvatar: (avatar: File) => Promise<void>;
   deleteProfile: () => Promise<void>;
 }
@@ -60,8 +61,12 @@ export function useUserProfile(): UseUserProfileReturn {
     }
   }, [setUser]);
 
-  const updateEmail = useCallback(async (email: string) => {
-    await updateProfile({ email });
+  const updateUsername = useCallback(async (username: string) => {
+    await updateProfile({ username });
+  }, [updateProfile]);
+
+  const updateAddress = useCallback(async (address: string) => {
+    await updateProfile({ address });
   }, [updateProfile]);
 
   const updateAvatar = useCallback(async (avatar: File) => {
@@ -88,9 +93,10 @@ export function useUserProfile(): UseUserProfileReturn {
     }
   }, [clearUser]);
 
-  // Load profile on mount if not already loaded
+  // Load profile on mount to ensure we have complete profile data
+  // Fetch if no user or if user exists but lacks username (incomplete profile)
   useEffect(() => {
-    if (!user && !isLoading) {
+    if (!isLoading && (!user || !user.username)) {
       refetchProfile();
     }
   }, [user, isLoading, refetchProfile]);
@@ -103,7 +109,8 @@ export function useUserProfile(): UseUserProfileReturn {
     error,
     refetchProfile,
     updateProfile,
-    updateEmail,
+    updateUsername,
+    updateAddress,
     updateAvatar,
     deleteProfile,
   };

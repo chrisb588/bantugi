@@ -13,9 +13,12 @@ export { supabase };
 function adaptSupabaseUser(supabaseUser: SupabaseUser | null): User | null {
   if (!supabaseUser) return null;
   return {
-    username: supabaseUser.email || '', // Use email as username, provide fallback
-    profilePicture: supabaseUser.user_metadata?.avatar_url || undefined, // Get avatar_url from user_metadata
-    emailConfirmedAt: supabaseUser.email_confirmed_at, // Populate email confirmation status
+    id: supabaseUser.id,
+    username: supabaseUser.user_metadata?.username || supabaseUser.email || '', 
+    email: supabaseUser.email || '',
+    profilePicture: supabaseUser.user_metadata?.avatar_url || undefined,
+    address: supabaseUser.user_metadata?.address || undefined,
+    emailConfirmedAt: supabaseUser.email_confirmed_at,
     // location can be added later if needed
   };
 }

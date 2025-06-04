@@ -84,7 +84,7 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
             
             {/* Complete: Username is now shown below the title and icon */}
             <div className="text-sm text-muted-foreground mb-3">
-              Posted by {report.creator.username}
+              Posted by {report.creator.username || report.creator.email || "Unknown User"}
             </div>
               {/* Report Images */}
               <div className="relative w-full h-64 rounded-lg overflow-hidden mb-5">
@@ -238,7 +238,7 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
                           {comment.creator.profilePicture && (  
                             <Image
                               src={comment.creator.profilePicture}
-                              alt={comment.creator.username}
+                              alt={comment.creator.username || comment.creator.email || "User"}
                               fill
                               className="object-cover"
                             />
@@ -246,7 +246,7 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
                         </div>
                         <div className="flex-1">
                           <div className="flex flex-col">
-                            <span className="font-medium text-sm">{comment.creator.username}</span>
+                            <span className="font-medium text-sm">{comment.creator.username || comment.creator.email || "Unknown User"}</span>
                             <p className="text-sm mt-1">{comment.content}</p>
                           </div>
                         </div>

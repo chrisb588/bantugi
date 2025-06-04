@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     
     const { data: profileData, error } = await supabase
       .from('profiles')
-      .select('user_id, email, avatar_url')
+      .select('user_id, email, avatar_url, username, address')
       .eq('user_id', userId)
       .single();
 
@@ -40,8 +40,10 @@ export async function GET(req: NextRequest) {
     }
 
     const userProfile = {
-      username: profileData.email || '',
+      username: profileData.username || profileData.email || '',
+      email: profileData.email || '',
       profilePicture: profileData.avatar_url || undefined,
+      address: profileData.address || undefined,
       emailConfirmedAt: null,
     };
 
@@ -92,8 +94,17 @@ export async function PUT(req: NextRequest) {
       const formData = await req.formData();
       
       const email = formData.get('email') as string;
+      const username = formData.get('username') as string;
+      const address = formData.get('address') as string;
+      
       if (email) {
         updateData.email = email;
+      }
+      if (username) {
+        updateData.username = username;
+      }
+      if (address) {
+        updateData.address = address;
       }
 
       avatarFile = formData.get('avatar') as File;
@@ -157,6 +168,12 @@ export async function PUT(req: NextRequest) {
     if (updateData.email !== undefined) {
       profileUpdateData.email = updateData.email;
     }
+    if (updateData.username !== undefined) {
+      profileUpdateData.username = updateData.username;
+    }
+    if (updateData.address !== undefined) {
+      profileUpdateData.address = updateData.address;
+    }
     if (updateData.avatar_url !== undefined) {
       profileUpdateData.avatar_url = updateData.avatar_url;
     }
@@ -172,7 +189,7 @@ export async function PUT(req: NextRequest) {
       .from('profiles')
       .update(profileUpdateData)
       .eq('user_id', userId)
-      .select('user_id, email, avatar_url')
+      .select('user_id, email, avatar_url, username, address')
       .single();
 
     if (updateError) {
@@ -191,8 +208,10 @@ export async function PUT(req: NextRequest) {
     }
 
     const userProfile = {
-      username: updatedProfile.email || '',
+      username: updatedProfile.username || updatedProfile.email || '',
+      email: updatedProfile.email || '',
       profilePicture: updatedProfile.avatar_url || undefined,
+      address: updatedProfile.address || undefined,
       emailConfirmedAt: null,
     };
 

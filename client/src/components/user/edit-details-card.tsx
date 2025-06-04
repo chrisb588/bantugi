@@ -7,12 +7,14 @@ interface EditDetailsCardProps {
   label?: string;
   initialValue?: string;
   onConfirm: (value: string) => void;
+  onCancel?: () => void;
 }
 
 export default function EditDetailsCard({
   label = "Enter new details",
   initialValue = "",
   onConfirm,
+  onCancel,
 }: EditDetailsCardProps) {
   const [value, setValue] = useState(initialValue);
 
@@ -24,19 +26,33 @@ export default function EditDetailsCard({
   return (
     <div className="pointer-events-auto">
       <Card>
-        <CardHeader>
-          <CardTitle>{label}</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">{label}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <CardContent className="pt-0">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <Input
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder="Enter new value"
+              autoFocus
             />
-            <Button type="submit">
-              Confirm
-            </Button>
+            <div className="flex gap-2">
+              <Button type="submit" size="sm" className="flex-1">
+                Confirm
+              </Button>
+              {onCancel && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={onCancel}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
           </form>
         </CardContent>
       </Card>

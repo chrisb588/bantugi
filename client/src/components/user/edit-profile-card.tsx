@@ -9,21 +9,27 @@ import Image from "next/image";
 interface EditProfileCardProps {
   label?: string;
   initialEmail?: string;
+  initialUsername?: string;
+  initialAddress?: string;
   currentAvatar?: string;
   isUpdating?: boolean;
-  onConfirm: (data: { email?: string; avatar?: File }) => void;
+  onConfirm: (data: { username?: string; address?: string; avatar?: File }) => void;
   onCancel: () => void;
 }
 
 export default function EditProfileCard({
   label = "Edit Profile",
   initialEmail = "",
+  initialUsername = "",
+  initialAddress = "",
   currentAvatar,
   isUpdating = false,
   onConfirm,
   onCancel,
 }: EditProfileCardProps) {
   const [email, setEmail] = useState(initialEmail);
+  const [username, setUsername] = useState(initialUsername);
+  const [address, setAddress] = useState(initialAddress);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,10 +73,14 @@ export default function EditProfileCard({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const updateData: { email?: string; avatar?: File } = {};
+    const updateData: { username?: string; address?: string; avatar?: File } = {};
     
-    if (email && email !== initialEmail) {
-      updateData.email = email;
+    if (username && username !== initialUsername) {
+      updateData.username = username;
+    }
+    
+    if (address && address !== initialAddress) {
+      updateData.address = address;
     }
     
     if (avatarFile) {
@@ -148,17 +158,47 @@ export default function EditProfileCard({
               </Button>
             </div>
 
-            {/* Email Section */}
+            {/* Username Section */}
             <div className="flex flex-col gap-2">
-              <Label htmlFor="email" className="text-sm font-medium">
-                Email
+              <Label htmlFor="username" className="text-sm font-medium">
+                Username
+              </Label>
+              <Input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your username"
+              />
+            </div>
+
+            {/* Email Section - Read Only */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">
+                Email (Read Only)
               </Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                disabled={true}
+                readOnly={true}
+                className="bg-muted text-muted-foreground cursor-not-allowed"
+                placeholder="Email address"
+              />
+            </div>
+
+            {/* Address Section */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="address" className="text-sm font-medium">
+                Address
+              </Label>
+              <Input
+                id="address"
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Enter your address"
               />
             </div>
 

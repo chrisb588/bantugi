@@ -2,7 +2,8 @@
 import type User from '@/interfaces/user';
 
 export interface ProfileUpdateData {
-  email?: string;
+  username?: string; // Add username field
+  address?: string;  // Add address field
   avatar?: File;
 }
 
@@ -46,8 +47,11 @@ export async function updateUserProfile(data: ProfileUpdateData): Promise<Profil
   if (data.avatar) {
     const formData = new FormData();
     
-    if (data.email) {
-      formData.append('email', data.email);
+    if (data.username) {
+      formData.append('username', data.username);
+    }
+    if (data.address) {
+      formData.append('address', data.address);
     }
     formData.append('avatar', data.avatar);
     
@@ -75,10 +79,17 @@ export async function updateUserProfile(data: ProfileUpdateData): Promise<Profil
 }
 
 /**
- * Update only the email (convenience function)
+ * Update only the username (convenience function)
  */
-export async function updateUserEmail(email: string): Promise<ProfileResponse> {
-  return updateUserProfile({ email });
+export async function updateUserUsername(username: string): Promise<ProfileResponse> {
+  return updateUserProfile({ username });
+}
+
+/**
+ * Update only the address (convenience function)
+ */
+export async function updateUserAddress(address: string): Promise<ProfileResponse> {
+  return updateUserProfile({ address });
 }
 
 /**

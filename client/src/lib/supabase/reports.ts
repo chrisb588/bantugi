@@ -53,7 +53,7 @@ export async function getReport(server: SupabaseClient, reportId: string) {
   // Fetch creator separately using created_by field
   const { data: creatorData, error: creatorError } = await supabase
     .from('profiles')
-    .select('user_id, email, avatar_url')
+    .select('user_id, email, username, avatar_url')
     .eq('user_id', dbReportData.created_by)
     .maybeSingle();
 
@@ -84,7 +84,7 @@ export async function getReport(server: SupabaseClient, reportId: string) {
     if (creatorIds.length > 0) {
       const { data: creatorsData, error: creatorsError } = await supabase
         .from('profiles')
-        .select('user_id, email, avatar_url') // Select only existing fields
+        .select('user_id, email, username, avatar_url') // Select only existing fields
         .in('user_id', creatorIds);
 
       if (creatorsError) {
@@ -461,6 +461,7 @@ interface DbLocationRow {
 interface DbUserRow {
   user_id: string;
   email?: string | null;
+  username?: string | null;
   avatar_url?: string | null;
 }
 
@@ -534,7 +535,8 @@ export function transformDbUserToUser(dbUser: DbUserRow | null | undefined): Use
     return undefined; 
   }
   return {
-    username: dbUser.email, // Use email as username since schema doesn't have username field
+    username: dbUser.username || dbUser.email, // Use username with email fallback
+    email: dbUser.email,
     profilePicture: dbUser.avatar_url ?? undefined,
   };
 }
@@ -684,7 +686,7 @@ export async function getUserCreatedReports(server: SupabaseClient, userId?: str
   // Fetch the creator's profile once since all reports are by the same user
   const { data: creatorProfile, error: profileError } = await supabase
     .from('profiles')
-    .select('user_id, email, avatar_url')
+    .select('user_id, email, username, avatar_url')
     .eq('user_id', targetUserId)
     .single();
   
@@ -995,37 +997,64 @@ export async function getSavedReports(supabase: SupabaseClient, userId: string, 
             return { success: false, error: 'Failed to fetch saved reports' };
         }
 
-        // Transform the data
+        // Fetch creator information for all saved reports
+        const creatorIds = [...new Set(savedReports?.map(sr => (sr.report as any)?.created_by).filter(Boolean))];
+        let creatorsData: DbUserRow[] = [];
+        
+        if (creatorIds.length > 0) {
+            const { data: creators, error: creatorsError } = await supabase
+                .from('profiles')
+                .select('user_id, email, username, avatar_url')
+                .in('user_id', creatorIds);
+                
+            if (creatorsError) {
+                console.error('[getSavedReports] Error fetching creators:', creatorsError);
+            } else {
+                creatorsData = creators || [];
+            }
+        }
+
+        // Transform the data to match Report interface
         const transformedReports = savedReports?.map(savedReport => {
             const report = savedReport.report as any;
             if (!report) return null;
 
-            return {
+            // Find creator for this report
+            const creator = creatorsData.find(c => c.user_id === report.created_by);
+            const transformedCreator = transformDbUserToUser(creator);
+
+            // Process location to match Location interface
+            const location = report.location ? transformDbLocationToLocation({
+                location_id: report.location.location_id,
+                latitude: report.location.latitude,
+                longitude: report.location.longitude,
+                area: report.location.area ? {
+                    id: report.location.area.id,
+                    province: report.location.area.province,
+                    city: report.location.area.city,
+                    barangay: report.location.area.barangay
+                } : null
+            }) : undefined;
+
+            const transformedReport: Report = {
                 id: report.id,
                 title: report.title,
                 description: report.description,
                 status: report.status,
-                images: report.images || [],
-                createdAt: report.created_at,
+                images: report.images || undefined,
+                createdAt: new Date(report.created_at),
                 category: report.category,
                 urgency: report.urgency,
-                createdBy: report.created_by,
-                location: report.location ? {
-                    locationId: report.location.location_id,
-                    coordinates: {
-                        lat: report.location.latitude,
-                        lng: report.location.longitude
-                    },
-                    area: report.location.area ? {
-                        id: report.location.area.id,
-                        province: report.location.area.province,
-                        city: report.location.area.city,
-                        barangay: report.location.area.barangay
-                    } : null
-                } : null,
-                savedAt: savedReport.created_at
+                creator: transformedCreator || {
+                    username: "Unknown User",
+                    profilePicture: undefined,
+                },
+                location: location,
+                comments: undefined, // No comments in list view
             };
-        }).filter(Boolean);
+
+            return transformedReport;
+        }).filter((report): report is Report => report !== null);
 
         return {
             success: true,
