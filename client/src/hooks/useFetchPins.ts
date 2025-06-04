@@ -41,7 +41,7 @@ async function fetchPinsDataFromApi(bounds: LatLngBounds, signal?: AbortSignal):
 }
 
 export function useFetchPins() {
-  const { mapInstanceRef, isMapReady, L, resetMapInstance } = useMapContext();
+  const { mapInstanceRef, isMapReady, L, resetMapInstance, mapResetKey } = useMapContext();
   // ADD THIS LOG to see if the hook re-renders when isMapReady changes:
   console.log(`[useFetchPins] HOOK BODY EXECUTING. isMapReady: ${isMapReady}, mapInstanceRef.current: ${!!mapInstanceRef.current}, L: ${!!L}`);
 
@@ -60,8 +60,8 @@ export function useFetchPins() {
 
   // ADDED: useEffect to watch isMapReady specifically
   useEffect(() => {
-    console.log(`[useFetchPins] isMapReady WATCHER effect: isMapReady is now ${isMapReady}. L is ${!!L}. Map instance is ${!!mapInstanceRef.current}`);
-  }, [isMapReady, L, mapInstanceRef]); // Watch all relevant context values
+    console.log(`[useFetchPins] isMapReady WATCHER effect: isMapReady is now ${isMapReady}. L is ${!!L}. Map instance is ${!!mapInstanceRef.current}. mapResetKey: ${mapResetKey}`);
+  }, [isMapReady, L, mapInstanceRef, mapResetKey]); // Watch all relevant context values
 
   // Reset refs when map is reset to allow fresh initialization
   useEffect(() => {
@@ -107,16 +107,38 @@ export function useFetchPins() {
     }
 
     // ADDED: Check if map container exists and is properly initialized
-    const container = currentMap.getContainer();
-    if (!container) {
-      console.warn("[useFetchPins] fetchPinsInBounds: Map container not available. Bailing.");
+    let container;
+    try {
+      container = currentMap.getContainer();
+      if (!container) {
+        console.warn("[useFetchPins] fetchPinsInBounds: Map container not available. Bailing.");
+        return;
+      }
+    } catch (error) {
+      console.warn("[useFetchPins] fetchPinsInBounds: Error getting map container:", error);
+      return;
+    }
+
+    // ADDED: Check if container is still connected to DOM
+    if (!container.parentNode || !document.contains(container)) {
+      console.warn("[useFetchPins] fetchPinsInBounds: Map container is detached from DOM. Triggering reset.");
+      isRecoveringRef.current = true;
+      if (resetMapInstance) {
+        resetMapInstance();
+      }
       return;
     }
 
     // ADDED: Check if map has valid size
-    const size = currentMap.getSize();
-    if (!size || size.x === 0 || size.y === 0) {
-      console.warn("[useFetchPins] fetchPinsInBounds: Map has invalid size. Bailing.");
+    let size;
+    try {
+      size = currentMap.getSize();
+      if (!size || size.x === 0 || size.y === 0) {
+        console.warn("[useFetchPins] fetchPinsInBounds: Map has invalid size. Bailing.");
+        return;
+      }
+    } catch (error) {
+      console.warn("[useFetchPins] fetchPinsInBounds: Error getting map size:", error);
       return;
     }
 
@@ -126,9 +148,15 @@ export function useFetchPins() {
     } catch (error) {
       console.warn("[useFetchPins] fetchPinsInBounds: Error getting bounds:", error);
       
-      // Check if this is the "el is undefined" error
-      if (error instanceof Error && (error.message.includes('el is undefined') || error.message.includes('Cannot read properties of undefined'))) {
-        console.warn("[useFetchPins] fetchPinsInBounds: Detected map container error. Triggering map reset.");
+      // Check if this is the "t is undefined" or similar DOM element error
+      if (error instanceof Error && (
+        error.message.includes('t is undefined') || 
+        error.message.includes('Cannot read properties of undefined') ||
+        error.message.includes('undefined') ||
+        error.stack?.includes('_getMapPanePos') ||
+        error.stack?.includes('getPixelBounds')
+      )) {
+        console.warn("[useFetchPins] fetchPinsInBounds: Detected map DOM element error. Triggering map reset.");
         // Mark as recovering and trigger map reset to allow re-initialization
         isRecoveringRef.current = true;
         if (resetMapInstance) {
@@ -186,7 +214,7 @@ export function useFetchPins() {
         console.log("[useFetchPins] fetchPinsInBounds: finally block - controller is NOT current or unmounted. Not changing isLoading.");
       }
     }
-  }, [L]); // Stable reference with only L dependency
+  }, [L, resetMapInstance]); // Stable reference with L and resetMapInstance dependencies
 
   // Special effect to trigger immediate fetch after recovery
   useEffect(() => {
@@ -210,8 +238,7 @@ export function useFetchPins() {
 
   // MODIFIED: Effect to fetch pins on map ready, map 'load' (for initial), and map 'moveend'
   useEffect(() => {
-    console.log(`[useFetchPins] Main effect: ENTRY. isMapReady: ${isMapReady}, mapInstance: ${!!mapInstanceRef.current}, L: ${!!L}, initialLoadSetupDone: ${initialLoadSetupDoneRef.current}, initialFetchTriggered: ${initialFetchTriggeredRef.current}`);
-    
+    console.log(`[useFetchPins] Main effect: ENTRY. isMapReady: ${isMapReady}, mapInstance: ${!!mapInstanceRef.current}, L: ${!!L}, initialLoadSetupDone: ${initialLoadSetupDoneRef.current}, initialFetchTriggered: ${initialFetchTriggeredRef.current}, mapResetKey: ${mapResetKey}`);
     if (!isMapReady || !mapInstanceRef.current || !L) {
       console.log("[useFetchPins] Main effect: Prerequisites NOT MET. Returning.");
       return;
@@ -227,6 +254,16 @@ export function useFetchPins() {
         return;
       }
       
+      // Check if container is still connected to DOM
+      if (!container.parentNode || !document.contains(container)) {
+        console.log("[useFetchPins] Main effect: Map container is detached from DOM. Triggering reset.");
+        isRecoveringRef.current = true;
+        if (resetMapInstance) {
+          resetMapInstance();
+        }
+        return;
+      }
+      
       const size = map.getSize();
       if (!size || size.x === 0 || size.y === 0) {
         console.log("[useFetchPins] Main effect: Map has invalid size. Returning.");
@@ -234,6 +271,18 @@ export function useFetchPins() {
       }
     } catch (error) {
       console.log("[useFetchPins] Main effect: Error checking map state:", error);
+      // If we can't even check the map state, it's likely broken - trigger reset
+      if (error instanceof Error && (
+        error.message.includes('t is undefined') ||
+        error.message.includes('Cannot read properties of undefined') ||
+        error.stack?.includes('_getMapPanePos')
+      )) {
+        console.log("[useFetchPins] Main effect: Detected map DOM error, triggering reset");
+        isRecoveringRef.current = true;
+        if (resetMapInstance) {
+          resetMapInstance();
+        }
+      }
       return;
     }
 
@@ -326,7 +375,7 @@ export function useFetchPins() {
       // For now, they are not reset here, assuming they are for the lifetime of the hook instance
       // unless the map context fully resets.
     };
-  }, [isMapReady, mapInstanceRef, L, fetchPinsInBounds, resetMapInstance]);
+  }, [isMapReady, mapInstanceRef, L, fetchPinsInBounds, resetMapInstance, mapResetKey]);
 
   console.log('[useFetchPins] Hook rendering. isLoading:', isLoading, 'Pins count:', pins.length, 'Error:', error);
   return { pins, isLoading, error };
