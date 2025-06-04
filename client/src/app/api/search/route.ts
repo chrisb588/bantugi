@@ -10,6 +10,7 @@ interface OptimizedSearchResult {
     description: string;
     category: string;
     urgency: "Low" | "Medium" | "High";
+    status: "Unresolved" | "Being Addressed" | "Resolved";
     location?: {
       coordinates: {
         lat: number;
@@ -35,7 +36,7 @@ function transformOptimizedSearchToReport(searchResult: OptimizedSearchResult): 
     description: data.description,
     category: data.category,
     urgency: data.urgency,
-    status: "Unresolved", // Default status for search results
+    status: data.status || "Unresolved", // Use actual status from search result
     location: data.location ? {
       coordinates: {
         lat: data.location.coordinates.lat,
@@ -60,9 +61,12 @@ export async function GET(req: NextRequest) {
     const response = new NextResponse();
     const supabase = createServerClient(req, response);
     
-    // Extract search query from URL parameters
+    // Extract search query and filter parameters from URL parameters
     const { searchParams } = new URL(req.url);
     const query = searchParams.get('q');
+    const urgency = searchParams.get('urgency');
+    const category = searchParams.get('category');
+    const status = searchParams.get('status');
     
     if (!query || query.trim().length === 0) {
       return NextResponse.json(
@@ -71,10 +75,10 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log(`[API/search] Performing optimized fuzzy search for query: "${query}"`);
+    console.log(`[API/search] Performing search with query: "${query}" and filters:`, { urgency, category, status });
 
     // Call the optimized fuzzy_search_reports RPC function
-    const { data, error, status, statusText } = await supabase
+    const { data, error, status: rpcStatus, statusText } = await supabase
       .rpc('fuzzy_search_reports_optimized', {
         search_term: query.trim(),
         similarity_threshold: 0.1
@@ -122,9 +126,37 @@ export async function GET(req: NextRequest) {
       })
       .filter((report): report is Report => report !== null);
 
-    console.log(`[API/search] Successfully transformed ${reports.length} search results`);
+    // Apply filters to the search results
+    let filteredReports = reports;
+    
+    if (urgency || category || status) {
+      console.log(`[API/search] Applying filters to ${reports.length} search results`);
+      
+      filteredReports = reports.filter(report => {
+        // Apply urgency filter
+        if (urgency && report.urgency !== urgency) {
+          return false;
+        }
+        
+        // Apply category filter
+        if (category && report.category !== category) {
+          return false;
+        }
+        
+        // Apply status filter
+        if (status && report.status !== status) {
+          return false;
+        }
+        
+        return true;
+      });
+      
+      console.log(`[API/search] Filtered results: ${filteredReports.length} out of ${reports.length} reports`);
+    }
 
-    const jsonResponse = NextResponse.json(reports, { status: 200 });
+    console.log(`[API/search] Successfully processed ${filteredReports.length} search results`);
+
+    const jsonResponse = NextResponse.json(filteredReports, { status: 200 });
     
     // Copy any cookies set by Supabase
     response.cookies.getAll().forEach(cookie => {

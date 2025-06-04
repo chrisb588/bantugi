@@ -14,12 +14,36 @@ import {
 interface FilterDropdownProps {
   isOpen: boolean;
   onClose: () => void;
+  onFiltersChange?: (filters: { urgency: string; category: string; status: string }) => void;
+  initialFilters?: { urgency: string; category: string; status: string };
 }
 
-export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
-  const [urgency, setUrgency] = useState("Low");
-  const [category, setCategory] = useState("Miscellaneous");
-  const [status, setStatus] = useState("In Progress");
+export function FilterDropdown({ isOpen, onClose, onFiltersChange, initialFilters }: FilterDropdownProps) {
+  const [urgency, setUrgency] = useState(initialFilters?.urgency || "");
+  const [category, setCategory] = useState(initialFilters?.category || "");
+  const [status, setStatus] = useState(initialFilters?.status || "");
+
+  // Notify parent component when filters change
+  const handleFilterChange = (newUrgency: string, newCategory: string, newStatus: string) => {
+    if (onFiltersChange) {
+      onFiltersChange({ urgency: newUrgency, category: newCategory, status: newStatus });
+    }
+  };
+
+  const handleUrgencyChange = (newUrgency: string) => {
+    setUrgency(newUrgency);
+    handleFilterChange(newUrgency, category, status);
+  };
+
+  const handleCategoryChange = (newCategory: string) => {
+    setCategory(newCategory);
+    handleFilterChange(urgency, newCategory, status);
+  };
+
+  const handleStatusChange = (newStatus: string) => {
+    setStatus(newStatus);
+    handleFilterChange(urgency, category, newStatus);
+  };
 
   if (!isOpen) return null;
 
@@ -104,26 +128,29 @@ export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
             <DropdownMenuTrigger asChild>
               <button className="flex items-center justify-between gap-2 rounded-full px-3 py-1.5 bg-muted text-sm min-w-[80px] shadow-md">
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${getUrgencyCircleColor(urgency)}`}></div>
-                  <span>{urgency}</span>
+                  {urgency && <div className={`w-2 h-2 rounded-full ${getUrgencyCircleColor(urgency)}`}></div>}
+                  <span>{urgency || "All"}</span>
                 </div>
                 <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-32 shadow-lg">
-              <DropdownMenuItem onClick={() => setUrgency("High")}>
+              <DropdownMenuItem onClick={() => handleUrgencyChange("")}>
+                <span>All</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleUrgencyChange("High")}>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-urgency-high"></div>
                   <span>High</span>
                 </div>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setUrgency("Medium")}>
+              <DropdownMenuItem onClick={() => handleUrgencyChange("Medium")}>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-urgency-medium"></div>
                   <span>Medium</span>
                 </div>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setUrgency("Low")}>
+              <DropdownMenuItem onClick={() => handleUrgencyChange("Low")}>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-urgency-low"></div>
                   <span>Low</span>
@@ -139,24 +166,27 @@ export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center justify-between gap-2 rounded-full px-3 py-1.5 bg-muted text-sm min-w-[120px] shadow-md">
-                <span>{category}</span>
+                <span>{category || "All"}</span>
                 <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-40 shadow-lg">
-              <DropdownMenuItem onClick={() => setCategory("Environment")}>
+              <DropdownMenuItem onClick={() => handleCategoryChange("")}>
+                <span>All</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleCategoryChange("Environment")}>
                 <span>Environment</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setCategory("Infrastructure")}>
+              <DropdownMenuItem onClick={() => handleCategoryChange("Infrastructure")}>
                 <span>Infrastructure</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setCategory("Basic Services")}>
+              <DropdownMenuItem onClick={() => handleCategoryChange("Basic Services")}>
                 <span>Basic Services</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setCategory("Crime and Order")}>
+              <DropdownMenuItem onClick={() => handleCategoryChange("Crime and Order")}>
                 <span>Crime and Order</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setCategory("Miscellaneous")}>
+              <DropdownMenuItem onClick={() => handleCategoryChange("Miscellaneous")}>
                 <span>Miscellaneous</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -169,18 +199,21 @@ export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center justify-between gap-2 rounded-full px-3 py-1.5 bg-muted text-sm min-w-[100px] shadow-md">
-                <span>{status}</span>
+                <span>{status || "All"}</span>
                 <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-32 shadow-lg">
-              <DropdownMenuItem onClick={() => setStatus("Unresolved")}>
+              <DropdownMenuItem onClick={() => handleStatusChange("")}>
+                <span>All</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleStatusChange("Unresolved")}>
                 <span>Unresolved</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatus("Being Addressed")}>
+              <DropdownMenuItem onClick={() => handleStatusChange("Being Addressed")}>
                 <span>Being Addressed</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatus("Resolved")}>
+              <DropdownMenuItem onClick={() => handleStatusChange("Resolved")}>
                 <span>Resolved</span>
               </DropdownMenuItem>
             </DropdownMenuContent>

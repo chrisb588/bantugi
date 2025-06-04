@@ -32,6 +32,13 @@ function HomePageContent() {
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<Report[]>([]);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
+  
+  // Filter state
+  const [filters, setFilters] = useState({
+    urgency: "",
+    category: "",
+    status: ""
+  });
 
   // State for ReportCard overlay
   const [selectedReportIdForCard, setSelectedReportIdForCard] = useState<string | null>(null);
@@ -99,10 +106,20 @@ function HomePageContent() {
 
     setIsLoadingSearch(true);
     try {
-      console.log("Search query:", trimmedQuery);
+      console.log("Search query:", trimmedQuery, "with filters:", filters);
       
-      // Call the search API
-      const response = await fetch(`/api/search?q=${encodeURIComponent(trimmedQuery)}`);
+      // Build query parameters with filters
+      const params = new URLSearchParams({
+        q: trimmedQuery
+      });
+      
+      // Add filter parameters if they exist
+      if (filters.urgency) params.append('urgency', filters.urgency);
+      if (filters.category) params.append('category', filters.category);
+      if (filters.status) params.append('status', filters.status);
+      
+      // Call the search API with filters
+      const response = await fetch(`/api/search?${params.toString()}`);
       
       if (!response.ok) {
         throw new Error(`Search API error: ${response.status}`);
@@ -116,7 +133,7 @@ function HomePageContent() {
     } finally {
       setIsLoadingSearch(false);
     }
-  }, []);
+  }, [filters]);
 
   // Debounced search function - waits 500ms after user stops typing
   const debouncedSearch = useCallback(
@@ -152,6 +169,23 @@ function HomePageContent() {
   const closeFilterDropdown = () => {
     setIsFilterDropdownOpen(false);
   };
+
+  // Handle filter changes
+  const handleFiltersChange = useCallback((newFilters: { urgency: string; category: string; status: string }) => {
+    setFilters(newFilters);
+    console.log("Filters updated:", newFilters);
+  }, []);
+
+  // Re-run search when filters change (if there's an active search)
+  useEffect(() => {
+    const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+    const currentQuery = searchInput?.value?.trim();
+    
+    if (currentQuery && isSearchScreenVisible) {
+      console.log("Re-running search due to filter change");
+      performSearch(currentQuery);
+    }
+  }, [filters, isSearchScreenVisible, performSearch]);
 
   // const openCreateReport = () => {
   //   if (!user) {
@@ -353,6 +387,8 @@ function HomePageContent() {
         <FilterDropdown 
           isOpen={isFilterDropdownOpen} 
           onClose={closeFilterDropdown} 
+          onFiltersChange={handleFiltersChange}
+          initialFilters={filters}
         />
 
         {/* Report Card Overlay */}
