@@ -1,25 +1,22 @@
 "use client";
 
 import SearchBar from "@/components/search/search-bar";
-import { useState, useCallback, useEffect, Suspense } from "react";
+import { useState, useCallback, useEffect, Suspense, useRef } from "react";
 import SearchResultsList from "@/components/search/search-results-list";
 import { debounce } from "lodash";
 import { FilterButton } from "@/components/ui/filter-button";
 import { FilterDropdown } from "@/components/ui/filter-dropdown";
 import Report from "@/interfaces/report";
 import { useFetchPins } from "@/hooks/useFetchPins";
-// MobileNavbar is now in MainLayout
-// import { ReportForm } from "@/components/report/report-form/report-form"; // Not used directly here anymore for overlay
-// import { SavedReportsOverlay } from "@/components/report/saved-reports-overlay"; // Not used in this component
-import { ReportCard } from "@/components/report/report-card"; // Import ReportCard
+import { ReportCard } from "@/components/report/report-card";
 import { Button } from "@/components/ui/button";
-// Remove unused imports
-// import { useUserContext } from "@/context/user-context";
-// import { useRouter, useSearchParams } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import dynamic from 'next/dynamic';
-import { useMapContext } from "@/context/map-context"; // Import useMapContext
-import { toast } from "sonner"; // Import toast for error notifications
+import { useMapContext } from "@/context/map-context";
+import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import ReportItem from "@/components/report/report-item";
 
 // Dynamically import MapContents with ssr: false
 const MapContents = dynamic(() => import('@/components/map/map').then(mod => mod.MapContents), {
@@ -32,6 +29,7 @@ function HomePageContent() {
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<Report[]>([]);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // State for ReportCard overlay
   const [selectedReportIdForCard, setSelectedReportIdForCard] = useState<string | null>(null);
@@ -40,11 +38,12 @@ function HomePageContent() {
   const [isLoadingReportForCard, setIsLoadingReportForCard] = useState(false);
 
   const { pins, isLoading: isLoadingPins, error: fetchPinsError } = useFetchPins();
-  // Remove unused variables - keeping for potential future use
-  // const { state: { user } } = useUserContext();
-  // const router = useRouter();
   const searchParams = useSearchParams();
-  const { mapInstanceRef } = useMapContext(); // Get map instance for flyTo
+  const { mapInstanceRef } = useMapContext();
+  
+  // Create refs for both mobile and desktop search bars
+  const mobileSearchBarRef = useRef<HTMLDivElement>(null);
+  const desktopSearchBarRef = useRef<HTMLDivElement>(null);
 
   // Handle URL parameters for automatic navigation and report display
   useEffect(() => {
@@ -59,10 +58,8 @@ function HomePageContent() {
       const zoomLevel = zoom ? parseInt(zoom) : 18;
 
       if (!isNaN(latitude) && !isNaN(longitude)) {
-        // Navigate to the specified location
         mapInstanceRef.current.flyTo([latitude, longitude], zoomLevel);
 
-        // If a reportId is provided, show the report card
         if (reportId) {
           setSelectedReportIdForCard(reportId);
           setReportForCard(null);
@@ -70,7 +67,6 @@ function HomePageContent() {
           setIsReportCardVisible(true);
         }
 
-        // Clean up URL parameters after handling them
         const url = new URL(window.location.href);
         url.searchParams.delete('lat');
         url.searchParams.delete('lng');
@@ -81,16 +77,15 @@ function HomePageContent() {
     }
   }, [searchParams, mapInstanceRef]);
 
-  // const openSearchScreen = () => setIsSearchScreenVisible(true); // Not used in current implementation
   const closeSearchScreen = () => {
     if (isSearchScreenVisible) {
       setIsSearchScreenVisible(false);
     }
   };
 
-  // Separate the actual search API call from the debounced handler
   const performSearch = useCallback(async (query: string) => {
     const trimmedQuery = query.trim();
+    setSearchQuery(query);
 
     if (!trimmedQuery) {
       setSearchResults([]);
@@ -101,7 +96,6 @@ function HomePageContent() {
     try {
       console.log("Search query:", trimmedQuery);
       
-      // Call the search API
       const response = await fetch(`/api/search?q=${encodeURIComponent(trimmedQuery)}`);
       
       if (!response.ok) {
@@ -118,30 +112,26 @@ function HomePageContent() {
     }
   }, []);
 
-  // Debounced search function - waits 500ms after user stops typing
   const debouncedSearch = useCallback(
     debounce((query: string) => performSearch(query), 500),
     [performSearch]
   );
 
   const handleSearch = (query: string) => {
-    // If query is empty, clear results immediately without debouncing
+    setSearchQuery(query);
+    
     if (!query.trim()) {
       setSearchResults([]);
       setIsLoadingSearch(false);
-      setIsSearchScreenVisible(false); // Close search screen when query is empty
+      // Don't automatically close search screen when query is empty
       return;
     }
     
-    // Open search screen when user starts typing
     if (!isSearchScreenVisible) {
       setIsSearchScreenVisible(true);
     }
     
-    // Set loading state immediately for better UX
     setIsLoadingSearch(true);
-    
-    // Call the debounced search
     debouncedSearch(query);
   };
 
@@ -149,29 +139,22 @@ function HomePageContent() {
     setIsFilterDropdownOpen(!isFilterDropdownOpen);
   };
 
+  // TODO: Implement filters to search
+  const handleFilterSearchClick = () => {
+    setIsFilterDropdownOpen(!isFilterDropdownOpen);
+  }
+
   const closeFilterDropdown = () => {
     setIsFilterDropdownOpen(false);
   };
 
-  // const openCreateReport = () => {
-  //   if (!user) {
-  //     // Redirect to login for guest users
-  //     router.push('/login');
-  //     return;
-  //   }
-  //   // Navigate to create report page for desktop
-  //   router.push('/create-report');
-  // };
-
-  // Handler for pin click from the map
   const handlePinClick = useCallback((reportId: string) => {
     setSelectedReportIdForCard(reportId);
-    setReportForCard(null); // Clear previous report
+    setReportForCard(null);
     setIsLoadingReportForCard(true);
     setIsReportCardVisible(true);
   }, []);
 
-  // Effect to fetch report details when selectedReportIdForCard changes
   useEffect(() => {
     if (!selectedReportIdForCard) {
       return;
@@ -185,7 +168,7 @@ function HomePageContent() {
           throw new Error(errorData.error || `Failed to fetch report: ${response.status}`);
         }
         const data: Report = await response.json();
-        if (!data || !data.id) { // Basic validation of the fetched report data
+        if (!data || !data.id) {
           throw new Error("Fetched report data is invalid or missing ID.");
         }
         setReportForCard(data);
@@ -194,7 +177,7 @@ function HomePageContent() {
         const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
         toast.error(`Error loading report: ${errorMessage}`);
         setReportForCard(null);
-        setIsReportCardVisible(false); // Close card on error
+        setIsReportCardVisible(false);
       } finally {
         setIsLoadingReportForCard(false);
       }
@@ -212,29 +195,31 @@ function HomePageContent() {
   const handleViewOnMapFromCard = useCallback(() => {
     if (reportForCard?.location?.coordinates && mapInstanceRef.current) {
       const { lat, lng } = reportForCard.location.coordinates;
-      mapInstanceRef.current.flyTo([lat, lng], 18); // Zoom level 18
+      mapInstanceRef.current.flyTo([lat, lng], 18);
     }
-    closeReportCard(); // Close card after flying
+    closeReportCard();
   }, [reportForCard, mapInstanceRef, closeReportCard]);
 
-  // Handler for search result clicks - navigate to map location and show report overlay
   const handleSearchResultClick = useCallback((report: Report) => {
-    // Close search screen first
     setIsSearchScreenVisible(false);
     
-    // Navigate to the report location on the map
     if (report.location?.coordinates && mapInstanceRef.current) {
       const { lat, lng } = report.location.coordinates;
-      mapInstanceRef.current.flyTo([lat, lng], 18); // Zoom level 18
+      mapInstanceRef.current.flyTo([lat, lng], 18);
     }
     
-    // Show the report overlay
     setSelectedReportIdForCard(report.id);
-    setReportForCard(report); // We already have the report data
-    setIsLoadingReportForCard(false); // No need to load since we have the data
+    setReportForCard(report);
+    setIsLoadingReportForCard(false);
     setIsReportCardVisible(true);
   }, [mapInstanceRef]);
 
+  // Handler to close desktop search results (only for desktop)
+  const handleCloseDesktopSearch = () => {
+    setSearchResults([]);
+    setIsLoadingSearch(false);
+    setSearchQuery(""); // Clear the search query as well
+  };
 
   return (
       <div className="relative flex flex-col h-screen">
@@ -245,7 +230,7 @@ function HomePageContent() {
             isLoadingPins={isLoadingPins} 
             fetchPinsError={fetchPinsError}
             className="h-full w-full"
-            onPinClick={handlePinClick} // Pass the handler to MapContents
+            onPinClick={handlePinClick}
           />
         </div>
 
@@ -256,8 +241,15 @@ function HomePageContent() {
             {/* Mobile Header (Sticky) */}
             <div className="sticky top-0 left-0 right-0 py-4 z-20 pointer-events-none px-4">
               <div className="flex items-center justify-center gap-3 w-full">
-                <div className="flex-1 pointer-events-auto">
-                  <SearchBar onSearch={handleSearch} />
+                <div 
+                  ref={mobileSearchBarRef}
+                  className="flex-1 pointer-events-auto" 
+                  onClick={() => setIsSearchScreenVisible(true)}
+                >
+                  <SearchBar 
+                    onSearch={handleSearch} 
+                    value={searchQuery}
+                  />
                 </div>
                 <FilterButton 
                   onClick={handleFilterClick}
@@ -266,7 +258,7 @@ function HomePageContent() {
               </div>
             </div>
 
-            {/* Content Area (Search Results or Main Content for Mobile) - This will be scrollable if needed */}
+            {/* Content Area (Search Results or Main Content for Mobile) */}
             <div className={`flex-1 overflow-y-auto z-20 px-4 ${isSearchScreenVisible ? 'pointer-events-auto' : 'pointer-events-none'}`}>
               {isSearchScreenVisible && (
                 <SearchResultsList 
@@ -275,11 +267,10 @@ function HomePageContent() {
                   results={searchResults}
                   isLoading={isLoadingSearch}
                   onReportClick={handleSearchResultClick}
+                  ignoreClickRef={mobileSearchBarRef}
                 />
               )}
             </div>
-
-            {/* Mobile Navbar is handled by the main layout, no need to render it here */}
           </div>
 
           {/* --- Desktop View Container --- */}
@@ -289,14 +280,13 @@ function HomePageContent() {
               <div className="flex justify-center">
                 <div className="flex flex-col items-center gap-2 pointer-events-auto max-w-md w-full">
                   <div className="flex items-center gap-3 w-full">
-                    <div className="flex-1">
-                      <SearchBar onSearch={handleSearch} />
+                    <div ref={desktopSearchBarRef} className="flex-1">
+                      <SearchBar onSearch={handleSearch} value={searchQuery} />
                     </div>
                     <FilterButton 
                       onClick={handleFilterClick}
                       className="flex-shrink-0"
                     />
-
                   </div>
                   
                   {/* Desktop Search Results positioned directly below search bar */}
@@ -304,13 +294,11 @@ function HomePageContent() {
                     <div className="w-full">
                       <SearchResultsList 
                         title="Search Results" 
-                        onClose={() => { 
-                          setSearchResults([]);
-                          setIsLoadingSearch(false);
-                        }}
+                        onClose={handleCloseDesktopSearch}
                         results={searchResults}
                         isLoading={isLoadingSearch}
                         onReportClick={handleSearchResultClick}
+                        ignoreClickRef={desktopSearchBarRef}
                       />
                     </div>
                   )}
@@ -322,9 +310,9 @@ function HomePageContent() {
 
         {/* Search Screen Overlay (Mobile) */}
         {isSearchScreenVisible && (
-          <div className="fixed inset-0 z-40 bg-background flex flex-col md:hidden px-4 pt-4 pointer-events-auto">
+          <div className="fixed inset-0 z-40 bg-background flex flex-col md:hidden px-8 pt-4 pointer-events-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Search</h2>
+              <h2 className="text-xl text-primary font-bold">Search Results</h2>
               <button 
                 onClick={closeSearchScreen}
                 className="p-2 hover:bg-gray-100 rounded-full"
@@ -334,17 +322,44 @@ function HomePageContent() {
                 </svg>
               </button>
             </div>
-            <div className="mb-4">
-              <SearchBar onSearch={handleSearch} />
+            <div className="mb-4 flex gap-2">
+              <SearchBar 
+                onSearch={handleSearch} 
+                value={searchQuery}
+                onFocus={() => {
+                  if (!isSearchScreenVisible) {
+                    setIsSearchScreenVisible(true);
+                  }
+                }}
+              />
+              <FilterButton 
+                onClick={handleFilterSearchClick}
+                className="pointer-events-auto flex-shrink-0"
+              />
             </div>
             <div className="flex-1 overflow-y-auto">
-              <SearchResultsList 
-                title="Search Results" 
-                onClose={closeSearchScreen}
-                results={searchResults}
-                isLoading={isLoadingSearch}
-                onReportClick={handleSearchResultClick}
-              />
+              <ScrollArea className="flex-1 min-h-0">
+                <Separator className="bg-border/50" />
+                {isLoadingSearch ? (
+                  <div className="flex items-center justify-center h-32 md:h-24">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <div className="mt-4 space-y-2">
+                    {searchResults.map((result) => (
+                      <ReportItem
+                        key={result.id}
+                        report={result}
+                        onReportClick={handleSearchResultClick}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-32 md:h-24 text-muted-foreground">
+                    <p className="md:text-sm">No results found</p>
+                  </div>
+                )}
+              </ScrollArea> 
             </div>
           </div>
         )}
@@ -374,10 +389,6 @@ function HomePageContent() {
               />
             )}
             {!isLoadingReportForCard && !reportForCard && (
-               // This case handles if fetching failed and reportForCard is null
-               // Error toast is already shown, so we might not need specific UI here,
-               // or a simple message if the card remains visible due to some logic.
-               // Since `closeReportCard` is called on error, this part might not be reached often.
               <div className="bg-background p-6 rounded-lg shadow-lg text-destructive">
                 <p>Could not load report details.</p>
                 <Button onClick={closeReportCard} variant="outline" className="mt-2">Close</Button>
