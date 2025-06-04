@@ -1,3 +1,5 @@
+import { AuthProvider } from '@/context/auth-context';
+
 export default function AuthLayout({
   children,
 }: Readonly<{
@@ -5,7 +7,9 @@ export default function AuthLayout({
 }>) {
   return (
     <div className="nohemi-font">
-      {children}
+      <AuthProvider>
+        {children}
+      </AuthProvider>
     </div>
   );
 }

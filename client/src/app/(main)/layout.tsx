@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 import DesktopSidebar from "@/components/generic/desktop-sidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import Provider from "@/provider/provider";
 import { MobileNavbar } from "@/components/generic/mobile-navbar";
 
 const Map = dynamic(
@@ -21,14 +21,13 @@ export default function MainLayout({
 }>) {
   return (
     <div className="font-satoshi">
-      <SidebarProvider>
-        <DesktopSidebar />
+      <Provider>
         <MobileNavbar />
         <Map />
         <div className="fixed inset-0 pointer-events-none">
           {children}
         </div>
-      </SidebarProvider>
+      </Provider>
     </div>
   );
 }

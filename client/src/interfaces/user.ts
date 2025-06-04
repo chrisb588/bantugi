@@ -1,6 +1,7 @@
+import Location from './location';
+
 export default interface User {
   username: string;
-  password: string;
   profilePicture?: string;
-  location?: string;
+  location?: Location;
 }
