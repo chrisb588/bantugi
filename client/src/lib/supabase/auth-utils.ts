@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createServerClient } from './server';
+import { logger } from '@/lib/logger';
 
 /**
  * Helper function to get user JWT from Authorization header
@@ -58,12 +59,12 @@ export async function getAuthenticatedUserID(request?: NextRequest): Promise<str
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     if (sessionError) {
-      console.warn('Session error in getAuthenticatedUserID:', sessionError.message);
+      logger.auth.warn('Session error in getAuthenticatedUserID:', sessionError.message);
       return null;
     }
 
     if (!session) {
-      console.log('No active session found in getAuthenticatedUserID');
+      logger.auth.info('No active session found in getAuthenticatedUserID');
       return null;
     }
 
@@ -71,13 +72,14 @@ export async function getAuthenticatedUserID(request?: NextRequest): Promise<str
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError) {
-      console.error('Error getting user in getAuthenticatedUserID:', userError.message);
-      return null;
+      logger.auth.error('Error getting user in getAuthenticatedUserID:', userError.message);
+      // Try to fall back to session.user if available
+      return session.user?.id || null;
     }
 
     return user?.id || null;
   } catch (error: any) {
-    console.error('Unexpected error in getAuthenticatedUserID:', error.message);
+    logger.auth.error('Unexpected error in getAuthenticatedUserID:', error.message);
     return null;
   }
 }

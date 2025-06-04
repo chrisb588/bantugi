@@ -19,11 +19,25 @@ export function useAuth() {
     return !!user; // Return true if user object is returned, false otherwise
   };
 
-  const logout = async () => {
-    await contextLogout();
-    // Removed router.push('/login'); to allow more flexible navigation after logout.
-    // The AuthGuard or specific page logic should handle where the user goes next,
-    // or if they stay on a public page.
+  const logout = async (options?: { redirect?: boolean, redirectPath?: string }) => {
+    try {
+      await contextLogout();
+      
+      // Handle redirection after logout if specified
+      const shouldRedirect = options?.redirect ?? true; // Default to redirecting
+      const redirectPath = options?.redirectPath ?? '/login'; // Default redirect path
+      
+      if (shouldRedirect) {
+        router.push(redirectPath);
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Even if logout fails at the Supabase level, we should still redirect
+      // This ensures users aren't stuck in a logged-in UI state
+      if (options?.redirect ?? true) {
+        router.push(options?.redirectPath ?? '/login');
+      }
+    }
   };
 
   return {

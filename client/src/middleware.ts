@@ -35,7 +35,23 @@ export async function middleware(request: NextRequest) {
 
   // Refresh session if expired - crucial for Server Components
   // and for keeping the client-side session alive
-  const { data: { session } } = await supabase.auth.getSession();
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error("Error refreshing session in middleware:", error.message);
+      // Continue with the request even if session refresh failed
+      // The user experience will be that they are logged out
+    }
+    
+    // If there's a protected route pattern we want to enforce, we could check here
+    // For example, redirecting from /dashboard to /login if no session
+    
+    // For now, we'll just refresh the session and continue
+    
+  } catch (e) {
+    console.error("Unexpected error in middleware session refresh:", e);
+  }
 
   return response;
 }

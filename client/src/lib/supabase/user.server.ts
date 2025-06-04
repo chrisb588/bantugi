@@ -6,7 +6,7 @@ import User from "@/interfaces/user";
 export async function userSignUp(server: SupabaseClient, payload: UserAuthDetails) {
 
     const {data : signupData, error: signUpError} = await server.auth.signUp({
-        email: payload.username,
+        email: payload.email,
         password: payload.password
     })
 
@@ -68,7 +68,7 @@ export async function getUserID(server: SupabaseClient) {
 
 export async function signInWithPassword(server: SupabaseClient, payload: UserAuthDetails) {
     const { data : { user }, error : signInError} = await server.auth.signInWithPassword({
-        email: payload.username,
+        email: payload.email,
         password: payload.password,        
     });
 

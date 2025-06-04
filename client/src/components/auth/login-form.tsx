@@ -26,14 +26,55 @@ export function LoginForm({
     email: '',
     password: ''
   });
+  const [validationErrors, setValidationErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
+  
+  const validateForm = (): boolean => {
+    const errors: {email?: string; password?: string} = {};
+    let isValid = true;
+    
+    // Email validation
+    if (!formData.email) {
+      errors.email = "Email is required";
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = "Please enter a valid email address";
+      isValid = false;
+    }
+    
+    // Password validation
+    if (!formData.password) {
+      errors.password = "Password is required";
+      isValid = false;
+    } else if (formData.password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+      isValid = false;
+    }
+    
+    setValidationErrors(errors);
+    return isValid;
+  };
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
+    
+    // Clear validation error for this field when user types
+    if (validationErrors[id as keyof typeof validationErrors]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [id]: undefined
+      }));
+    }
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Validate form before submitting
+    const isValid = validateForm();
+    if (!isValid) return;
     await login(formData);
   };
 
@@ -69,12 +110,25 @@ export function LoginForm({
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
-                    type="text"
+                    type="email"
                     required
                     value={formData.email}
                     onChange={handleChange}
                     disabled={isLoading}
+                    placeholder="your.email@example.com"
                   />
+                  {/* Email validation error message */}
+                  {validationErrors.email && (
+                    <div className="mt-1 text-sm text-red-600">
+                      {validationErrors.email}
+                    </div>
+                  )}
+                  {/* Email validation error message */}
+                  {validationErrors.email && (
+                    <div className="mt-1 text-sm text-red-600">
+                      {validationErrors.email}
+                    </div>
+                  )}
                 </div>
                 <div className="grid gap-1">
                   <div className="flex items-center">
@@ -88,6 +142,18 @@ export function LoginForm({
                     onChange={handleChange}
                     disabled={isLoading}
                   />
+                  {/* Password validation error message */}
+                  {validationErrors.password && (
+                    <div className="mt-1 text-sm text-red-600">
+                      {validationErrors.password}
+                    </div>
+                  )}
+                  {/* Password validation error message */}
+                  {validationErrors.password && (
+                    <div className="mt-1 text-sm text-red-600">
+                      {validationErrors.password}
+                    </div>
+                  )}
                 </div>
               </div>
               <Button 

@@ -8,25 +8,40 @@ interface AuthGuardProps {
   children: ReactNode;
   fallback?: ReactNode;
   redirectTo?: string;
+  loadingComponent?: ReactNode;
+  redirectIfAuthenticated?: boolean; // For login/signup pages to redirect away if already logged in
+  authenticatedRedirectTo?: string; // Where to redirect if already authenticated
 }
 
 export function AuthGuard({ 
   children, 
   fallback = null, 
-  redirectTo = '/login' 
+  redirectTo = '/login',
+  loadingComponent = null,
+  redirectIfAuthenticated = false,
+  authenticatedRedirectTo = '/home'
 }: AuthGuardProps) {
-  const { user, isLoading, initialAuthCheckComplete } = useAuth();
+  const { user, isLoading, error, initialAuthCheckComplete } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     // Only proceed with redirect logic after initial auth check is complete
-    if (initialAuthCheckComplete && !isLoading && !user) {
-      router.push(redirectTo);
+    if (initialAuthCheckComplete && !isLoading) {
+      if (!user && !redirectIfAuthenticated) {
+        // Regular auth guard - redirect to login if not authenticated
+        router.push(redirectTo);
+      } else if (user && redirectIfAuthenticated) {
+        // Login/signup page behavior - redirect away if already authenticated
+        router.push(authenticatedRedirectTo);
+      }
     }
-  }, [user, isLoading, initialAuthCheckComplete, router, redirectTo]);
+  }, [user, isLoading, initialAuthCheckComplete, router, redirectTo, redirectIfAuthenticated, authenticatedRedirectTo]);
 
-  // Show loading state while auth is being checked
+  // Show custom loading component or default loading state
   if (!initialAuthCheckComplete || isLoading) {
+    if (loadingComponent) {
+      return <>{loadingComponent}</>;
+    }
     return (
       <div className="flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -35,13 +50,14 @@ export function AuthGuard({
     );
   }
 
-  // If user is not authenticated after initial check, show fallback or null
-  if (!user) {
-    return <>{fallback}</>;
+  // Handle authentication requirements based on redirectIfAuthenticated flag
+  if (redirectIfAuthenticated) {
+    // For login/signup pages: show children if NOT authenticated
+    return user ? <>{fallback}</> : <>{children}</>;
+  } else {
+    // For protected pages: show children if authenticated
+    return user ? <>{children}</> : <>{fallback}</>;
   }
-
-  // User is authenticated, render children
-  return <>{children}</>;
 }
 
 export default AuthGuard;
