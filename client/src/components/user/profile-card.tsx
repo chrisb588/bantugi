@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { cn, formatArea } from "@/lib/utils"
 import Image from "next/image";
-import { MapPin, Settings2, Trash, ArrowLeftFromLine, Pencil, ChevronLeft } from "lucide-react";
+import { MapPin, Settings2, Trash, ArrowLeftFromLine, Pencil, ChevronLeft, Camera } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   Card,
@@ -19,8 +20,10 @@ import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-di
 import { useMapContext } from "@/context/map-context";
 import { useMapMarker } from "@/hooks/use-map-marker";
 import EditDetailsCard from "@/components/user/edit-details-card";
+import EditProfileCard from "@/components/user/edit-profile-card";
 import type LType from "leaflet"; // Import LType for type annotation
 import { useUserContext } from "@/context/user-context";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { convertLatLngToArea } from "@/lib/geocoding";
 
 interface ProfileCardProps extends React.ComponentProps<"div"> {
@@ -33,8 +36,10 @@ export default function ProfileCard({
   ...props
 }: ProfileCardProps) {
   const { state: { user }, updateUser } = useUserContext();
+  const { updateProfile, deleteProfile, isUpdating, isDeleting, error } = useUserProfile();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   
   // Get L from useMapContext
   const { mapInstanceRef, L } = useMapContext(); 
@@ -66,10 +71,16 @@ export default function ProfileCard({
     setIsEditingName(true);
   }
 
-  const handleConfirmNameEdit = (newUsername: string) => {
-    updateUser({ username: newUsername });
-    setIsEditingName(false);
-    // TODO: Add API call to update username (backend)
+  const handleConfirmNameEdit = async (newUsername: string) => {
+    try {
+      await updateProfile({ email: newUsername }); // Using email as username
+      setIsEditingName(false);
+      toast.success('Username updated successfully');
+    } catch (error) {
+      console.error('Failed to update username:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update username';
+      toast.error(errorMessage);
+    }
   };
 
   const handleEditLocation = () => {
@@ -145,16 +156,43 @@ export default function ProfileCard({
     }
   };
 
-  const handleDeleteAccount = () => {
-    alert('Account delete clicked'); //just put the delete logic here
-
-    router.push('/');
+  const handleDeleteAccount = async () => {
+    try {
+      await deleteProfile();
+      toast.success('Account deleted successfully');
+      console.log('Account deleted successfully');
+      router.push('/');
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete account';
+      toast.error(errorMessage);
+    }
   };
 
   const handleLogout = () => {
     alert('Logout clicked');
 
     router.push('/');
+  };
+
+  const handleEditAvatar = () => {
+    setIsEditingProfile(true);
+  };
+
+  const handleConfirmProfileEdit = async (data: { email?: string; avatar?: File }) => {
+    try {
+      await updateProfile(data);
+      setIsEditingProfile(false);
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleCancelProfileEdit = () => {
+    setIsEditingProfile(false);
   };
 
   // FIXME: fix windows is not defined error
@@ -164,7 +202,8 @@ export default function ProfileCard({
       <div className={cn(
         "w-full max-w-lg flex flex-col gap-4 -mt-12", 
         className,
-        isEditingLocation ? "pointer-events-none hidden" : "pointer-events-auto",
+        (isEditingLocation || isEditingProfile || isDeleting) ? "pointer-events-none" : "pointer-events-auto",
+        isDeleting ? "opacity-50" : "",
       )} {...props}>
         <Card className="h-[85vh] min-h-[400px] max-h-[800px]"> {/* Set fixed height here */}
           <ScrollArea className="h-full"> {/* Make ScrollArea full height of card */}
@@ -199,11 +238,20 @@ export default function ProfileCard({
               )}
               <div className="relative h-32 w-32 rounded-full overflow-hidden bg-muted">
                 <Image
-                src={user?.profilePicture || "/img/avatar.png"}
-                alt="Profile"
-                fill
-                className="object-cover"
-              />
+                  src={user?.profilePicture || "/img/avatar.png"}
+                  alt="Profile"
+                  fill
+                  className="object-cover"
+                />
+                {edit && (
+                  <button
+                    onClick={handleEditAvatar}
+                    className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                    aria-label="Edit avatar"
+                  >
+                    <Camera size={24} className="text-white" />
+                  </button>
+                )}
               </div>
               <div className="flex flex-col items-center">
                 {edit ? (
@@ -249,17 +297,17 @@ export default function ProfileCard({
                 <div className="flex flex-col items-center gap-2">
                   <DeleteConfirmationDialog
                     trigger={
-                      <Button variant="ghost">
+                      <Button variant="ghost" disabled={isDeleting}>
                         <div className="flex items-center gap-1 text-primary mt-4">
                           <Trash size={16} />
                           <div className="font-bold text-sm">
-                            Delete Account
+                            {isDeleting ? "Deleting..." : "Delete Account"}
                           </div>
                         </div>
                       </Button>
                     }
                     title="Are you sure you want to delete your account?"
-                    description="This action is irreversible."
+                    description="This action is irreversible and will permanently delete all your data including reports and profile information."
                     onConfirm={handleDeleteAccount}
                   />
                   <Button variant="ghost" onClick={handleLogout}>
@@ -292,6 +340,21 @@ export default function ProfileCard({
             <EditDetailsCard
               label="Edit Username"
               onConfirm={handleConfirmNameEdit}
+            />
+          </div>
+        </div>
+      )}
+
+      {isEditingProfile && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="w-full max-w-md p-4" onClick={(e) => e.stopPropagation()}>
+            <EditProfileCard
+              label="Edit Profile"
+              initialEmail={user?.username || ''}
+              currentAvatar={user?.profilePicture}
+              isUpdating={isUpdating}
+              onConfirm={handleConfirmProfileEdit}
+              onCancel={handleCancelProfileEdit}
             />
           </div>
         </div>

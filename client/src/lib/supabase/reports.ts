@@ -312,7 +312,7 @@ export async function deleteReport(
         // First, verify that the report exists and the user is the creator
         const { data: reportData, error: fetchError } = await supabase
             .from('reports')
-            .select('id, created_by, title')
+            .select('id, created_by, title, images')
             .eq('id', reportId)
             .single();
 
@@ -333,6 +333,41 @@ export async function deleteReport(
         }
 
         console.log(`[deleteReport] User ${userId} is authorized to delete report "${reportData.title}"`);
+
+        // Handle image cleanup before deleting the report
+        if (reportData.images && reportData.images.length > 0) {
+            console.log(`[deleteReport] Cleaning up ${reportData.images.length} images from storage`);
+            
+            // Delete all images from storage
+            for (const imageUrl of reportData.images) {
+                try {
+                    // Extract the file path from the image URL
+                    // Expected format: https://...supabase.co/storage/v1/object/public/report-images/{path}
+                    const pathMatch = imageUrl.match(/\/storage\/v1\/object\/public\/report-images\/(.+)$/);
+                    
+                    if (pathMatch) {
+                        const filePath = pathMatch[1];
+                        console.log(`[deleteReport] Deleting image file: ${filePath}`);
+                        
+                        const { error: deleteFileError } = await supabase.storage
+                            .from('report-images')
+                            .remove([filePath]);
+                        
+                        if (deleteFileError) {
+                            console.warn(`[deleteReport] Failed to delete image file ${filePath}:`, deleteFileError);
+                            // Continue with deletion even if file deletion fails
+                        } else {
+                            console.log(`[deleteReport] Successfully deleted image file: ${filePath}`);
+                        }
+                    } else {
+                        console.warn(`[deleteReport] Could not extract file path from image URL: ${imageUrl}`);
+                    }
+                } catch (imageCleanupError) {
+                    console.warn(`[deleteReport] Error during image cleanup for ${imageUrl}:`, imageCleanupError);
+                    // Continue with deletion even if image cleanup fails
+                }
+            }
+        }
 
         // Delete the report
         const { error: deleteError } = await supabase
@@ -720,7 +755,7 @@ export async function updateReport(
         // First, verify that the report exists and the user is the creator
         const { data: reportData, error: fetchError } = await supabase
             .from('reports')
-            .select('id, created_by, title, location_id')
+            .select('id, created_by, title, location_id, images')
             .eq('id', reportId)
             .single();
 
@@ -742,7 +777,48 @@ export async function updateReport(
 
         console.log(`[updateReport] User ${userId} is authorized to update report "${reportData.title}"`);
 
-        // Handle location updates if provided
+        // Handle image cleanup if images are being updated
+        if (updateData.images !== undefined) {
+            const currentImages: string[] = reportData.images || [];
+            const newImages: string[] = updateData.images || [];
+            
+            // Find images that are being removed
+            const removedImages = currentImages.filter(img => !newImages.includes(img));
+            
+            if (removedImages.length > 0) {
+                console.log(`[updateReport] Cleaning up ${removedImages.length} removed images`);
+                
+                // Delete removed images from storage
+                for (const imageUrl of removedImages) {
+                    try {
+                        // Extract the file path from the image URL
+                        // Expected format: https://...supabase.co/storage/v1/object/public/report-images/{path}
+                        const pathMatch = imageUrl.match(/\/storage\/v1\/object\/public\/report-images\/(.+)$/);
+                        
+                        if (pathMatch) {
+                            const filePath = pathMatch[1];
+                            console.log(`[updateReport] Deleting image file: ${filePath}`);
+                            
+                            const { error: deleteFileError } = await supabase.storage
+                                .from('report-images')
+                                .remove([filePath]);
+                            
+                            if (deleteFileError) {
+                                console.warn(`[updateReport] Failed to delete image file ${filePath}:`, deleteFileError);
+                                // Continue with update even if file deletion fails
+                            } else {
+                                console.log(`[updateReport] Successfully deleted image file: ${filePath}`);
+                            }
+                        } else {
+                            console.warn(`[updateReport] Could not extract file path from image URL: ${imageUrl}`);
+                        }
+                    } catch (imageCleanupError) {
+                        console.warn(`[updateReport] Error during image cleanup for ${imageUrl}:`, imageCleanupError);
+                        // Continue with update even if image cleanup fails
+                    }
+                }
+            }
+        }
         let newLocationId = reportData.location_id;
         if (updateData.latitude && updateData.longitude && updateData.areaProvince && updateData.areaBarangay) {
             try {

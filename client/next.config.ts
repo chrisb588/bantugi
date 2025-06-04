@@ -13,6 +13,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'xbgmephbgyjtlunnvwlu.supabase.co',
+        port: '', 
+        pathname: '/storage/v1/object/public/avatars/**', 
+      },
+      {
+        protocol: 'https',
         hostname: 'placehold.co',
         port: '',
         pathname: '/**',
