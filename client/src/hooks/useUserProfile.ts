@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useUserContext } from '@/context/user-context';
+import { useAuth } from '@/hooks/useAuth'; // Added useAuth import
 import { fetchUserProfile, updateUserProfile, deleteUserProfile, ProfileUpdateData } from '@/lib/api/user-profile';
 import type User from '@/interfaces/user';
 
@@ -18,7 +19,8 @@ interface UseUserProfileReturn {
 }
 
 export function useUserProfile(): UseUserProfileReturn {
-  const { state: { user }, setUser, updateUser, clearUser } = useUserContext();
+  const { state: { user: userFromUserContext }, setUser, updateUser, clearUser } = useUserContext();
+  const { user: userFromAuthContext, initialAuthCheckComplete } = useAuth(); // Get user and auth status from useAuth
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -95,13 +97,22 @@ export function useUserProfile(): UseUserProfileReturn {
 
   // Load profile on mount if not already loaded (fallback for any edge cases)
   useEffect(() => {
-    if (!user && !isLoading) {
+    // Only fetch profile if:
+    // 1. Initial authentication check has completed.
+    // 2. The user is actually authenticated (userFromAuthContext exists).
+    // 3. The profile data is not yet in UserContext (userFromUserContext is null).
+    // 4. We are not already in a loading state.
+    if (initialAuthCheckComplete && userFromAuthContext && !userFromUserContext && !isLoading) {
       refetchProfile();
     }
-  }, [user, isLoading, refetchProfile]);
+    // If the user logs out (userFromAuthContext becomes null) and userFromUserContext still has data,
+    // UserContext should ideally be cleared by a higher-level mechanism that syncs AuthContext with UserContext.
+    // Or, clearUser() could be called here if userFromAuthContext is null and userFromUserContext is not.
+    // For now, this change primarily prevents the erroneous refetch on logout.
+  }, [initialAuthCheckComplete, userFromAuthContext, userFromUserContext, isLoading, refetchProfile]);
 
   return {
-    profile: user,
+    profile: userFromUserContext, // Ensure we return the user data from UserContext
     isLoading,
     isUpdating,
     isDeleting,
