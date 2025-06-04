@@ -49,15 +49,15 @@ export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
         
         {/* Filter Card */}
         <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 w-96 max-w-[90vw]">
-          <Card className="bg-white dark:bg-gray-900 shadow-xl border border-gray-200 dark:border-gray-800">
-            <div className="px-6 pt-4">
+          <Card className="bg-white dark:bg-gray-900 shadow-xl border border-gray-200 dark:border-gray-800 items-center">
+            <div className="px-6 w-full">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Filters
               </h3>
               <Separator />
             </div>
             
-            <CardContent className="pt-2 space-y-4">
+            <CardContent className="pt-2 space-y-4 w-full">
               {/* Filter Content - Same for both mobile and desktop */}
               {renderFilterContent()}
             </CardContent>
@@ -111,6 +111,12 @@ export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-32 shadow-lg">
+              <DropdownMenuItem onClick={() => setUrgency("All")}>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+                  <span>All</span>
+                </div>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setUrgency("High")}>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-urgency-high"></div>
@@ -144,6 +150,9 @@ export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-40 shadow-lg">
+              <DropdownMenuItem onClick={() => setCategory("All")}>
+                <span>All</span>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setCategory("Environment")}>
                 <span>Environment</span>
               </DropdownMenuItem>
@@ -174,6 +183,9 @@ export function FilterDropdown({ isOpen, onClose }: FilterDropdownProps) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-32 shadow-lg">
+              <DropdownMenuItem onClick={() => setStatus("All")}>
+                <span>All</span>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setStatus("Unresolved")}>
                 <span>Unresolved</span>
               </DropdownMenuItem>
