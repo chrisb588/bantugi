@@ -21,9 +21,9 @@ export function useAuth() {
 
   const logout = async () => {
     await contextLogout();
-    // Consider if this immediate redirect is always desired or should also be effect-driven
-    // For now, keeping it as is, as it's less likely to cause issues than login/signup redirects
-    router.push('/login'); 
+    // Removed router.push('/login'); to allow more flexible navigation after logout.
+    // The AuthGuard or specific page logic should handle where the user goes next,
+    // or if they stay on a public page.
   };
 
   return {
