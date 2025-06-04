@@ -3,6 +3,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getReport, deleteReport, updateReport } from '@/lib/supabase/reports';
 import { createServerClient } from '@/lib/supabase/server';
 import { getAuthenticatedUserID } from '@/lib/supabase/auth-utils';
+import { 
+  generateReportCacheKey, 
+  generateUserReportsCacheKey,
+  getCachedData, 
+  cacheData, 
+  invalidateCache 
+} from '@/lib/redis';
+
+// Cache expiration time in seconds (10 minutes)
+const CACHE_EXPIRY_SECONDS = 600;
 
 export async function GET(
   req: NextRequest,
@@ -17,7 +27,11 @@ export async function GET(
       return NextResponse.json({ error: "Report ID is missing or undefined in the path" }, { status: 400 });
     }
 
-    console.log(`[API GET /api/reports/${id}] Attempting to fetch report for ID: ${id}`);
+    // Check if skipCache query parameter is present
+    const url = new URL(req.url);
+    const skipCache = url.searchParams.get('skipCache') === 'true';
+
+    console.log(`[API GET /api/reports/${id}] Attempting to fetch report for ID: ${id}, skipCache: ${skipCache}`);
     
     const response = new NextResponse();
     const supabase = createServerClient(req, response);
@@ -28,6 +42,31 @@ export async function GET(
       console.log(`[API GET /api/reports/${id}] Request from authenticated user: ${userId}`);
     } else {
       console.log(`[API GET /api/reports/${id}] Request from unauthenticated user`);
+    }
+
+    // Generate cache key for this report
+    const cacheKey = generateReportCacheKey(id);
+    
+    // Try to get data from cache first (unless skipCache is true)
+    if (!skipCache) {
+      const cachedReport = await getCachedData(cacheKey);
+      if (cachedReport) {
+        console.log(`[API GET /api/reports/${id}] Cache HIT`);
+        
+        const jsonResponse = NextResponse.json(cachedReport, { 
+          status: 200,
+          headers: { 'X-Cache': 'HIT' }
+        });
+        
+        response.cookies.getAll().forEach(cookie => {
+          jsonResponse.cookies.set(cookie);
+        });
+        
+        return jsonResponse;
+      }
+      console.log(`[API GET /api/reports/${id}] Cache MISS`);
+    } else {
+      console.log(`[API GET /api/reports/${id}] Cache skip requested`);
     }
     
     const reportData = await getReport(supabase, id);
@@ -45,6 +84,9 @@ export async function GET(
     response.cookies.getAll().forEach(cookie => {
       jsonResponse.cookies.set(cookie);
     });
+    
+    // Cache the report data with an expiration time
+    await cacheData(cacheKey, reportData, CACHE_EXPIRY_SECONDS);
     
     return jsonResponse;
 
@@ -88,6 +130,14 @@ export async function DELETE(
     }
     
     console.log(`[API DELETE /api/reports/${id}] Successfully deleted report`);
+    
+    // Invalidate the cache for this report
+    const cacheKey = generateReportCacheKey(id);
+    await invalidateCache(cacheKey);
+    
+    // Also invalidate user reports cache since this report has been deleted
+    const userReportsCacheKey = generateUserReportsCacheKey(userId);
+    await invalidateCache(userReportsCacheKey);
     
     const jsonResponse = NextResponse.json(
       { message: "Report deleted successfully" },
@@ -185,6 +235,14 @@ export async function PUT(
     }
     
     console.log(`[API PUT /api/reports/${id}] Successfully updated report`);
+    
+    // Invalidate the cache for this report
+    const cacheKey = generateReportCacheKey(id);
+    await invalidateCache(cacheKey);
+    
+    // Also invalidate user reports cache since this report has been updated
+    const userReportsCacheKey = generateUserReportsCacheKey(userId);
+    await invalidateCache(userReportsCacheKey);
     
     const jsonResponse = NextResponse.json({
       message: "Report updated successfully",

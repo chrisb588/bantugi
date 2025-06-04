@@ -4,8 +4,67 @@ import type Pin from '@/interfaces/pin';
 import type { LatLngBounds, Map as LeafletMap } from 'leaflet';
 import { usePathname } from 'next/navigation';
 
+// Client-side in-memory cache
+const pinsCache = new Map<string, { data: Pin[], timestamp: number }>();
+// Reduce cache expiry time to improve responsiveness
+const CACHE_EXPIRY_MS = 2 * 60 * 1000; // 2 minutes (reduced from 5 minutes)
+const DEBOUNCE_DELAY_MS = 150; // 150ms (reduced from 300ms)
+
+// Function to clear all pins cache entries
+export function clearAllPinsCache(): void {
+  console.log('[useFetchPins] Clearing all pins cache entries');
+  pinsCache.clear();
+}
+
+// Generate cache key for client-side cache
+function generateClientCacheKey(bounds: LatLngBounds): string {
+  // Round to 3 decimal places (about 111 meters precision at the equator)
+  const sw = bounds.getSouthWest();
+  const ne = bounds.getNorthEast();
+  const precision = 3;
+  return `map:bounds:${sw.lat.toFixed(precision)}:${sw.lng.toFixed(precision)}:${ne.lat.toFixed(precision)}:${ne.lng.toFixed(precision)}`;
+}
+
+// Helper function to check if bounds are similar enough to use cached data
+function areBoundsSimilar(boundsA: LatLngBounds, boundsB: LatLngBounds, tolerancePercent = 30): boolean {
+  const swA = boundsA.getSouthWest();
+  const neA = boundsA.getNorthEast();
+  const swB = boundsB.getSouthWest();
+  const neB = boundsB.getNorthEast();
+  
+  // Calculate area of each bounds
+  const areaA = (neA.lat - swA.lat) * (neA.lng - swA.lng);
+  const areaB = (neB.lat - swB.lat) * (neB.lng - swB.lng);
+  
+  // Calculate overlap area
+  const overlapSW = {
+    lat: Math.max(swA.lat, swB.lat),
+    lng: Math.max(swA.lng, swB.lng)
+  };
+  const overlapNE = {
+    lat: Math.min(neA.lat, neB.lat),
+    lng: Math.min(neA.lng, neB.lng)
+  };
+  
+  // If there's no overlap, bounds are not similar
+  if (overlapSW.lat > overlapNE.lat || overlapSW.lng > overlapNE.lng) {
+    return false;
+  }
+  
+  // Calculate overlap area
+  const overlapArea = (overlapNE.lat - overlapSW.lat) * (overlapNE.lng - overlapSW.lng);
+  
+  // Calculate overlap percentage relative to both areas
+  const overlapPercentA = (overlapArea / areaA) * 100;
+  const overlapPercentB = (overlapArea / areaB) * 100;
+  
+  // Bounds are similar if the overlap is significant for both areas
+  return overlapPercentA >= (100 - tolerancePercent) && 
+         overlapPercentB >= (100 - tolerancePercent);
+}
+
 // Helper function to fetch pins from the API (remains the same)
-async function fetchPinsDataFromApi(bounds: LatLngBounds, signal?: AbortSignal): Promise<Pin[]> {
+async function fetchPinsDataFromApi(bounds: LatLngBounds, signal?: AbortSignal, skipCache = false): Promise<Pin[]> {
   const sw = bounds.getSouthWest();
   const ne = bounds.getNorthEast();
   const params = new URLSearchParams({
@@ -14,6 +73,12 @@ async function fetchPinsDataFromApi(bounds: LatLngBounds, signal?: AbortSignal):
     ne_lat: ne.lat.toString(),
     ne_lng: ne.lng.toString(),
   });
+  
+  // Add skip_cache parameter if needed
+  if (skipCache) {
+    params.append('skip_cache', 'true');
+  }
+  
   // CRITICAL LOG: Confirm this function is entered and fetch is attempted
   console.log('[useFetchPins] fetchPinsDataFromApi: ATTEMPTING FETCH from URL:', `/api/location?${params.toString()}`);
   const response = await fetch(`/api/location?${params.toString()}`, {
@@ -34,6 +99,11 @@ async function fetchPinsDataFromApi(bounds: LatLngBounds, signal?: AbortSignal):
     }
     throw new Error(errorMessage);
   }
+  
+  // Check if response was served from cache
+  const cacheStatus = response.headers.get('X-Cache');
+  console.log(`[useFetchPins] fetchPinsDataFromApi: Server cache status: ${cacheStatus || 'Not available'}`);
+  
   console.log('[useFetchPins] fetchPinsDataFromApi: Raw response OK, parsing JSON.');
   const data = await response.json();
   console.log('[useFetchPins] fetchPinsDataFromApi: Parsed data:', data);
@@ -176,6 +246,47 @@ export function useFetchPins() {
       console.warn("[useFetchPins] fetchPinsInBounds: Map returned zero-area bounds. Bailing for this attempt. Bounds:", bounds);
       return;
     }
+    
+    // NEW: Check client-side cache first
+    const cacheKey = generateClientCacheKey(bounds);
+    const cachedEntry = pinsCache.get(cacheKey);
+    const now = Date.now();
+    
+    // If we have a valid cache entry, use it
+    if (cachedEntry && (now - cachedEntry.timestamp < CACHE_EXPIRY_MS)) {
+      console.log("[useFetchPins] fetchPinsInBounds: Client cache HIT. Using cached pins. Count:", cachedEntry.data.length);
+      setPins(cachedEntry.data);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+    
+    // If cache key doesn't match exactly, check if we have similar bounds cached
+    if (!cachedEntry) {
+      // Check all cache entries for similar bounds
+      for (const [key, entry] of pinsCache.entries()) {
+        // Skip expired cache entries
+        if (now - entry.timestamp >= CACHE_EXPIRY_MS) continue;
+        
+        // Parse the bounds from the cache key
+        const parts = key.split(':');
+        if (parts.length === 6) { // map:bounds:sw_lat:sw_lng:ne_lat:ne_lng
+          const cachedBounds = L.latLngBounds(
+            L.latLng(parseFloat(parts[2]), parseFloat(parts[3])),
+            L.latLng(parseFloat(parts[4]), parseFloat(parts[5]))
+          );
+          
+          // If bounds are similar enough, use the cached data
+          if (areBoundsSimilar(bounds, cachedBounds, 20)) {
+            console.log("[useFetchPins] fetchPinsInBounds: Found similar bounds in cache. Using cached pins. Count:", entry.data.length);
+            setPins(entry.data);
+            setIsLoading(false);
+            setError(null);
+            return;
+          }
+        }
+      }
+    }
 
     if (abortControllerRef.current) {
       console.log("[useFetchPins] fetchPinsInBounds: New fetch requested: Aborting previous fetch.");
@@ -191,10 +302,29 @@ export function useFetchPins() {
     setError(null);
 
     try {
-      const fetchedPins = await fetchPinsDataFromApi(bounds, signal);
+      // Force skip cache on initial load and recovery to ensure fresh data
+      const skipCache = isInitialLoadAttempt || isRecoveringRef.current;
+      const fetchedPins = await fetchPinsDataFromApi(bounds, signal, skipCache);
+      
       if (!signal.aborted) {
+        // Update state with fetched pins
         setPins(fetchedPins);
-        console.log("[useFetchPins] fetchPinsInBounds: Successfully fetched and set pins. Count:", fetchedPins ? fetchedPins.length : 'undefined/null'); // MODIFIED: Added log
+        console.log("[useFetchPins] fetchPinsInBounds: Successfully fetched and set pins. Count:", fetchedPins ? fetchedPins.length : 'undefined/null');
+        
+        // Update client-side cache
+        pinsCache.set(cacheKey, {
+          data: fetchedPins,
+          timestamp: Date.now()
+        });
+        
+        // Cleanup old cache entries
+        const cacheCleanupTime = Date.now() - CACHE_EXPIRY_MS;
+        for (const [key, entry] of pinsCache.entries()) {
+          if (entry.timestamp < cacheCleanupTime) {
+            pinsCache.delete(key);
+          }
+        }
+        
         setError(null);
       } else {
         console.log("[useFetchPins] fetchPinsInBounds: Fetch was aborted before setting pins.");
@@ -304,17 +434,36 @@ export function useFetchPins() {
       map.off('load', handleInitialMapLoad); // Self-removing listener after it has run
     };
 
-    const debouncedFetch = () => {
-      console.log("[useFetchPins] debouncedFetch: Calling fetchPinsInBounds.");
-      fetchPinsInBounds(map);
-    };
-
     const handleMoveEnd = () => {
       console.log("[useFetchPins] map.on('moveend'): Triggered.");
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
+      
+      // Get current map bounds
+      try {
+        const bounds = map.getBounds();
+        if (!bounds) {
+          console.warn("[useFetchPins] handleMoveEnd: Could not get map bounds");
+          return;
+        }
+        
+        // Check if we have valid bounds with area
+        if (bounds.getSouthWest().equals(bounds.getNorthEast())) {
+          console.warn("[useFetchPins] handleMoveEnd: Zero-area bounds, skipping fetch");
+          return;
+        }
+        
+        // Clear any existing timeout
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current);
+        }
+        
+        // Set a new timeout
+        debounceTimeoutRef.current = setTimeout(() => {
+          console.log("[useFetchPins] debouncedFetch: Calling fetchPinsInBounds after debounce.");
+          fetchPinsInBounds(map);
+        }, DEBOUNCE_DELAY_MS);
+      } catch (error) {
+        console.error("[useFetchPins] handleMoveEnd: Error getting map bounds", error);
       }
-      debounceTimeoutRef.current = setTimeout(debouncedFetch, 300);
     };
 
     map.whenReady(() => {
@@ -376,6 +525,50 @@ export function useFetchPins() {
       // unless the map context fully resets.
     };
   }, [isMapReady, mapInstanceRef, L, fetchPinsInBounds, resetMapInstance, mapResetKey]);
+
+  // Clean up expired cache entries
+  useEffect(() => {
+    const now = Date.now();
+    const cacheCleanupTime = now - CACHE_EXPIRY_MS;
+    
+    for (const [key, entry] of pinsCache.entries()) {
+      if (entry.timestamp < cacheCleanupTime) {
+        pinsCache.delete(key);
+      }
+    }
+  }, [pins]);
+
+  // Add an event listener for cache invalidation
+  useEffect(() => {
+    const handleClearCache = () => {
+      console.log("[useFetchPins] Received clear-map-pins-cache event, clearing cache");
+      clearAllPinsCache();
+      
+      // If map is ready, trigger a refresh
+      if (isMapReady && mapInstanceRef.current) {
+        console.log("[useFetchPins] Map is ready, triggering refresh after cache clear");
+        
+        // Small delay to allow other operations to complete
+        setTimeout(() => {
+          if (mapInstanceRef.current) {
+            fetchPinsInBounds(mapInstanceRef.current, true); // Force skip cache
+          }
+        }, 50);
+      }
+    };
+
+    // Add event listener
+    if (typeof window !== 'undefined') {
+      window.addEventListener('clear-map-pins-cache', handleClearCache);
+    }
+
+    // Clean up
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('clear-map-pins-cache', handleClearCache);
+      }
+    };
+  }, [isMapReady, mapInstanceRef, fetchPinsInBounds]);
 
   console.log('[useFetchPins] Hook rendering. isLoading:', isLoading, 'Pins count:', pins.length, 'Error:', error);
   return { pins, isLoading, error };

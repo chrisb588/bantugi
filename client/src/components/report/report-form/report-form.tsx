@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner"; // Import toast
+import { notifyNewReportCreated } from "@/lib/cache-utils"; // Import notifyNewReportCreated
 
 import { Button } from "@/components/ui/button";
 import {
@@ -333,6 +334,14 @@ export function ReportForm({
       if (onSuccess) {
         const reportData = result.data || result;
         onSuccess(reportData, isEditing);
+      }
+      
+      // Notify that a new report has been created to refresh map pins
+      if (!isEditing) {
+        const reportData = result.data || result;
+        if (reportData?.id) {
+          notifyNewReportCreated(reportData.id);
+        }
       }
       
       if (onClose) {

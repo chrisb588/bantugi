@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createReport } from '@/lib/supabase/reports';
 import { createServerClient } from '@/lib/supabase/server';
 import { getAuthenticatedUserID } from '@/lib/supabase/auth-utils';
+import { generateUserReportsCacheKey, invalidateCache } from '@/lib/redis';
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,6 +32,12 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('[API/reports] Successfully created report:', report.id);
+    
+    // Invalidate the user's created reports cache
+    await invalidateCache(generateUserReportsCacheKey(userId));
+    
+    // Invalidate all map bounds caches to ensure the new pin shows up on the map
+    await invalidateCache('map:bounds:*');
     
     const jsonResponse = NextResponse.json(report, { status: 201 });
     

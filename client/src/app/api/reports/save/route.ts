@@ -2,6 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { getAuthenticatedUserID } from '@/lib/supabase/auth-utils';
+import { 
+  generateUserSavedReportsCacheKey, 
+  generateReportCacheKey,
+  invalidateCache 
+} from '@/lib/redis';
 
 export async function POST(req: NextRequest) {
   try {
@@ -84,6 +89,12 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('[API/reports/save] Successfully saved report:', reportId);
+    
+    // Invalidate the saved reports cache for this user
+    // We need to invalidate all possible pagination combinations by using a pattern
+    const cachePattern = `${generateUserSavedReportsCacheKey(userId)}:*`;
+    console.log(`[API/reports/save] Invalidating saved reports cache with pattern: ${cachePattern}`);
+    await invalidateCache(cachePattern);
     
     const jsonResponse = NextResponse.json(
       { 
@@ -178,6 +189,12 @@ export async function DELETE(req: NextRequest) {
     }
 
     console.log('[API/reports/save] Successfully unsaved report:', reportId);
+    
+    // Invalidate the saved reports cache for this user
+    // We need to invalidate all possible pagination combinations by using a pattern
+    const cachePattern = `${generateUserSavedReportsCacheKey(userId)}:*`;
+    console.log(`[API/reports/save] Invalidating saved reports cache with pattern: ${cachePattern}`);
+    await invalidateCache(cachePattern);
     
     const jsonResponse = NextResponse.json(
       { message: "Report unsaved successfully" },
