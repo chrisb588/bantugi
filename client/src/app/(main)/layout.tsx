@@ -6,6 +6,7 @@ import { MobileNavbar } from "@/components/generic/mobile-navbar";
 import { CreateReportOverlay } from "@/components/report/create-report-overlay";
 import { SavedReportsOverlay } from "@/components/report/saved-reports-overlay";
 import { CreatedReportsOverlay } from "@/components/report/created-reports-overlay";
+import { Toaster } from "@/components/ui/sonner";
 import { useState } from "react";
 import { useUserContext } from "@/context/user-context";
 import { useRouter } from "next/navigation"; // Remove unused usePathname
@@ -98,6 +99,7 @@ function MainLayoutContentInner({ children }: { children: React.ReactNode }) {
       
       {/* Created Reports Overlay */}
       {isCreatedReportsVisible && <CreatedReportsOverlay isVisible={true} onClose={closeMyReports} />}
+      <Toaster />
     </>
   );
 }

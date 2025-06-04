@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { cn, formatArea } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import Image from "next/image";
-import { MapPin, Settings2, Trash, ArrowLeftFromLine, Pencil, ChevronLeft } from "lucide-react";
+import { MapPin, Settings2, Trash, ArrowLeftFromLine, Pencil, ChevronLeft, Camera } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   Card,
@@ -16,12 +17,10 @@ import { ScrollArea } from "@/components/ui/scroll-area"; // Make sure to import
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
-import { useMapContext } from "@/context/map-context";
-import { useMapMarker } from "@/hooks/use-map-marker";
 import EditDetailsCard from "@/components/user/edit-details-card";
-import type LType from "leaflet"; // Import LType for type annotation
+import EditProfileCard from "@/components/user/edit-profile-card";
 import { useUserContext } from "@/context/user-context";
-import { convertLatLngToArea } from "@/lib/geocoding";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface ProfileCardProps extends React.ComponentProps<"div"> {
   edit?: boolean;
@@ -33,25 +32,12 @@ export default function ProfileCard({
   ...props
 }: ProfileCardProps) {
   const { state: { user }, updateUser } = useUserContext();
+  const { updateProfile, deleteProfile, isUpdating, isDeleting, error } = useUserProfile();
   const [isEditingName, setIsEditingName] = useState(false);
-  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   
-  // Get L from useMapContext
-  const { mapInstanceRef, L } = useMapContext(); 
-  const { addMarker, removeMarker, getMarkerPosition, initializeMarker } = useMapMarker();
   const router = useRouter();
-
-  // Initialize selectedLocation to null and set it in useEffect when L and user data are available
-  const [selectedLocation, setSelectedLocation] = useState<LType.LatLng | null>(null);
-
-  useEffect(() => {
-    if (L && user?.location?.coordinates) {
-      setSelectedLocation(new L.LatLng(user.location.coordinates.lat, user.location.coordinates.lng));
-    } else {
-      // Ensure selectedLocation is null if L or user coordinates are not available
-      setSelectedLocation(null); 
-    }
-  }, [L, user?.location?.coordinates]); // Dependencies: L and user's location coordinates
 
   const navigateToEditProfile = () => {
     router.push(`/${user?.username}/account/edit`);
@@ -66,95 +52,71 @@ export default function ProfileCard({
     setIsEditingName(true);
   }
 
-  const handleConfirmNameEdit = (newUsername: string) => {
-    updateUser({ username: newUsername });
-    setIsEditingName(false);
-    // TODO: Add API call to update username (backend)
-  };
-
-  const handleEditLocation = () => {
-    setIsEditingLocation(true);
-
-    if (mapInstanceRef.current && L) { // Ensure L is available
-      // Initialize marker at current location if exists
-      if (selectedLocation) {
-        const marker = initializeMarker(selectedLocation, { draggable: true }); // Make marker draggable
-        
-        if (marker) {
-          marker.on('dragend', () => {
-            const position = getMarkerPosition();
-            if (position) {
-              setSelectedLocation(position);
-            }
-          });
-        }
-      }
-
-      // Add click handler to map
-      mapInstanceRef.current.on('click', (e: LType.LeafletMouseEvent) => { // Type the event
-        const marker = addMarker(e.latlng, { draggable: true }); // Make new marker draggable
-        
-        if (marker) {
-          marker.on('dragend', () => {
-            const position = getMarkerPosition();
-            if (position) {
-              setSelectedLocation(position);
-            }
-          });
-          
-          setSelectedLocation(e.latlng);
-        }
-      });
-    }
-  }
-
-  const handleConfirmLocation = async () => {
-    if (selectedLocation && L) { // Ensure L is available for convertLatLngToArea if it uses L
-      const address = await convertLatLngToArea(selectedLocation);
-
-      if (!address) {
-        // Provide a fallback or handle the error as needed
-        // Here, we throw an error, but you can set a default Area object if appropriate
-        throw new Error("Failed to retrieve address for the selected location.");
-      }
-      
-      updateUser({
-        location: {
-          coordinates: {
-            lat: selectedLocation.lat,
-            lng: selectedLocation.lng
-          },
-          address: address,
-        }
-      });
-    }
-    setIsEditingLocation(false);
-    
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.off('click');
+  const handleConfirmNameEdit = async (newUsername: string) => {
+    try {
+      await updateProfile({ username: newUsername });
+      setIsEditingName(false);
+      toast.success('Username updated successfully');
+    } catch (error) {
+      console.error('Failed to update username:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update username';
+      toast.error(errorMessage);
     }
   };
 
-  const handleCancelLocation = () => {
-    setIsEditingLocation(false);
-    removeMarker();
-    
-    // Remove click handler from map
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.off('click');
+  const handleEditAddress = () => {
+    setIsEditingAddress(true);
+  };
+
+  const handleConfirmAddressEdit = async (newAddress: string) => {
+    try {
+      await updateProfile({ address: newAddress });
+      setIsEditingAddress(false);
+      toast.success('Address updated successfully');
+    } catch (error) {
+      console.error('Failed to update address:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update address';
+      toast.error(errorMessage);
     }
   };
 
-  const handleDeleteAccount = () => {
-    alert('Account delete clicked'); //just put the delete logic here
-
-    router.push('/');
+  const handleDeleteAccount = async () => {
+    try {
+      await deleteProfile();
+      toast.success('Account deleted successfully');
+      console.log('Account deleted successfully');
+      router.push('/');
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete account';
+      toast.error(errorMessage);
+    }
   };
 
   const handleLogout = () => {
     alert('Logout clicked');
 
     router.push('/');
+  };
+
+  const handleEditAvatar = () => {
+    setIsEditingProfile(true);
+  };
+
+  const handleConfirmProfileEdit = async (data: { username?: string; address?: string; avatar?: File }) => {
+    try {
+      await updateProfile(data);
+      setIsEditingProfile(false);
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleCancelProfileEdit = () => {
+    setIsEditingProfile(false);
   };
 
   // FIXME: fix windows is not defined error
@@ -164,7 +126,8 @@ export default function ProfileCard({
       <div className={cn(
         "w-full max-w-lg flex flex-col gap-4 -mt-12", 
         className,
-        isEditingLocation ? "pointer-events-none hidden" : "pointer-events-auto",
+        (isEditingProfile || isDeleting) ? "pointer-events-none" : "pointer-events-auto",
+        isDeleting ? "opacity-50" : "",
       )} {...props}>
         <Card className="h-[85vh] min-h-[400px] max-h-[800px]"> {/* Set fixed height here */}
           <ScrollArea className="h-full"> {/* Make ScrollArea full height of card */}
@@ -199,16 +162,25 @@ export default function ProfileCard({
               )}
               <div className="relative h-32 w-32 rounded-full overflow-hidden bg-muted">
                 <Image
-                src={user?.profilePicture || "/img/avatar.png"}
-                alt="Profile"
-                fill
-                className="object-cover"
-              />
+                  src={user?.profilePicture || "/img/avatar.png"}
+                  alt="Profile"
+                  fill
+                  className="object-cover"
+                />
+                {edit && (
+                  <button
+                    onClick={handleEditAvatar}
+                    className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                    aria-label="Edit avatar"
+                  >
+                    <Camera size={24} className="text-white" />
+                  </button>
+                )}
               </div>
               <div className="flex flex-col items-center">
                 {edit ? (
                   <div className="flex items-center gap-2">
-                    <div className="font-bold text-lg text-foreground">{user ? user.username : "User"}</div>
+                    <div className="font-bold text-lg text-foreground">{user?.username || "User"}</div>
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -219,24 +191,27 @@ export default function ProfileCard({
                     </Button>
                   </div>
                 ) : (
-                  <div className="font-bold text-lg text-foreground">{user?.username}</div>
+                  <div className="font-bold text-lg text-foreground">{user?.username || "User"}</div>
                 )}
-                <div className="flex items-center gap-1 text-foreground">
-                  <MapPin size={16} />
-                  <div className="font-bold text-sm">
-                    {user?.location ? formatArea(user?.location?.address) : "Unknown Location"}
+                {user?.email && (
+                  <div className="text-sm text-muted-foreground">{user.email}</div>
+                )}
+                {user?.address && (
+                  <div className="flex items-center gap-1 text-foreground mt-2">
+                    <MapPin size={16} />
+                    <div className="text-sm text-muted-foreground">{user.address}</div>
+                    {edit && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-5 w-5 ml-1"
+                        onClick={handleEditAddress}
+                      >
+                        <Pencil size={12} />
+                      </Button>
+                    )}
                   </div>
-                  {edit && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6 ml-1"
-                      onClick={handleEditLocation}
-                    >
-                      <Pencil size={14} />
-                    </Button>
-                  )}
-                </div>
+                )}
               </div>
             </CardContent>
             {edit && (
@@ -249,17 +224,17 @@ export default function ProfileCard({
                 <div className="flex flex-col items-center gap-2">
                   <DeleteConfirmationDialog
                     trigger={
-                      <Button variant="ghost">
+                      <Button variant="ghost" disabled={isDeleting}>
                         <div className="flex items-center gap-1 text-primary mt-4">
                           <Trash size={16} />
                           <div className="font-bold text-sm">
-                            Delete Account
+                            {isDeleting ? "Deleting..." : "Delete Account"}
                           </div>
                         </div>
                       </Button>
                     }
                     title="Are you sure you want to delete your account?"
-                    description="This action is irreversible."
+                    description="This action is irreversible and will permanently delete all your data including reports and profile information."
                     onConfirm={handleDeleteAccount}
                   />
                   <Button variant="ghost" onClick={handleLogout}>
@@ -291,28 +266,44 @@ export default function ProfileCard({
           <div className="w-full max-w-md p-4" onClick={(e) => e.stopPropagation()}>
             <EditDetailsCard
               label="Edit Username"
+              initialValue={user?.username || ''}
               onConfirm={handleConfirmNameEdit}
+              onCancel={() => setIsEditingName(false)}
             />
           </div>
         </div>
       )}
 
-      {isEditingLocation && (
-        <div className="fixed bottom-20 left-4 z-[1000] flex gap-2 pointer-events-auto">
-          <Button
-            onClick={handleConfirmLocation}
-            disabled={!selectedLocation}
-          >
-            Confirm Location
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleCancelLocation}
-          >
-            Cancel
-          </Button>
+      {isEditingAddress && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="w-full max-w-md p-4" onClick={(e) => e.stopPropagation()}>
+            <EditDetailsCard
+              label="Edit Address"
+              initialValue={user?.address || ''}
+              onConfirm={handleConfirmAddressEdit}
+              onCancel={() => setIsEditingAddress(false)}
+            />
+          </div>
         </div>
       )}
+
+      {isEditingProfile && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="w-full max-w-md p-4" onClick={(e) => e.stopPropagation()}>
+            <EditProfileCard
+              label="Edit Profile"
+              initialEmail={user?.email || ''}
+              initialUsername={user?.username || ''}
+              initialAddress={user?.address || ''}
+              currentAvatar={user?.profilePicture}
+              isUpdating={isUpdating}
+              onConfirm={handleConfirmProfileEdit}
+              onCancel={handleCancelProfileEdit}
+            />
+          </div>
+        </div>
+      )}
+
     </>
   )
 }

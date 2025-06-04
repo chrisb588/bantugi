@@ -13,11 +13,48 @@ export { supabase };
 function adaptSupabaseUser(supabaseUser: SupabaseUser | null): User | null {
   if (!supabaseUser) return null;
   return {
-    username: supabaseUser.email || '', // Use email as username, provide fallback
-    profilePicture: supabaseUser.user_metadata?.avatar_url || undefined, // Get avatar_url from user_metadata
-    emailConfirmedAt: supabaseUser.email_confirmed_at, // Populate email confirmation status
+    id: supabaseUser.id,
+    username: supabaseUser.user_metadata?.username || supabaseUser.email || '', 
+    email: supabaseUser.email || '',
+    profilePicture: supabaseUser.user_metadata?.avatar_url || undefined,
+    address: supabaseUser.user_metadata?.address || undefined,
+    emailConfirmedAt: supabaseUser.email_confirmed_at,
     // location can be added later if needed
   };
+}
+
+// Enhanced function to get complete user profile from database
+async function getCompleteUserProfile(supabaseUser: SupabaseUser): Promise<User | null> {
+  try {
+    // First get the basic user data from auth
+    const baseUser = adaptSupabaseUser(supabaseUser);
+    if (!baseUser) return null;
+
+    // Then fetch the profile data from database
+    const { data: profileData, error } = await supabase
+      .from('profiles')
+      .select('username, address, avatar_url')
+      .eq('user_id', supabaseUser.id)
+      .single();
+
+    if (error) {
+      console.warn('[getCompleteUserProfile] Could not fetch profile data:', error.message);
+      // Return base user data if profile fetch fails
+      return baseUser;
+    }
+
+    // Merge profile data with auth data
+    return {
+      ...baseUser,
+      username: profileData.username || baseUser.email || '',
+      address: profileData.address || undefined,
+      profilePicture: profileData.avatar_url || baseUser.profilePicture,
+    };
+  } catch (error) {
+    console.error('[getCompleteUserProfile] Error:', error);
+    // Fallback to basic user data
+    return adaptSupabaseUser(supabaseUser);
+  }
 }
 
 export async function signInWithPassword(payload: UserAuthDetails): Promise<User | null> {
@@ -31,7 +68,8 @@ export async function signInWithPassword(payload: UserAuthDetails): Promise<User
     throw error;
   }
 
-  return adaptSupabaseUser(data.user);
+  // Get complete user profile including database data
+  return data.user ? await getCompleteUserProfile(data.user) : null;
 }
 
 export async function userSignUp(payload: UserAuthDetails): Promise<User | null> {
@@ -49,7 +87,8 @@ export async function userSignUp(payload: UserAuthDetails): Promise<User | null>
     console.error("Signup error:", error.message);
     throw error;
   }
-  return adaptSupabaseUser(data.user);
+  // Get complete user profile including database data (though for new signups, profile might not exist yet)
+  return data.user ? await getCompleteUserProfile(data.user) : null;
 }
 
 export async function getCurrentUser(): Promise<User | null> {
@@ -111,7 +150,8 @@ export async function getCurrentUser(): Promise<User | null> {
     // and getUser() confirmed there's no authenticated user.
   }
   
-  return adaptSupabaseUser(userFromGetUser);
+  // Get complete user profile including database data
+  return userFromGetUser ? await getCompleteUserProfile(userFromGetUser) : null;
 }
 
 export async function signOut() {

@@ -82,23 +82,52 @@ export async function GET(req: NextRequest) {
         createdAt: report.created_at,
         category: report.category,
         urgency: report.urgency,
-        createdBy: report.created_by,
+        creator: {
+          username: "Unknown User", // Will be populated after fetching creator info
+          email: undefined,
+          profilePicture: undefined,
+        },
         location: report.location ? {
           locationId: report.location.location_id,
           coordinates: {
             lat: report.location.latitude,
             lng: report.location.longitude
           },
-          area: report.location.area ? {
-            id: report.location.area.id,
-            province: report.location.area.province,
-            city: report.location.area.city,
-            barangay: report.location.area.barangay
-          } : null
-        } : null,
+          address: report.location.area ? 
+            `${report.location.area.barangay}, ${report.location.area.city || ""}, ${report.location.area.province}`.replace(/, ,/g, ',').replace(/^,|,$/g, '') 
+            : "Unknown Location"
+        } : undefined,
         savedAt: savedReport.created_at
       };
     }).filter(Boolean); // Remove any null entries
+
+    // Fetch creator information for all reports
+    if (transformedReports && transformedReports.length > 0) {
+      const creatorIds = [...new Set(savedReports?.map(sr => (sr.report as any)?.created_by).filter(Boolean))];
+      
+      if (creatorIds.length > 0) {
+        const { data: creators } = await supabase
+          .from('profiles')
+          .select('user_id, email, username, avatar_url')
+          .in('user_id', creatorIds);
+
+        // Update each report with creator information
+        transformedReports.forEach((report) => {
+          if (!report) return;
+          const reportData = savedReports?.find(sr => (sr.report as any)?.id === report.id)?.report as any;
+          if (reportData) {
+            const creator = creators?.find(c => c.user_id === reportData.created_by);
+            if (creator) {
+              report.creator = {
+                username: creator.username || creator.email || "Unknown User",
+                email: creator.email,
+                profilePicture: creator.avatar_url || undefined,
+              };
+            }
+          }
+        });
+      }
+    }
 
     console.log(`[API/user/saved-reports] Successfully fetched ${transformedReports?.length || 0} saved reports`);
     

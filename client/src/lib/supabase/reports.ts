@@ -53,7 +53,7 @@ export async function getReport(server: SupabaseClient, reportId: string) {
   // Fetch creator separately using created_by field
   const { data: creatorData, error: creatorError } = await supabase
     .from('profiles')
-    .select('user_id, email, avatar_url')
+    .select('user_id, email, username, avatar_url')
     .eq('user_id', dbReportData.created_by)
     .maybeSingle();
 
@@ -84,7 +84,7 @@ export async function getReport(server: SupabaseClient, reportId: string) {
     if (creatorIds.length > 0) {
       const { data: creatorsData, error: creatorsError } = await supabase
         .from('profiles')
-        .select('user_id, email, avatar_url') // Select only existing fields
+        .select('user_id, email, username, avatar_url') // Select only existing fields
         .in('user_id', creatorIds);
 
       if (creatorsError) {
@@ -312,7 +312,7 @@ export async function deleteReport(
         // First, verify that the report exists and the user is the creator
         const { data: reportData, error: fetchError } = await supabase
             .from('reports')
-            .select('id, created_by, title')
+            .select('id, created_by, title, images')
             .eq('id', reportId)
             .single();
 
@@ -333,6 +333,41 @@ export async function deleteReport(
         }
 
         console.log(`[deleteReport] User ${userId} is authorized to delete report "${reportData.title}"`);
+
+        // Handle image cleanup before deleting the report
+        if (reportData.images && reportData.images.length > 0) {
+            console.log(`[deleteReport] Cleaning up ${reportData.images.length} images from storage`);
+            
+            // Delete all images from storage
+            for (const imageUrl of reportData.images) {
+                try {
+                    // Extract the file path from the image URL
+                    // Expected format: https://...supabase.co/storage/v1/object/public/report-images/{path}
+                    const pathMatch = imageUrl.match(/\/storage\/v1\/object\/public\/report-images\/(.+)$/);
+                    
+                    if (pathMatch) {
+                        const filePath = pathMatch[1];
+                        console.log(`[deleteReport] Deleting image file: ${filePath}`);
+                        
+                        const { error: deleteFileError } = await supabase.storage
+                            .from('report-images')
+                            .remove([filePath]);
+                        
+                        if (deleteFileError) {
+                            console.warn(`[deleteReport] Failed to delete image file ${filePath}:`, deleteFileError);
+                            // Continue with deletion even if file deletion fails
+                        } else {
+                            console.log(`[deleteReport] Successfully deleted image file: ${filePath}`);
+                        }
+                    } else {
+                        console.warn(`[deleteReport] Could not extract file path from image URL: ${imageUrl}`);
+                    }
+                } catch (imageCleanupError) {
+                    console.warn(`[deleteReport] Error during image cleanup for ${imageUrl}:`, imageCleanupError);
+                    // Continue with deletion even if image cleanup fails
+                }
+            }
+        }
 
         // Delete the report
         const { error: deleteError } = await supabase
@@ -426,6 +461,7 @@ interface DbLocationRow {
 interface DbUserRow {
   user_id: string;
   email?: string | null;
+  username?: string | null;
   avatar_url?: string | null;
 }
 
@@ -499,7 +535,8 @@ export function transformDbUserToUser(dbUser: DbUserRow | null | undefined): Use
     return undefined; 
   }
   return {
-    username: dbUser.email, // Use email as username since schema doesn't have username field
+    username: dbUser.username || dbUser.email, // Use username with email fallback
+    email: dbUser.email,
     profilePicture: dbUser.avatar_url ?? undefined,
   };
 }
@@ -649,7 +686,7 @@ export async function getUserCreatedReports(server: SupabaseClient, userId?: str
   // Fetch the creator's profile once since all reports are by the same user
   const { data: creatorProfile, error: profileError } = await supabase
     .from('profiles')
-    .select('user_id, email, avatar_url')
+    .select('user_id, email, username, avatar_url')
     .eq('user_id', targetUserId)
     .single();
   
@@ -720,7 +757,7 @@ export async function updateReport(
         // First, verify that the report exists and the user is the creator
         const { data: reportData, error: fetchError } = await supabase
             .from('reports')
-            .select('id, created_by, title, location_id')
+            .select('id, created_by, title, location_id, images')
             .eq('id', reportId)
             .single();
 
@@ -742,7 +779,48 @@ export async function updateReport(
 
         console.log(`[updateReport] User ${userId} is authorized to update report "${reportData.title}"`);
 
-        // Handle location updates if provided
+        // Handle image cleanup if images are being updated
+        if (updateData.images !== undefined) {
+            const currentImages: string[] = reportData.images || [];
+            const newImages: string[] = updateData.images || [];
+            
+            // Find images that are being removed
+            const removedImages = currentImages.filter(img => !newImages.includes(img));
+            
+            if (removedImages.length > 0) {
+                console.log(`[updateReport] Cleaning up ${removedImages.length} removed images`);
+                
+                // Delete removed images from storage
+                for (const imageUrl of removedImages) {
+                    try {
+                        // Extract the file path from the image URL
+                        // Expected format: https://...supabase.co/storage/v1/object/public/report-images/{path}
+                        const pathMatch = imageUrl.match(/\/storage\/v1\/object\/public\/report-images\/(.+)$/);
+                        
+                        if (pathMatch) {
+                            const filePath = pathMatch[1];
+                            console.log(`[updateReport] Deleting image file: ${filePath}`);
+                            
+                            const { error: deleteFileError } = await supabase.storage
+                                .from('report-images')
+                                .remove([filePath]);
+                            
+                            if (deleteFileError) {
+                                console.warn(`[updateReport] Failed to delete image file ${filePath}:`, deleteFileError);
+                                // Continue with update even if file deletion fails
+                            } else {
+                                console.log(`[updateReport] Successfully deleted image file: ${filePath}`);
+                            }
+                        } else {
+                            console.warn(`[updateReport] Could not extract file path from image URL: ${imageUrl}`);
+                        }
+                    } catch (imageCleanupError) {
+                        console.warn(`[updateReport] Error during image cleanup for ${imageUrl}:`, imageCleanupError);
+                        // Continue with update even if image cleanup fails
+                    }
+                }
+            }
+        }
         let newLocationId = reportData.location_id;
         if (updateData.latitude && updateData.longitude && updateData.areaProvince && updateData.areaBarangay) {
             try {
@@ -919,37 +997,64 @@ export async function getSavedReports(supabase: SupabaseClient, userId: string, 
             return { success: false, error: 'Failed to fetch saved reports' };
         }
 
-        // Transform the data
+        // Fetch creator information for all saved reports
+        const creatorIds = [...new Set(savedReports?.map(sr => (sr.report as any)?.created_by).filter(Boolean))];
+        let creatorsData: DbUserRow[] = [];
+        
+        if (creatorIds.length > 0) {
+            const { data: creators, error: creatorsError } = await supabase
+                .from('profiles')
+                .select('user_id, email, username, avatar_url')
+                .in('user_id', creatorIds);
+                
+            if (creatorsError) {
+                console.error('[getSavedReports] Error fetching creators:', creatorsError);
+            } else {
+                creatorsData = creators || [];
+            }
+        }
+
+        // Transform the data to match Report interface
         const transformedReports = savedReports?.map(savedReport => {
             const report = savedReport.report as any;
             if (!report) return null;
 
-            return {
+            // Find creator for this report
+            const creator = creatorsData.find(c => c.user_id === report.created_by);
+            const transformedCreator = transformDbUserToUser(creator);
+
+            // Process location to match Location interface
+            const location = report.location ? transformDbLocationToLocation({
+                location_id: report.location.location_id,
+                latitude: report.location.latitude,
+                longitude: report.location.longitude,
+                area: report.location.area ? {
+                    id: report.location.area.id,
+                    province: report.location.area.province,
+                    city: report.location.area.city,
+                    barangay: report.location.area.barangay
+                } : null
+            }) : undefined;
+
+            const transformedReport: Report = {
                 id: report.id,
                 title: report.title,
                 description: report.description,
                 status: report.status,
-                images: report.images || [],
-                createdAt: report.created_at,
+                images: report.images || undefined,
+                createdAt: new Date(report.created_at),
                 category: report.category,
                 urgency: report.urgency,
-                createdBy: report.created_by,
-                location: report.location ? {
-                    locationId: report.location.location_id,
-                    coordinates: {
-                        lat: report.location.latitude,
-                        lng: report.location.longitude
-                    },
-                    area: report.location.area ? {
-                        id: report.location.area.id,
-                        province: report.location.area.province,
-                        city: report.location.area.city,
-                        barangay: report.location.area.barangay
-                    } : null
-                } : null,
-                savedAt: savedReport.created_at
+                creator: transformedCreator || {
+                    username: "Unknown User",
+                    profilePicture: undefined,
+                },
+                location: location,
+                comments: undefined, // No comments in list view
             };
-        }).filter(Boolean);
+
+            return transformedReport;
+        }).filter((report): report is Report => report !== null);
 
         return {
             success: true,
