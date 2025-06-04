@@ -22,7 +22,7 @@ export function SavedReportsOverlay({ onClose }: SavedReportsOverlayProps) {
   const { reports: savedReports, isLoading, error, refetch } = useSavedReports();
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center p-4 md:p-6">
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-4 md:p-6 pinter-events-auto">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"

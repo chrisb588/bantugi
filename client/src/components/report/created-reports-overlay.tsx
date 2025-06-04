@@ -41,7 +41,7 @@ export function CreatedReportsOverlay({ isVisible, onClose }: CreatedReportsOver
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 pointer-event-auto">
       <div className="relative w-full max-w-md max-h-[90vh] flex flex-col">
         <Card className={cn(
           "flex flex-col w-full max-w-lg h-[85vh] min-h-[400px] max-h-[800px] overflow-hidden transition-opacity duration-300",

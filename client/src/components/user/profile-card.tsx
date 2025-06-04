@@ -94,8 +94,6 @@ export default function ProfileCard({
   };
 
   const handleLogout = () => {
-    alert('Logout clicked');
-
     router.push('/');
   };
 
