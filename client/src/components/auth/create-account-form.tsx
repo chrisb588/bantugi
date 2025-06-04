@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import UserAuthDetails from "@/interfaces/user-auth";
 import { useAuth } from "@/hooks/useAuth"; // Import useAuth
+import { toast } from "sonner";
 
 interface CreateAccountFormData extends UserAuthDetails {
   confirmPassword: string;
@@ -54,7 +55,9 @@ export function CreateAccountForm({
 
     // Extract username and password for the signup function
     const { username, password } = formData;
-    await signup({ username, password }); // Signup now returns a boolean, but we'll rely on the effect
+    const isSuccess = await signup({ username, password }); // Signup now returns a boolean, but we'll rely on the effect
+
+    if (isSuccess) toast.success('Success! Check your email to confirm your signup.')
     
     // Navigation is handled by the useAuth hook upon successful signup
   };
