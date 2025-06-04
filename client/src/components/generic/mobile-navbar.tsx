@@ -89,7 +89,7 @@ export function MobileNavbar({ onCreateReport, onSavedReports, onMyReports }: Na
 
   return (
     <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-35 w-full max-w-md md:max-w-lg px-4"> {/* Increased max-width for desktop */}
-      <div className="relative flex items-center justify-between h-14 md:h-16 bg-white dark:bg-gray-900 rounded-full shadow-lg border border-gray-100 dark:border-gray-800"> {/* Slightly taller on desktop */}
+      <div className="relative flex items-center justify-between h-14 md:h-16 bg-background dark:bg-gray-900 rounded-full shadow-lg border border-gray-100 dark:border-gray-800"> {/* Slightly taller on desktop */}
         {/* Map/Home button - always available */}
         <button
           className="flex-1 flex justify-center p-2 md:p-3 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors"
