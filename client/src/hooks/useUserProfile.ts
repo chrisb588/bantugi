@@ -93,10 +93,9 @@ export function useUserProfile(): UseUserProfileReturn {
     }
   }, [clearUser]);
 
-  // Load profile on mount to ensure we have complete profile data
-  // Fetch if no user or if user exists but lacks username (incomplete profile)
+  // Load profile on mount if not already loaded (fallback for any edge cases)
   useEffect(() => {
-    if (!isLoading && (!user || !user.username)) {
+    if (!user && !isLoading) {
       refetchProfile();
     }
   }, [user, isLoading, refetchProfile]);
