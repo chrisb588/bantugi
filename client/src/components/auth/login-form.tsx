@@ -23,7 +23,7 @@ export function LoginForm({
   const router = useRouter();
   const { login, isLoading, error, user, initialAuthCheckComplete } = useAuth();
   const [formData, setFormData] = useState<UserAuthDetails>({
-    username: '',
+    email: '',
     password: ''
   });
   
@@ -55,7 +55,7 @@ export function LoginForm({
         <CardHeader className="text-center">
           <CardTitle className="text-xl sm:text-2xl">READY TO SERVE <br /> YOUR COMMUNITY?</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center">
+        <CardContent className="flex flex-col items-center w-full">
           {/* Combined error display */}
           {error && (
             <div className="w-full p-3 mb-4 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm text-center">
@@ -66,12 +66,12 @@ export function LoginForm({
             <div className="w-full grid gap-6 sm:gap-10">
               <div className="w-full grid gap-3">
                 <div className="grid gap-1">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="username"
+                    id="email"
                     type="text"
                     required
-                    value={formData.username}
+                    value={formData.email}
                     onChange={handleChange}
                     disabled={isLoading}
                   />

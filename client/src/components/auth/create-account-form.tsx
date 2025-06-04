@@ -26,7 +26,7 @@ export function CreateAccountForm({
   ...props
 }: React.ComponentProps<"div">) {
   const [formData, setFormData] = useState<CreateAccountFormData>({
-    username: '',
+    email: '',
     password: '',
     confirmPassword: '',
   });
@@ -54,8 +54,8 @@ export function CreateAccountForm({
     }
 
     // Extract username and password for the signup function
-    const { username, password } = formData;
-    const isSuccess = await signup({ username, password }); // Signup now returns a boolean, but we'll rely on the effect
+    const { email, password } = formData;
+    const isSuccess = await signup({ email, password }); // Signup now returns a boolean, but we'll rely on the effect
 
     if (isSuccess) toast.success('Success! Check your email to confirm your signup.')
     
@@ -80,8 +80,8 @@ export function CreateAccountForm({
         <CardHeader className="text-center">
           <CardTitle className="text-xl sm:text-2xl">START SERVING YOUR <br /> COMMUNITY TODAY!</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center">
-          <form onSubmit={handleSubmit} className="w-full max-w-full">
+        <CardContent className="flex flex-col items-center w-full">
+          <form onSubmit={handleSubmit} className="w-full">
             <div className="w-full grid gap-6 sm:gap-10">
               <div className="w-full grid gap-3">
                 {/* Display form-specific error or auth error */}
@@ -91,11 +91,11 @@ export function CreateAccountForm({
                   </div>
                 )}
                 <div className="grid gap-1">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="username"
+                    id="email"
                     type="text"
-                    value={formData.username}
+                    value={formData.email}
                     onChange={handleInputChange}
                     required
                     disabled={isLoading} // Disable input when loading
