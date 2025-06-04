@@ -439,6 +439,61 @@ export async function getCommentsByReportId(
   }
 }
 
+// Create a new comment for a report
+export async function createComment(
+  server: SupabaseClient,
+  reportId: string,
+  content: string,
+  userId: string
+): Promise<Comment | null> {
+  const supabase: SupabaseClient = server;
+
+  // Insert the comment
+  const { data: commentData, error: commentError } = await supabase
+    .from('comment')
+    .insert({
+      report_id: reportId,
+      creatorid: userId,
+      content: content.trim()
+    })
+    .select(`
+      id,
+      content,
+      created_at,
+      creator:creatorid (
+        user_id,
+        email,
+        username,
+        avatar_url
+      )
+    `)
+    .single();
+
+  if (commentError) {
+    console.error('Error creating comment:', commentError);
+    return null;
+  }
+
+  if (!commentData) {
+    console.error('No comment data returned after creation');
+    return null;
+  }
+
+  // Transform the database comment to match the Comment interface
+  const creatorData = Array.isArray(commentData.creator) ? commentData.creator[0] : commentData.creator;
+  
+  return {
+    id: commentData.id,
+    content: commentData.content,
+    createdAt: new Date(commentData.created_at),
+    creator: {
+      username: creatorData?.username || creatorData?.email || "Unknown User",
+      email: creatorData?.email,
+      profilePicture: creatorData?.avatar_url || undefined,
+    }
+  };
+}
+
 // Helper functions to transform Supabase DB rows to application interfaces
 
 // Import interfaces (ensure these are correctly pathed if not at top level of this file)

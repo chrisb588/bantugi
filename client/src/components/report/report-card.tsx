@@ -11,32 +11,66 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import Report from "@/interfaces/report";
+import Comment from "@/interfaces/comment";
 import urgencyIcon from '@/constants/urgency-icon';
 import { formatArea } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { useComments } from '@/hooks/useComments';
 
 interface ReportCardProps {
   report: Report;
   className?: string;
   onViewMap?: () => void;
   onBack?: () => void;
+  onCommentAdded?: (comment: Comment) => void; // Callback for when a comment is added
 }
 
-export function ReportCard({ report, className, onViewMap, onBack, ...props }: ReportCardProps) {
+export function ReportCard({ report, className, onViewMap, onBack, onCommentAdded, ...props }: ReportCardProps) {
   const [showComments, setShowComments] = useState(true);
   const [commentText, setCommentText] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  const { user } = useAuth();
+  const { 
+    comments, 
+    isSubmitting: isSubmittingComment, 
+    error: commentError,
+    addComment 
+  } = useComments({ 
+    reportId: report.id, 
+    initialComments: report.comments 
+  });
   
   const toggleComments = () => {
     setShowComments(!showComments);
   };
 
-  const handleCommentSubmit = (e: React.FormEvent) => {
+  const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Handle comment submission - can be implemented later
-    console.log("Comment submitted:", commentText);
+    if (!commentText.trim() || !user || isSubmittingComment) {
+      return;
+    }
 
-    setCommentText("");
+    try {
+      console.log("Submitting comment:", commentText);
+
+      const newComment = await addComment(commentText);
+      
+      if (newComment) {
+        // Call the callback if provided
+        if (onCommentAdded) {
+          onCommentAdded(newComment);
+        }
+
+        // Clear the input
+        setCommentText("");
+        
+        console.log("Comment created successfully:", newComment);
+      }
+    } catch (error) {
+      console.error("Error creating comment:", error);
+    }
   };
 
   const nextImage = () => {
@@ -206,33 +240,56 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
                 {showComments && (
                   <div className="space-y-4 mt-3 w-full">
                     {/* Comment input field - styled like searchbar */}
-                    <form onSubmit={handleCommentSubmit} className="w-full mb-4">
-                      <div className="flex items-center w-full rounded-md bg-muted px-3 py-1 shadow-inner">
-                        <MessageSquare className="h-4 w-4 text-muted-foreground mr-2" />
-                        <Input 
-                          type="text"
-                          placeholder="Type a comment"
-                          value={commentText}
-                          onChange={(e) => setCommentText(e.target.value)}
-                          className="w-full border-0 h-8 bg-transparent font-medium text-xs focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
-                        />
-                        <Button 
-                          type="submit"
-                          variant="ghost" 
-                          size="icon"
-                          className="h-6 w-6 p-1"
-                          disabled={!commentText.trim()}
-                        >
-                          <span className="sr-only">Submit</span>
-                          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M1.20308 1.04312C1.00481 0.954998 0.772341 1.0048 0.627577 1.16641C0.482813 1.32802 0.458794 1.56455 0.568117 1.75196L3.92115 7.50002L0.568117 13.2481C0.458794 13.4355 0.482813 13.672 0.627577 13.8336C0.772341 13.9952 1.00481 14.045 1.20308 13.9569L14.7031 7.95693C14.8836 7.87668 15 7.69762 15 7.50002C15 7.30243 14.8836 7.12337 14.7031 7.04312L1.20308 1.04312ZM4.84553 7.10002L2.21234 2.586L13.2689 7.50002L2.21234 12.414L4.84552 7.90002H9C9.22092 7.90002 9.4 7.72094 9.4 7.50002C9.4 7.27911 9.22092 7.10002 9 7.10002H4.84553Z" fill="currentColor"></path>
-                          </svg>
-                        </Button>
+                    {user ? (
+                      <div className="w-full mb-4">
+                        <form onSubmit={handleCommentSubmit} className="w-full">
+                          <div className="flex items-center w-full rounded-md bg-muted px-3 py-1 shadow-inner">
+                            <MessageSquare className="h-4 w-4 text-muted-foreground mr-2" />
+                            <Input 
+                              type="text"
+                              placeholder="Type a comment"
+                              value={commentText}
+                              onChange={(e) => setCommentText(e.target.value)}
+                              disabled={isSubmittingComment}
+                              className="w-full border-0 h-8 bg-transparent font-medium text-xs focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
+                            />
+                            <Button 
+                              type="submit"
+                              variant="ghost" 
+                              size="icon"
+                              className="h-6 w-6 p-1"
+                              disabled={!commentText.trim() || isSubmittingComment}
+                            >
+                              <span className="sr-only">
+                                {isSubmittingComment ? "Submitting..." : "Submit"}
+                              </span>
+                              {isSubmittingComment ? (
+                                <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              ) : (
+                                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M1.20308 1.04312C1.00481 0.954998 0.772341 1.0048 0.627577 1.16641C0.482813 1.32802 0.458794 1.56455 0.568117 1.75196L3.92115 7.50002L0.568117 13.2481C0.458794 13.4355 0.482813 13.672 0.627577 13.8336C0.772341 13.9952 1.00481 14.045 1.20308 13.9569L14.7031 7.95693C14.8836 7.87668 15 7.69762 15 7.50002C15 7.30243 14.8836 7.12337 14.7031 7.04312L1.20308 1.04312ZM4.84553 7.10002L2.21234 2.586L13.2689 7.50002L2.21234 12.414L4.84552 7.90002H9C9.22092 7.90002 9.4 7.72094 9.4 7.50002C9.4 7.27911 9.22092 7.10002 9 7.10002H4.84553Z" fill="currentColor"></path>
+                                </svg>
+                              )}
+                            </Button>
+                          </div>
+                        </form>
+                        {/* Error message display */}
+                        {commentError && (
+                          <div className="mt-2 p-2 rounded-md bg-red-50 border border-red-200">
+                            <p className="text-sm text-red-600">{commentError}</p>
+                          </div>
+                        )}
                       </div>
-                    </form>
+                    ) : (
+                      <div className="w-full mb-4 p-3 rounded-md bg-muted/50 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          Please log in to add comments
+                        </p>
+                      </div>
+                    )}
                     
                     {/* Comments list */}
-                    {report.comments ? (report.comments.map((comment) => (
+                    {comments.length > 0 ? (comments.map((comment) => (
                       <div key={comment.id} className="flex items-start gap-3 pb-3 border-b border-gray-100">
                         <div className="relative h-8 w-8 rounded-full overflow-hidden bg-gray-200">
                           {comment.creator.profilePicture && (  
@@ -248,11 +305,19 @@ export function ReportCard({ report, className, onViewMap, onBack, ...props }: R
                           <div className="flex flex-col">
                             <span className="font-medium text-sm">{comment.creator.username || comment.creator.email || "Unknown User"}</span>
                             <p className="text-sm mt-1">{comment.content}</p>
+                            <span className="text-xs text-muted-foreground mt-1">
+                              {new Date(comment.createdAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
                           </div>
                         </div>
                       </div>
                     ))) : (
-                      <p className="text-sm text-gray-500">No comments.</p>
+                      <p className="text-sm text-gray-500">No comments yet. Be the first to comment!</p>
                     )}
                   </div>
                 )}
