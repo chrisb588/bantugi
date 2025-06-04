@@ -37,7 +37,7 @@ export function CategoryDropdownMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center justify-between gap-2 rounded-full px-3 py-1 bg-muted text-xs w-full">
+        <button className="flex items-center text-left justify-between gap-2 rounded-full px-3 py-1 bg-muted text-xs w-full">
           <span>{value || "-----"}</span>
           <ChevronDown className="h-3 w-3" />
         </button>

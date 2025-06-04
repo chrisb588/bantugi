@@ -110,11 +110,11 @@ const ReportList: React.FC<ReportListProps> = ({
         <CardHeader className="text-left bg-background z-10 flex-shrink-0">
           <CardTitle className="text-2xl">{title}</CardTitle>
         </CardHeader>
-        <div className="px-6 flex-shrink-0">
+        <div className="px-6">
           <Separator />
         </div>
         <ScrollArea className="flex-1 min-h-0"> {/* Make ScrollArea fill remaining space */}
-          <CardContent className="flex flex-col items-center py-4">
+          <CardContent className="flex flex-col items-center py-2">
             {/* Loading state for My Reports */}
             {isMyReportsView && isLoadingUserReports && (
               <div className="flex flex-col items-center justify-center py-8">

@@ -22,7 +22,7 @@ import ImageUploader from "@/components/report/report-form/image-uploader";
 import { Separator } from "@/components/ui/separator";
 import Report from "@/interfaces/report";
 import Pin from "@/interfaces/pin"; // Import Pin interface
-import { Locate } from "lucide-react";
+import { Locate, Loader2 } from "lucide-react";
 import { useMapContext } from "@/context/map-context";
 // Removed useMapMarker as its direct marker manipulation functions for this pin are replaced by useDrawPins
 import { useDrawPins } from "@/hooks/useDrawPins"; // Import useDrawPins
@@ -50,6 +50,7 @@ export function ReportForm({
 }: ReportFormProps) {
   const [choosingLocation, setChoosingLocation] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<LatLng | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add loading state
   const [formData, setFormData] = useState<Partial<Report>>({
     title: report?.title || '',
     description: report?.description || '',
@@ -286,6 +287,8 @@ export function ReportForm({
       return;
     }
 
+    setIsSubmitting(true); // Set loading state
+
     console.log('ReportForm - handleSubmit - formData.images before API call:', JSON.stringify(formData.images, null, 2)); // Log images before sending
 
     // Prepare the data for the API endpoint
@@ -357,6 +360,8 @@ export function ReportForm({
     } catch (error) {
       console.error(`Error ${isEditing ? 'updating' : 'submitting'} report:`, error);
       toast.error(`An unexpected error occurred while ${isEditing ? 'updating' : 'submitting'} the report.`);
+    } finally {
+      setIsSubmitting(false); // Reset loading state
     }
   };
 
@@ -429,10 +434,21 @@ export function ReportForm({
                 <ImageUploader images={formData.images || []} onChange={handleImagesChange} />
               </div>
               <Separator />
-              <Button type="submit" className="w-full" disabled={!formData.title || !formData.location?.coordinates}>
-                {report ? "Save Changes" : "Submit Report"}
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={!formData.title || !formData.location?.coordinates || isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  report ? "Save Changes" : "Submit Report"
+                )}
               </Button>
-              <Button type="button" variant="outline" onClick={handleCancel} className="w-full">
+              <Button type="button" variant="outline" onClick={handleCancel} className="w-full" disabled={isSubmitting}>
                 Cancel
               </Button>
             </form>

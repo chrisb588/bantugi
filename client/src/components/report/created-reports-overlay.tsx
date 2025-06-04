@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from '../ui/separator';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReportItem from "@/components/report/report-item";
 import { ReportForm } from "@/components/report/report-form/report-form";
@@ -47,7 +48,7 @@ export function CreatedReportsOverlay({ isVisible, onClose }: CreatedReportsOver
           "flex flex-col w-full max-w-lg h-[85vh] min-h-[400px] max-h-[800px] overflow-hidden transition-opacity duration-300",
           editingReport ? "opacity-30 pointer-events-none" : "opacity-100 pointer-events-auto"
         )}>
-          <CardHeader className="flex flex-row items-center justify-between pb-3 flex-shrink-0 border-b">
+          <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
             <CardTitle className="text-xl">My Reports</CardTitle>
             <button
               onClick={onClose}
@@ -57,9 +58,9 @@ export function CreatedReportsOverlay({ isVisible, onClose }: CreatedReportsOver
               <X className="h-5 w-5" />
             </button>
           </CardHeader>
-          
+          <Separator />
           <ScrollArea className="flex-1 min-h-0">
-            <CardContent className="p-4">
+            <CardContent className="py-2">
               {/* Auth check */}
               {!user && (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -101,7 +102,7 @@ export function CreatedReportsOverlay({ isVisible, onClose }: CreatedReportsOver
 
               {/* Reports list */}
               {user && !isLoading && !error && reports.length > 0 && (
-                <div className="space-y-3 pb-4">
+                <div className="space-y-4 pb-4">
                   {reports.map((report, index) => (
                     <ReportItem
                       key={report.id || index}
