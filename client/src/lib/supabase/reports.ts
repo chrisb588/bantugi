@@ -229,6 +229,33 @@ export async function createReport(server: SupabaseClient, data: {
       return null; 
   }
 
+  // Now update the location record with the report_id to complete the bidirectional relationship
+  const { error: locationUpdateError } = await supabase
+    .from('location')
+    .update({ report_id: createdReportRow.id })
+    .eq('location_id', report_location_id);
+
+  if (locationUpdateError) {
+    console.error('Error updating location with report_id:', locationUpdateError?.message);
+    // Log the error but don't fail the report creation since the core data is already created
+    console.warn('Report created successfully but location relationship may be incomplete');
+  } else {
+    console.log(`Successfully linked location ${report_location_id} to report ${createdReportRow.id}`);
+  }
+
+  // Update the area record with the report_id to complete the relationship
+  const { error: areaUpdateError } = await supabase
+    .from('area')
+    .update({ report_id: createdReportRow.id })
+    .eq('id', area_id);
+
+  if (areaUpdateError) {
+    console.error('Error updating area with report_id:', areaUpdateError?.message);
+    console.warn('Report created successfully but area relationship may be incomplete');
+  } else {
+    console.log(`Successfully linked area ${area_id} to report ${createdReportRow.id}`);
+  }
+
   return createdReportRow;
 }
 
@@ -312,7 +339,7 @@ export async function deleteReport(
         // First, verify that the report exists and the user is the creator
         const { data: reportData, error: fetchError } = await supabase
             .from('reports')
-            .select('id, created_by, title, images')
+            .select('id, created_by, title, images, location_id')
             .eq('id', reportId)
             .single();
 
@@ -369,7 +396,7 @@ export async function deleteReport(
             }
         }
 
-        // Delete the report
+        // Delete the report - CASCADE DELETE will automatically handle the location relationship
         const { error: deleteError } = await supabase
             .from('reports')
             .delete()
@@ -900,6 +927,70 @@ export async function updateReport(
                 if (!newLocationId) {
                     console.error('[updateReport] Failed to create new location');
                     return { success: false, error: 'Failed to update location' };
+                }
+
+                // Update the new location record with the report_id to establish the relationship
+                const { error: locationUpdateError } = await supabase
+                    .from('location')
+                    .update({ report_id: reportId })
+                    .eq('location_id', newLocationId);
+
+                if (locationUpdateError) {
+                    console.error('[updateReport] Error updating location with report_id:', locationUpdateError);
+                    // Log but don't fail the entire update
+                    console.warn('[updateReport] Location created but relationship may be incomplete');
+                } else {
+                    console.log(`[updateReport] Successfully linked location ${newLocationId} to report ${reportId}`);
+                }
+
+                // Update the new area record with the report_id to establish the relationship
+                const { error: areaUpdateError } = await supabase
+                    .from('area')
+                    .update({ report_id: reportId })
+                    .eq('id', createdAreaData.id);
+
+                if (areaUpdateError) {
+                    console.error('[updateReport] Error updating area with report_id:', areaUpdateError);
+                    console.warn('[updateReport] Area created but relationship may be incomplete');
+                } else {
+                    console.log(`[updateReport] Successfully linked area ${createdAreaData.id} to report ${reportId}`);
+                }
+
+                // If we have an old location and it's different from the new one, 
+                // we should clear the report_id from the old location and its area
+                if (reportData.location_id && reportData.location_id !== newLocationId) {
+                    // First get the old location's area_id
+                    const { data: oldLocationData } = await supabase
+                        .from('location')
+                        .select('area_id')
+                        .eq('location_id', reportData.location_id)
+                        .single();
+
+                    // Clear the old location relationship
+                    const { error: oldLocationUpdateError } = await supabase
+                        .from('location')
+                        .update({ report_id: null })
+                        .eq('location_id', reportData.location_id);
+
+                    if (oldLocationUpdateError) {
+                        console.warn('[updateReport] Error clearing old location relationship:', oldLocationUpdateError);
+                    } else {
+                        console.log(`[updateReport] Successfully cleared relationship for old location ${reportData.location_id}`);
+                    }
+
+                    // Clear the old area relationship if we found the area_id
+                    if (oldLocationData?.area_id) {
+                        const { error: oldAreaUpdateError } = await supabase
+                            .from('area')
+                            .update({ report_id: null })
+                            .eq('id', oldLocationData.area_id);
+
+                        if (oldAreaUpdateError) {
+                            console.warn('[updateReport] Error clearing old area relationship:', oldAreaUpdateError);
+                        } else {
+                            console.log(`[updateReport] Successfully cleared relationship for old area ${oldLocationData.area_id}`);
+                        }
+                    }
                 }
             } catch (locationError) {
                 console.error('[updateReport] Error updating location:', locationError);
