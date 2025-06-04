@@ -30,9 +30,9 @@ export function SavedReportsOverlay({ onClose }: SavedReportsOverlayProps) {
       />
       
       {/* Overlay Content */}
-      <Card className="relative w-full max-w-lg h-[85vh] min-h-[400px] max-h-[800px] bg-white dark:bg-gray-900 shadow-xl flex flex-col">
+      <Card className="relative w-full max-w-lg h-[85vh] min-h-[400px] max-h-[800px]  dark:bg-gray-900 shadow-xl flex flex-col">
         {/* Header with close button */}
-        <CardHeader className="flex flex-row items-center justify-between text-left bg-background z-10 border-b flex-shrink-0">
+        <CardHeader className="flex flex-row items-center justify-between text-left z-10 border-b flex-shrink-0">
           <CardTitle className="text-2xl">Saved Reports</CardTitle>
           <button
             onClick={onClose}
