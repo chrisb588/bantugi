@@ -99,8 +99,8 @@ export default function ProfileCard({
     alert('Logout clicked');
     try {
       await authLogout();
-      // Force redirect to login page after logout to test session state
-      router.push('/login'); 
+      // Redirect to landing page after logout
+      router.push('/'); 
     } catch (e) {
       console.error("Logout failed in profile-card", e);
       toast.error("Logout failed. Please try again.");
