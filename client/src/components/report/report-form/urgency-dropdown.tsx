@@ -1,4 +1,5 @@
 import { ChevronDown } from "lucide-react"; // Remove unused ChevronUp
+import { cn } from "@/lib/utils";
 
 // Remove unused imports
 // import { Button } from "@/components/ui/button"
@@ -22,6 +23,12 @@ interface UrgencyDropdownMenuProps {
   onValueChange: (value: "Low" | "Medium" | "High") => void;
 }
 
+const urgencyColors = {
+  'Low': 'bg-urgency-low',
+  'Medium': 'bg-urgency-medium',
+  'High': 'bg-urgency-high',
+}
+
 export function UrgencyDropdownMenu({ value, onValueChange }: UrgencyDropdownMenuProps) {
   const urgencyLevels: ["Low", "Medium", "High"] = ["Low", "Medium", "High"];
 
@@ -39,7 +46,8 @@ export function UrgencyDropdownMenu({ value, onValueChange }: UrgencyDropdownMen
             key={level}
             onClick={() => onValueChange(level)}
           >
-            {level}
+            <div className={cn("w-2 h-2 rounded-full", urgencyColors[level])}></div>
+            <span>{level}</span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

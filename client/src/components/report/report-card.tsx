@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useComments } from '@/hooks/useComments';
 import useIsReportSaved from '@/hooks/useIsReportSaved';
 import { toast } from 'sonner';
+import { StatusDropdownMenu } from './status-dropdown';
 
 interface ReportCardProps {
   report: Report;
@@ -32,6 +33,7 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
   const [commentText, setCommentText] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [status, setStatus] = useState<string>(report.status);
   
   const { user } = useAuth();
   const { 
@@ -84,7 +86,6 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
     }
   };
 
-  // TODO: Implement save report
   const handleSaveToggle = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent event bubbling
     
@@ -134,6 +135,12 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
       setIsSaving(false);
     }
   };
+
+  const handleStatusChange = (status: string) => {
+    setStatus(status);
+
+    // TODO: update status changes to supabase
+  }
 
   const nextImage = () => {
     setCurrentImageIndex((prevIndex) => 
@@ -260,7 +267,7 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
               </div>
               
               {/* Location with View in Map button */}
-              <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex w-full items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-1.5">
                   <MapPin className="h-4 w-4 text-gray-500" />
                   <span className="text-sm">
@@ -280,7 +287,7 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
               
               {/* Category */}
               <div className="flex mb-4">
-                <span className="text-xs font-semibold text-slate-700 bg-muted px-3 py-1 rounded-full whitespace-nowrap">
+                <span className="text-xs font-semibold text-foreground bg-muted px-3 py-1 rounded-full whitespace-nowrap">
                   {report.category}
                 </span>
               </div>
@@ -290,10 +297,11 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
 
               {/* Status */}
               <div className="flex items-center gap-2 mb-5">
-                <span className="h-2 w-2 rounded-full text-primary"></span>
+                {/* <span className="h-2 w-2 rounded-full text-primary"></span>
                 <span className="text-sm font-medium text-primary">
                   {report.status}
-                </span>
+                </span> */}
+                <StatusDropdownMenu value={status} onValueChange={handleStatusChange} />
               </div>
               
               {/* Description */}
