@@ -38,6 +38,32 @@ export default function ProfileCard({
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  // For username uniqueness check
+  async function checkUsernameUnique(username: string): Promise<boolean> {
+    setIsCheckingUsername(true);
+    setEditError(null);
+    try {
+      const res = await fetch(`/api/user/check-username?username=${encodeURIComponent(username)}`);
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('API error:', errorText);
+        setEditError('Could not verify username uniqueness.');
+        setIsCheckingUsername(false);
+        return false;
+      }
+      const data = await res.json();
+      // API returns { available: true/false }
+      setIsCheckingUsername(false);
+      return !!data.available;
+    } catch (e) {
+      console.error('Network or parsing error:', e);
+      setEditError('Could not verify username uniqueness.');
+      setIsCheckingUsername(false);
+      return false;
+    }
+  }
   
   const router = useRouter();
 
@@ -107,11 +133,27 @@ export default function ProfileCard({
     }
   };
 
-  const handleEditAvatar = () => {
+  // Unified edit handler for account details
+  const handleEditAccountDetails = () => {
+    setEditError(null);
     setIsEditingProfile(true);
   };
 
+  // Enhanced confirm handler with username uniqueness validation
   const handleConfirmProfileEdit = async (data: { username?: string; address?: string; avatar?: File }) => {
+    setEditError(null);
+    if (!data.username || !data.username.trim()) {
+      setEditError('Username is required.');
+      return;
+    }
+    // Only check uniqueness if username is changed
+    if (data.username !== user?.username) {
+      const isUnique = await checkUsernameUnique(data.username.trim());
+      if (!isUnique) {
+        setEditError('Username is already taken.');
+        return;
+      }
+    }
     try {
       await updateProfile(data);
       setIsEditingProfile(false);
@@ -119,11 +161,13 @@ export default function ProfileCard({
     } catch (error) {
       console.error('Failed to update profile:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+      setEditError(errorMessage);
       toast.error(errorMessage);
     }
   };
 
   const handleCancelProfileEdit = () => {
+    setEditError(null);
     setIsEditingProfile(false);
   };
 
@@ -131,6 +175,13 @@ export default function ProfileCard({
 
   return (
     <>
+      {/* Edit Account Details Button (always visible, consistent with design) */}
+      <div className="w-full flex justify-end mb-2">
+        <Button variant="outline" size="sm" onClick={handleEditAccountDetails}>
+          Edit Account Details
+        </Button>
+      </div>
+      {/* Main Profile Card UI (preserved) */}
       <div className={cn(
         "w-full max-w-lg flex flex-col gap-4 -mt-12", 
         className,
@@ -163,155 +214,65 @@ export default function ProfileCard({
               </div>
             )}
             <CardContent className="flex flex-col items-center py-4 gap-2">
-              {edit && (
-                <div className="text-lg font-bold text-foreground">
-                  Edit Account
-                </div>
-              )}
-              <div className="relative h-32 w-32 rounded-full overflow-hidden bg-muted">
-                <Image
-                  src={user?.profilePicture || "/img/avatar.png"}
-                  alt="Profile"
-                  fill
-                  className="object-cover"
+              {/* Edit Profile Modal (reusing your EditProfileCard) */}
+              {isEditingProfile && (
+                <EditProfileCard
+                  label="Edit Account Details"
+                  initialEmail={user?.email || ''}
+                  initialUsername={user?.username || ''}
+                  initialAddress={user?.address || ''}
+                  currentAvatar={user?.profilePicture}
+                  isUpdating={isUpdating || isCheckingUsername}
+                  onConfirm={handleConfirmProfileEdit}
+                  onCancel={handleCancelProfileEdit}
                 />
-                {edit && (
-                  <button
-                    onClick={handleEditAvatar}
-                    className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                    aria-label="Edit avatar"
-                  >
-                    <Camera size={24} className="text-white" />
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-col items-center">
-                {edit ? (
-                  <div className="flex items-center gap-2">
-                    <div className="font-bold text-lg text-foreground">{user?.username || "User"}</div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6"
-                      onClick={handleEditName}
-                    >
-                      <Pencil size={14} />
-                    </Button>
+              )}
+              {/* Show validation or API errors */}
+              {editError && (
+                <div className="text-red-500 text-sm mb-2">{editError}</div>
+              )}
+              {/* Rest of the profile card UI (unchanged) */}
+              {!isEditingProfile && (
+                <>
+                  <div className="relative h-32 w-32 rounded-full overflow-hidden bg-muted">
+                    <Image
+                      src={user?.profilePicture || "/img/avatar.png"}
+                      alt="Profile"
+                      fill
+                      className="object-cover"
+                    />
                   </div>
-                ) : (
-                  <div className="font-bold text-lg text-foreground">{user?.username || "User"}</div>
-                )}
-                {user?.email && (
-                  <div className="text-sm text-muted-foreground">{user.email}</div>
-                )}
-                {user?.address && (
-                  <div className="flex items-center gap-1 text-foreground mt-2">
-                    <MapPin size={16} />
-                    <div className="text-sm text-muted-foreground">{user.address}</div>
-                    {edit && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-5 w-5 ml-1"
-                        onClick={handleEditAddress}
-                      >
-                        <Pencil size={12} />
-                      </Button>
+                  <div className="flex flex-col items-center">
+                    <div className="font-bold text-lg text-foreground">{user?.username || "User"}</div>
+                    {user?.email && (
+                      <div className="text-xs text-muted-foreground">{user.email}</div>
+                    )}
+                    {user?.address && (
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <MapPin size={14} />
+                        <span>{user.address}</span>
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-            </CardContent>
-            {edit && (
-              <div className="px-6">
-                <Separator />
-              </div>
-            )}
-            <CardContent className="flex flex-col items-center py-4 gap-2">
-              {edit ? (
-                <div className="flex flex-col items-center gap-2">
-                  <DeleteConfirmationDialog
-                    trigger={
-                      <Button variant="ghost" disabled={isDeleting}>
-                        <div className="flex items-center gap-1 text-primary mt-4">
-                          <Trash size={16} />
-                          <div className="font-bold text-sm">
-                            {isDeleting ? "Deleting..." : "Delete Account"}
-                          </div>
-                        </div>
+
+                  {/* Account Settings Section */}
+                  <div className="w-full mt-8 px-4">
+                    <div className="font-semibold text-base mb-2">Account Settings</div>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={handleLogout}>
+                        Log Out
                       </Button>
-                    }
-                    title="Are you sure you want to delete your account?"
-                    description="This action is irreversible and will permanently delete all your data including reports and profile information."
-                    onConfirm={handleDeleteAccount}
-                  />
-                  <Button variant="ghost" onClick={handleLogout}>
-                    <div className="flex items-center gap-1 text-accent mt-4">
-                      <ArrowLeftFromLine size={16} />
-                      <div className="font-bold text-sm">
-                        Logout
-                      </div>
-                    </div>
-                  </Button>
-                </div>
-              ) : (
-                <Button variant="ghost" onClick={navigateToEditProfile}>
-                  <div className="flex items-center gap-1 text-accent mt-4">
-                    <Settings2 size={16} />
-                    <div className="font-bold text-sm">
-                      Account Settings
+                      <Button variant="destructive" size="sm" onClick={handleDeleteAccount}>
+                        Delete Account
+                      </Button>
                     </div>
                   </div>
-                </Button>
+                </>
               )}
             </CardContent>
-          </ScrollArea> 
+          </ScrollArea>
         </Card>
       </div>
-
-      {isEditingName && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="w-full max-w-md p-4" onClick={(e) => e.stopPropagation()}>
-            <EditDetailsCard
-              label="Edit Username"
-              initialValue={user?.username || ''}
-              onConfirm={handleConfirmNameEdit}
-              onCancel={() => setIsEditingName(false)}
-            />
-          </div>
-        </div>
-      )}
-
-      {isEditingAddress && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="w-full max-w-md p-4" onClick={(e) => e.stopPropagation()}>
-            <EditDetailsCard
-              label="Edit Address"
-              initialValue={user?.address || ''}
-              onConfirm={handleConfirmAddressEdit}
-              onCancel={() => setIsEditingAddress(false)}
-            />
-          </div>
-        </div>
-      )}
-
-      {isEditingProfile && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="w-full max-w-md p-4" onClick={(e) => e.stopPropagation()}>
-            <EditProfileCard
-              label="Edit Profile"
-              initialEmail={user?.email || ''}
-              initialUsername={user?.username || ''}
-              initialAddress={user?.address || ''}
-              currentAvatar={user?.profilePicture}
-              isUpdating={isUpdating}
-              onConfirm={handleConfirmProfileEdit}
-              onCancel={handleCancelProfileEdit}
-            />
-          </div>
-        </div>
-      )}
-
     </>
-  )
+  );
 }

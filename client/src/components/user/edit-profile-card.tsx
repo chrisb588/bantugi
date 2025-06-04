@@ -15,6 +15,8 @@ interface EditProfileCardProps {
   isUpdating?: boolean;
   onConfirm: (data: { username?: string; address?: string; avatar?: File }) => void;
   onCancel: () => void;
+  onLogout?: () => void;
+  onDeleteAccount?: () => void;
 }
 
 export default function EditProfileCard({
@@ -26,6 +28,8 @@ export default function EditProfileCard({
   isUpdating = false,
   onConfirm,
   onCancel,
+  onLogout,
+  onDeleteAccount,
 }: EditProfileCardProps) {
   const [email, setEmail] = useState(initialEmail);
   const [username, setUsername] = useState(initialUsername);
@@ -221,8 +225,23 @@ export default function EditProfileCard({
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
-    </div>
-  );
+        {/* Account Settings Section */}
+        {onLogout && onDeleteAccount && (
+          <div className="mt-8">
+            <div className="font-semibold text-base mb-2">Account Settings</div>
+            <div className="flex gap-2">
+              <Button variant="destructive" size="sm" onClick={onDeleteAccount} disabled={isUpdating}>
+                Delete Account
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onLogout}>
+                Log Out
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  </div>
+); 
 }
+
