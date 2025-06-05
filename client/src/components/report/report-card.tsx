@@ -136,10 +136,55 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
     }
   };
 
-  const handleStatusChange = (status: string) => {
-    setStatus(status);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [statusUpdateSuccess, setStatusUpdateSuccess] = useState(false);
 
-    // TODO: update status changes to supabase
+  const handleStatusChange = async (newStatus: string) => {
+    if (isUpdatingStatus || newStatus === status) return;
+    
+    setIsUpdatingStatus(true);
+    setStatusUpdateSuccess(false);
+    
+    try {
+      console.log(`Updating report status from ${status} to ${newStatus}`);
+      
+      const endpoint = `/api/reports/${report.id}`;
+      const response = await fetch(endpoint, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to update status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`Status update response:`, result);
+      
+      // Update the local state
+      setStatus(newStatus);
+      setStatusUpdateSuccess(true);
+      
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setStatusUpdateSuccess(false);
+      }, 3000);
+      
+    } catch (error) {
+      console.error(`Error updating report status:`, error);
+      const errorMessage = error instanceof Error ? error.message : `Failed to update report status`;
+      toast.error(errorMessage);
+      
+      // Revert to previous status on error
+      setStatus(report.status);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   }
 
   const nextImage = () => {
@@ -296,12 +341,17 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
                       If so kay i-add lang ang dropdown*/}
 
               {/* Status */}
-              <div className="flex items-center gap-2 mb-5">
-                {/* <span className="h-2 w-2 rounded-full text-primary"></span>
-                <span className="text-sm font-medium text-primary">
-                  {report.status}
-                </span> */}
-                <StatusDropdownMenu value={status} onValueChange={handleStatusChange} />
+              <div className="flex flex-col gap-2 mb-5">
+                <StatusDropdownMenu 
+                  value={status} 
+                  onValueChange={handleStatusChange} 
+                  isLoading={isUpdatingStatus} 
+                />
+                {statusUpdateSuccess && (
+                  <div className="text-xs text-green-600 animate-fade-in-out">
+                    Status successfully updated
+                  </div>
+                )}
               </div>
               
               {/* Description */}
