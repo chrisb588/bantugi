@@ -112,6 +112,7 @@ export function CreatedReportsOverlay({ isVisible, onClose }: CreatedReportsOver
                       onDelete={handleReportDelete}
                       onUpdate={handleReportUpdate}
                       onEdit={handleEditReport}
+                      onReportClick={onClose}
                     />
                   ))}
                 </div>
