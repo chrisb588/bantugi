@@ -76,11 +76,6 @@ export async function userSignUp(payload: UserAuthDetails): Promise<User | null>
   const { data, error } = await supabase.auth.signUp({
     email: payload.username, // Assuming payload.username is the email
     password: payload.password,
-    options: {
-      data: { // This data goes into user_metadata
-        avatar_url: "https://placehold.co/40x40.png?text=Avatar", // Placeholder avatar
-      }
-    }
   });
 
   if (error) {
