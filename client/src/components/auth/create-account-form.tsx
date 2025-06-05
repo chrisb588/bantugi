@@ -83,7 +83,6 @@ export function CreateAccountForm({
   };
 
   // Create a debounced function to check email availability
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const checkEmailAvailability = useCallback(
     debounce(async (email: string) => {
       // Don't check if email is empty or invalid format

@@ -39,10 +39,10 @@ export function CreatedReportsOverlay({ isVisible, onClose }: CreatedReportsOver
     setEditingReport(null);
   };
 
-  if (!isVisible) return null;
-
   // State to track whether we're choosing a location
   const [isChoosingLocation, setIsChoosingLocation] = useState(false);
+
+  if (!isVisible) return null;
 
   return (
     <div className={cn(
