@@ -124,11 +124,11 @@ export function MobileNavbar({ onCreateReport, onSavedReports, onMyReports }: Na
           title={!user ? "Login to view your reports" : "My Reports"}
         >
           <CopyCheck className="w-5 h-5 md:w-6 md:h-6" />
-          {user && reportCount > 0 && (
+          {/* {user && reportCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full h-5 w-5 md:h-6 md:w-6 flex items-center justify-center min-w-[20px] md:min-w-[24px] font-medium">
               {reportCount > 99 ? '99+' : reportCount}
             </span>
-          )}
+          )} */}
         </button>
         
         {/* Account/Login button */}
