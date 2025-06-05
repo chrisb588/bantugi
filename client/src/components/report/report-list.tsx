@@ -50,10 +50,24 @@ const ReportList: React.FC<ReportListProps> = ({
     }
   };
 
-  const handleSaveToggle = () => {
-    // Refresh saved reports if needed
-    if (isSavedReportsView) {
-      refetchSavedReports();
+  const handleSaveToggle = (reportId: string, isSaved: boolean) => {
+    console.log(`Report ${reportId} ${isSaved ? 'saved' : 'unsaved'}`);
+    
+    // Refresh both types of reports when save status changes
+    refetchSavedReports();
+    
+    // If in the my reports view, refetch that as well to update any UI indicators
+    if (isMyReportsView) {
+      refetchUserReports();
+    }
+    
+    // If we're in the saved reports view and a report was unsaved,
+    // we should make sure it's removed from the current view immediately
+    if (isSavedReportsView && !isSaved) {
+      // Remove the unsaved report from the local state
+      setReports((currentReports) => 
+        currentReports ? currentReports.filter(report => report.id !== reportId) : null
+      );
     }
   };
 

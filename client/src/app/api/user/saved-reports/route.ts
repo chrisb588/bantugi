@@ -2,6 +2,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { getAuthenticatedUserID } from '@/lib/supabase/auth-utils';
+import { 
+  generateUserSavedReportsCacheKey, 
+  getCachedData, 
+  cacheData 
+} from '@/lib/redis';
+
+// Cache expiration time in seconds (10 minutes)
+const CACHE_EXPIRY_SECONDS = 600;
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,13 +25,42 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log(`[API/user/saved-reports] Fetching saved reports for user: ${userId}`);
-
     // Get query parameters for pagination
     const url = new URL(req.url);
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
+    const skipCache = url.searchParams.get('skipCache') === 'true';
+
+    // Generate cache key for this user's saved reports, including pagination
+    const cacheKey = `${generateUserSavedReportsCacheKey(userId)}:page${page}:limit${limit}`;
+    
+    console.log(`[API/user/saved-reports] Request for user: ${userId}, page: ${page}, limit: ${limit}`);
+    
+    // Try to get data from cache first (unless skipCache is true)
+    if (!skipCache) {
+      const cachedReports = await getCachedData(cacheKey);
+      if (cachedReports) {
+        console.log(`[API/user/saved-reports] Cache HIT for user: ${userId}, page: ${page}`);
+        
+        const jsonResponse = NextResponse.json(cachedReports, { 
+          status: 200,
+          headers: { 'X-Cache': 'HIT' }
+        });
+        
+        // Copy any cookies set by Supabase
+        response.cookies.getAll().forEach(cookie => {
+          jsonResponse.cookies.set(cookie);
+        });
+        
+        return jsonResponse;
+      }
+      console.log(`[API/user/saved-reports] Cache MISS for user: ${userId}, page: ${page}`);
+    } else {
+      console.log(`[API/user/saved-reports] Cache skip requested for user: ${userId}`);
+    }
+
+    console.log(`[API/user/saved-reports] Fetching saved reports for user: ${userId}`);
 
     // Query to get saved reports with full report details
     const reportQuery = `
@@ -140,6 +177,9 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil((count || 0) / limit)
       }
     });
+    
+    // Cache the response data with an expiration time
+    cacheData(cacheKey, jsonResponse, CACHE_EXPIRY_SECONDS);
     
     // Copy any cookies set by Supabase
     response.cookies.getAll().forEach(cookie => {

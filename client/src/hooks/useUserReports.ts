@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useUserContext } from '@/context/user-context';
 import { useAuthContext } from '@/context/auth-context';
 import Report from '@/interfaces/report';
+
+// Client-side in-memory cache
+const reportsCache = new Map<string, { data: Report[], timestamp: number }>();
+const CACHE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 
 interface UseUserReportsReturn {
   reports: Report[];
@@ -19,9 +23,25 @@ export function useUserReports(): UseUserReportsReturn {
   const { state: { user } } = useUserContext();
   const { state: authState } = useAuthContext();
 
-  const fetchReports = async () => {
+  // Cache key based on user ID
+  const cacheKey = user?.id ? `user-reports-${user.id}` : '';
+  const initialFetchRef = useRef(false);
+
+  const fetchReports = useCallback(async (skipCache = false) => {
     if (!user || !authState.initialAuthCheckComplete) {
       return;
+    }
+
+    // Check client-side cache first
+    if (!skipCache && cacheKey) {
+      const cachedEntry = reportsCache.get(cacheKey);
+      const now = Date.now();
+      
+      if (cachedEntry && (now - cachedEntry.timestamp < CACHE_EXPIRY_MS)) {
+        console.log('[useUserReports] Using client-side cached reports');
+        setReports(cachedEntry.data);
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -30,7 +50,12 @@ export function useUserReports(): UseUserReportsReturn {
     try {
       console.log('[useUserReports] Fetching user created reports...');
       
-      const response = await fetch('/api/user/created-reports', {
+      // Add skipCache parameter to the URL if needed
+      const url = skipCache 
+        ? '/api/user/created-reports?skipCache=true'
+        : '/api/user/created-reports';
+        
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -46,10 +71,22 @@ export function useUserReports(): UseUserReportsReturn {
         throw new Error(errorData.error || `Failed to fetch reports: ${response.status}`);
       }
 
+      // Check if response was served from cache
+      const cacheStatus = response.headers.get('X-Cache');
+      console.log(`[useUserReports] Server cache status: ${cacheStatus || 'Not available'}`);
+
       const data: Report[] = await response.json();
       
       console.log(`[useUserReports] Successfully fetched ${data.length} reports`);
       setReports(data);
+      
+      // Update client-side cache
+      if (cacheKey) {
+        reportsCache.set(cacheKey, {
+          data,
+          timestamp: Date.now()
+        });
+      }
       
     } catch (err: any) {
       console.error('[useUserReports] Error fetching reports:', err);
@@ -58,24 +95,41 @@ export function useUserReports(): UseUserReportsReturn {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, authState.initialAuthCheckComplete, cacheKey]);
 
   // Fetch reports when user is available and auth check is complete
   useEffect(() => {
     if (authState.initialAuthCheckComplete) {
       if (user) {
-        fetchReports();
+        // Only fetch if we haven't already fetched for this user
+        if (!initialFetchRef.current || !reportsCache.has(cacheKey)) {
+          fetchReports();
+          initialFetchRef.current = true;
+        }
       } else {
         // Clear reports if no user
         setReports([]);
         setError(null);
       }
     }
-  }, [user, authState.initialAuthCheckComplete]);
+  }, [user, authState.initialAuthCheckComplete, fetchReports, cacheKey]);
 
-  const refetch = () => {
-    fetchReports();
-  };
+  // Clean up expired cache entries
+  useEffect(() => {
+    const now = Date.now();
+    const cacheCleanupTime = now - CACHE_EXPIRY_MS;
+    
+    for (const [key, entry] of reportsCache.entries()) {
+      if (entry.timestamp < cacheCleanupTime) {
+        reportsCache.delete(key);
+      }
+    }
+  }, [reports]);
+
+  const refetch = useCallback(() => {
+    // Skip both client and server cache on manual refetch
+    fetchReports(true);
+  }, [fetchReports]);
 
   return {
     reports,

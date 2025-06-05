@@ -2,6 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCommentsByReportId, createComment } from '@/lib/supabase/reports';
 import { createServerClient } from '@/lib/supabase/server';
 import { getAuthenticatedUserID } from '@/lib/supabase/auth-utils';
+import { 
+  generateReportCacheKey, 
+  generateUserReportsCacheKey,
+  getCachedData, 
+  cacheData, 
+  invalidateCache 
+} from '@/lib/redis';
+
+// Cache key for comments
+function generateCommentsKey(reportId: string): string {
+  return `report:${reportId}:comments`;
+}
+
+// Cache expiration time in seconds (5 minutes)
+const CACHE_EXPIRY_SECONDS = 300;
 
 // GET - Fetch comments for a specific report
 export async function GET(
@@ -17,17 +32,60 @@ export async function GET(
       return NextResponse.json({ error: "Report ID is missing or undefined in the path" }, { status: 400 });
     }
 
-    console.log(`[API GET /api/reports/${reportId}/comments] Attempting to fetch comments for report ID: ${reportId}`);
+    // Check if skipCache query parameter is present
+    const url = new URL(req.url);
+    const skipCache = url.searchParams.get('skipCache') === 'true';
+
+    console.log(`[API GET /api/reports/${reportId}/comments] Attempting to fetch comments, skipCache: ${skipCache}`);
     
     const response = new NextResponse();
     const supabase = createServerClient(req, response);
+    
+    // Generate cache key for these comments
+    const cacheKey = generateCommentsKey(reportId);
+    
+    // Try to get data from cache first (unless skipCache is true)
+    if (!skipCache) {
+      const cachedComments = await getCachedData(cacheKey);
+      if (cachedComments) {
+        console.log(`[API GET /api/reports/${reportId}/comments] Cache HIT`);
+        
+        const jsonResponse = NextResponse.json(
+          { comments: cachedComments }, 
+          { 
+            status: 200,
+            headers: { 'X-Cache': 'HIT' }
+          }
+        );
+        
+        response.cookies.getAll().forEach(cookie => {
+          jsonResponse.cookies.set(cookie);
+        });
+        
+        return jsonResponse;
+      }
+      console.log(`[API GET /api/reports/${reportId}/comments] Cache MISS`);
+    } else {
+      console.log(`[API GET /api/reports/${reportId}/comments] Cache skip requested`);
+    }
     
     // Fetch comments for the report
     const comments = await getCommentsByReportId(supabase, reportId);
 
     console.log(`[API GET /api/reports/${reportId}/comments] Found ${comments.length} comments for report ID: ${reportId}`);
     
-    const jsonResponse = NextResponse.json({ comments }, { status: 200 });
+    // Cache the comments
+    if (!skipCache) {
+      await cacheData(cacheKey, comments, CACHE_EXPIRY_SECONDS);
+    }
+    
+    const jsonResponse = NextResponse.json(
+      { comments }, 
+      { 
+        status: 200,
+        headers: { 'X-Cache': 'MISS' }
+      }
+    );
     
     // Copy any cookies set by Supabase
     response.cookies.getAll().forEach(cookie => {
@@ -93,6 +151,16 @@ export async function POST(
     }
 
     console.log(`[API POST /api/reports/${reportId}/comments] Comment created successfully with ID: ${newComment.id}`);
+    
+    // Invalidate related caches
+    const commentsKey = generateCommentsKey(reportId);
+    const reportKey = generateReportCacheKey(reportId);
+    
+    // Invalidate comments cache
+    await invalidateCache(commentsKey);
+    
+    // Invalidate report cache since it may contain comments
+    await invalidateCache(reportKey);
     
     const jsonResponse = NextResponse.json({ comment: newComment }, { status: 201 });
     

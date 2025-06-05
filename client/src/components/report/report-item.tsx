@@ -10,6 +10,8 @@ import { useRouter } from 'next/navigation';
 import { DeleteConfirmationDialog } from '../ui/delete-confirmation-dialog';
 import useIsReportSaved from '@/hooks/useIsReportSaved';
 import { useMapContext } from '@/context/map-context';
+import { useUserContext } from '@/context/user-context';
+import { clearSavedReportCaches } from '@/lib/cache-utils';
 
 interface ReportItemProps {
   report: Report;
@@ -183,6 +185,9 @@ export default function ReportItem({
 
       const result = await response.json();
       console.log(`${reportSaved ? 'Unsave' : 'Save'} response:`, result);
+      
+      // Immediately clear all relevant caches
+      clearSavedReportCaches(report.id);
       
       // Refetch save status to get updated state
       refetchSaveStatus();
