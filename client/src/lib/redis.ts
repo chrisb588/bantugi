@@ -20,8 +20,8 @@ export function getRedisClient() {
 // Utility function to generate a cache key for map bounds
 export function generateMapBoundsCacheKey(sw_lat: number, sw_lng: number, ne_lat: number, ne_lng: number): string {
   // Round coordinates to reduce number of unique cache keys
-  // 3 decimal places ≈ 111 meters precision at the equator
-  const precision = 3;
+  // 2 decimal places ≈ 1.1 km precision at the equator (increased granularity for better cache hits)
+  const precision = 2;
   return `map:bounds:${sw_lat.toFixed(precision)}:${sw_lng.toFixed(precision)}:${ne_lat.toFixed(precision)}:${ne_lng.toFixed(precision)}`;
 }
 
@@ -108,7 +108,7 @@ export async function invalidateCache(cacheKey: string): Promise<void> {
       const keys = await client.keys(cacheKey);
       if (keys && keys.length > 0) {
         // Delete all matching keys
-        await Promise.all(keys.map((key) => client.del(key as string)));
+        await Promise.all(keys.map((key: string) => client.del(key)));
         console.log(`Invalidated ${keys.length} cache keys matching pattern: ${cacheKey}`);
       }
     } else {

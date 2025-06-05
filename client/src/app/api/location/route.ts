@@ -43,6 +43,40 @@ export async function GET(request: NextRequest) {
           } 
         });
       }
+      
+      // If no exact cache hit, try to find nearby cached areas
+      // Generate a few nearby cache keys with slightly different precision
+      const nearbyKeys = [
+        generateMapBoundsCacheKey(
+          Math.floor(swLat * 100) / 100, 
+          Math.floor(swLng * 100) / 100,
+          Math.ceil(neLat * 100) / 100, 
+          Math.ceil(neLng * 100) / 100
+        ),
+        generateMapBoundsCacheKey(
+          Math.ceil(swLat * 100) / 100, 
+          Math.ceil(swLng * 100) / 100,
+          Math.floor(neLat * 100) / 100, 
+          Math.floor(neLng * 100) / 100
+        )
+      ];
+      
+      for (const nearbyKey of nearbyKeys) {
+        if (nearbyKey !== cacheKey) {
+          const nearbyData = await getCachedPinsData(nearbyKey);
+          if (nearbyData) {
+            console.log(`[API/location] Cache HIT (nearby) for bounds: SW(${swLat},${swLng}), NE(${neLat},${neLng})`);
+            return NextResponse.json(nearbyData, { 
+              status: 200, 
+              headers: { 
+                ...baseResponse.headers,
+                'X-Cache': 'HIT-NEARBY'
+              } 
+            });
+          }
+        }
+      }
+      
       console.log(`[API/location] Cache MISS for bounds: SW(${swLat},${swLng}), NE(${neLat},${neLng})`);
     }
     
@@ -63,9 +97,9 @@ export async function GET(request: NextRequest) {
     );
     console.log('[API/location] Successfully fetched reports, count:', reports.length);
     
-    // Cache the results (5 minutes expiration)
+    // Cache the results (10 minutes expiration to match client-side)
     if (!skipCache) {
-      await cachePinsData(cacheKey, reports, 300);
+      await cachePinsData(cacheKey, reports, 600);
     }
     
     // Return the data with cache miss header

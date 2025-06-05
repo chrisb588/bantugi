@@ -4,11 +4,11 @@ import type Pin from '@/interfaces/pin';
 import type { LatLngBounds, Map as LeafletMap } from 'leaflet';
 import { usePathname } from 'next/navigation';
 
-// Client-side in-memory cache
-const pinsCache = new Map<string, { data: Pin[], timestamp: number }>();
-// Reduce cache expiry time to improve responsiveness
-const CACHE_EXPIRY_MS = 2 * 60 * 1000; // 2 minutes (reduced from 5 minutes)
-const DEBOUNCE_DELAY_MS = 150; // 150ms (reduced from 300ms)
+// Client-side in-memory cache with enhanced structure
+const pinsCache = new Map<string, { data: Pin[], timestamp: number, bounds: LatLngBounds }>();
+// Increase cache expiry time for better cross-view performance
+const CACHE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes (increased for better cross-view caching)
+const DEBOUNCE_DELAY_MS = 150; // 150ms
 
 // Function to clear all pins cache entries
 export function clearAllPinsCache(): void {
@@ -61,6 +61,60 @@ function areBoundsSimilar(boundsA: LatLngBounds, boundsB: LatLngBounds, toleranc
   // Bounds are similar if the overlap is significant for both areas
   return overlapPercentA >= (100 - tolerancePercent) && 
          overlapPercentB >= (100 - tolerancePercent);
+}
+
+// Enhanced function to find the best cached data for given bounds
+function findBestCachedData(targetBounds: LatLngBounds, L: any): Pin[] | null {
+  const now = Date.now();
+  let bestMatch: { data: Pin[], overlap: number } | null = null;
+  
+  // Check all cache entries for potential matches
+  for (const [key, entry] of pinsCache.entries()) {
+    // Skip expired cache entries
+    if (now - entry.timestamp >= CACHE_EXPIRY_MS) {
+      pinsCache.delete(key);
+      continue;
+    }
+    
+    // Calculate overlap with cached bounds
+    if (entry.bounds) {
+      const swA = targetBounds.getSouthWest();
+      const neA = targetBounds.getNorthEast();
+      const swB = entry.bounds.getSouthWest();
+      const neB = entry.bounds.getNorthEast();
+      
+      // Calculate overlap area
+      const overlapSW = {
+        lat: Math.max(swA.lat, swB.lat),
+        lng: Math.max(swA.lng, swB.lng)
+      };
+      const overlapNE = {
+        lat: Math.min(neA.lat, neB.lat),
+        lng: Math.min(neA.lng, neB.lng)
+      };
+      
+      // Check if there's overlap
+      if (overlapSW.lat < overlapNE.lat && overlapSW.lng < overlapNE.lng) {
+        const overlapArea = (overlapNE.lat - overlapSW.lat) * (overlapNE.lng - overlapSW.lng);
+        const targetArea = (neA.lat - swA.lat) * (neA.lng - swA.lng);
+        const overlapPercentage = (overlapArea / targetArea) * 100;
+        
+        // If we have significant overlap (>= 60%), consider this a good match
+        if (overlapPercentage >= 60) {
+          if (!bestMatch || overlapPercentage > bestMatch.overlap) {
+            bestMatch = { data: entry.data, overlap: overlapPercentage };
+          }
+        }
+      }
+    }
+  }
+  
+  if (bestMatch) {
+    console.log(`[useFetchPins] Found cached data with ${bestMatch.overlap.toFixed(1)}% overlap`);
+    return bestMatch.data;
+  }
+  
+  return null;
 }
 
 // Helper function to fetch pins from the API (remains the same)
@@ -247,45 +301,28 @@ export function useFetchPins() {
       return;
     }
     
-    // NEW: Check client-side cache first
+    // NEW: Enhanced client-side cache check
     const cacheKey = generateClientCacheKey(bounds);
     const cachedEntry = pinsCache.get(cacheKey);
     const now = Date.now();
     
-    // If we have a valid cache entry, use it
+    // If we have a valid exact cache entry, use it
     if (cachedEntry && (now - cachedEntry.timestamp < CACHE_EXPIRY_MS)) {
-      console.log("[useFetchPins] fetchPinsInBounds: Client cache HIT. Using cached pins. Count:", cachedEntry.data.length);
+      console.log("[useFetchPins] fetchPinsInBounds: Client cache HIT (exact match). Using cached pins. Count:", cachedEntry.data.length);
       setPins(cachedEntry.data);
       setIsLoading(false);
       setError(null);
       return;
     }
     
-    // If cache key doesn't match exactly, check if we have similar bounds cached
-    if (!cachedEntry) {
-      // Check all cache entries for similar bounds
-      for (const [key, entry] of pinsCache.entries()) {
-        // Skip expired cache entries
-        if (now - entry.timestamp >= CACHE_EXPIRY_MS) continue;
-        
-        // Parse the bounds from the cache key
-        const parts = key.split(':');
-        if (parts.length === 6) { // map:bounds:sw_lat:sw_lng:ne_lat:ne_lng
-          const cachedBounds = L.latLngBounds(
-            L.latLng(parseFloat(parts[2]), parseFloat(parts[3])),
-            L.latLng(parseFloat(parts[4]), parseFloat(parts[5]))
-          );
-          
-          // If bounds are similar enough, use the cached data
-          if (areBoundsSimilar(bounds, cachedBounds, 20)) {
-            console.log("[useFetchPins] fetchPinsInBounds: Found similar bounds in cache. Using cached pins. Count:", entry.data.length);
-            setPins(entry.data);
-            setIsLoading(false);
-            setError(null);
-            return;
-          }
-        }
-      }
+    // If no exact match, try to find overlapping cached data
+    const bestCachedData = findBestCachedData(bounds, L);
+    if (bestCachedData) {
+      console.log("[useFetchPins] fetchPinsInBounds: Using overlapping cached data. Count:", bestCachedData.length);
+      setPins(bestCachedData);
+      setIsLoading(false);
+      setError(null);
+      return;
     }
 
     if (abortControllerRef.current) {
@@ -311,10 +348,11 @@ export function useFetchPins() {
         setPins(fetchedPins);
         console.log("[useFetchPins] fetchPinsInBounds: Successfully fetched and set pins. Count:", fetchedPins ? fetchedPins.length : 'undefined/null');
         
-        // Update client-side cache
+        // Update client-side cache with bounds
         pinsCache.set(cacheKey, {
           data: fetchedPins,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          bounds: bounds
         });
         
         // Cleanup old cache entries
