@@ -17,21 +17,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-interface CategoryDropdownMenuProps {
+interface StatusDropdownMenuProps {
   value?: string;
   onValueChange: (value: string) => void;
 }
 
-export function CategoryDropdownMenu({
+export function StatusDropdownMenu({
   value,
   onValueChange
-}: CategoryDropdownMenuProps) {
+}: StatusDropdownMenuProps) {
   const categories = [
-    "Environmental",
-    "Infrastructure",
-    "Basic Services",
-    "Crime and Order",
-    "Miscellaneous"
+    "Unresolved",
+    "Being Addressed",
+    "Resolved"
   ];
   
   return (

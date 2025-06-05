@@ -1,4 +1,4 @@
 export default interface UserAuthDetails {
-  username: string;
+  email: string;
   password: string;
 }

@@ -21,6 +21,7 @@ import EditDetailsCard from "@/components/user/edit-details-card";
 import EditProfileCard from "@/components/user/edit-profile-card";
 import { useUserContext } from "@/context/user-context";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAuth } from "@/hooks/useAuth"; // Added import for useAuth
 
 interface ProfileCardProps extends React.ComponentProps<"div"> {
   edit?: boolean;
@@ -33,6 +34,7 @@ export default function ProfileCard({
 }: ProfileCardProps) {
   const { state: { user }, updateUser } = useUserContext();
   const { updateProfile, deleteProfile, isUpdating, isDeleting, error } = useUserProfile();
+  const { logout: authLogout } = useAuth(); // Get logout from useAuth
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -93,10 +95,15 @@ export default function ProfileCard({
     }
   };
 
-  const handleLogout = () => {
-    alert('Logout clicked');
-
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      await authLogout();
+      // Redirect to landing page after logout
+      router.push('/'); 
+    } catch (e) {
+      console.error("Logout failed in profile-card", e);
+      toast.error("Logout failed. Please try again.");
+    }
   };
 
   const handleEditAvatar = () => {
@@ -119,8 +126,6 @@ export default function ProfileCard({
     setIsEditingProfile(false);
   };
 
-  // FIXME: fix windows is not defined error
-
   return (
     <>
       <div className={cn(
@@ -131,100 +136,85 @@ export default function ProfileCard({
       )} {...props}>
         <Card className="h-[85vh] min-h-[400px] max-h-[800px]"> {/* Set fixed height here */}
           <ScrollArea className="h-full"> {/* Make ScrollArea full height of card */}
-            <CardHeader className="text-center sticky top-0 bg-background z-10">
-              {edit && (
-                <div className="flex justify-start mb-2">
-                  <Button
-                    variant="ghost"
-                    style={{ height: '40px', width: '40px', padding: '0' }}
-                    onClick={navigateBackToProfile}
-                  >
-                    <ChevronLeft 
-                    size={32}
-                    style={{ height: '32px', width: '32px' }}
-                    className="text-foreground hover:text-secondary"
-                    />
-                  </Button>
-                </div>
-              )}
-              <CardTitle className="text-2xl">YOUR PROFILE</CardTitle>
-            </CardHeader>
-            {edit && (
-              <div className="px-6">
-                <Separator />
+            <CardHeader className="sticky top-0 bg-background z-10">
+              <div className="flex gap-1 items-center">
+                {edit && (
+                  <div className="flex justify-center mb-2">
+                    <Button
+                      variant="ghost"
+                      style={{ height: '40px', width: '40px', padding: '0' }}
+                      onClick={navigateBackToProfile}
+                    >
+                      <ChevronLeft 
+                      size={32}
+                      style={{ height: '32px', width: '32px' }}
+                      className="text-foreground hover:text-secondary"
+                      />
+                    </Button>
+                  </div>
+                )}
+                <CardTitle className="text-2xl pb-2">
+                  {edit ? 'EDIT PROFILE' : 'YOUR PROFILE'}
+                </CardTitle>
               </div>
-            )}
-            <CardContent className="flex flex-col items-center py-4 gap-2">
-              {edit && (
-                <div className="text-lg font-bold text-foreground">
-                  Edit Account
-                </div>
-              )}
-              <div className="relative h-32 w-32 rounded-full overflow-hidden bg-muted">
+            </CardHeader>
+            <div className="px-6">
+              <Separator />
+            </div>
+            <CardContent className="flex py-4 gap-2">
+              <div className="relative h-24 w-24 rounded-full overflow-hidden bg-muted flex-shrink-0">
                 <Image
                   src={user?.profilePicture || "/img/avatar.png"}
                   alt="Profile"
                   fill
                   className="object-cover"
                 />
-                {edit && (
-                  <button
-                    onClick={handleEditAvatar}
-                    className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                    aria-label="Edit avatar"
-                  >
-                    <Camera size={24} className="text-white" />
-                  </button>
-                )}
               </div>
-              <div className="flex flex-col items-center">
-                {edit ? (
-                  <div className="flex items-center gap-2">
-                    <div className="font-bold text-lg text-foreground">{user?.username || "User"}</div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6"
-                      onClick={handleEditName}
-                    >
-                      <Pencil size={14} />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="font-bold text-lg text-foreground">{user?.username || "User"}</div>
-                )}
+              <div className="flex flex-col items-start justify-center overflow-hidden">
+                <div className="font-bold text-lg text-foreground text-ellipsis">{user?.username || "User"}</div>
                 {user?.email && (
                   <div className="text-sm text-muted-foreground">{user.email}</div>
                 )}
                 {user?.address && (
-                  <div className="flex items-center gap-1 text-foreground mt-2">
-                    <MapPin size={16} />
+                  <div className="flex items-start gap-1 text-foreground mt-2">
+                    <MapPin size={16} className="mt-1" />
                     <div className="text-sm text-muted-foreground">{user.address}</div>
-                    {edit && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-5 w-5 ml-1"
-                        onClick={handleEditAddress}
-                      >
-                        <Pencil size={12} />
-                      </Button>
-                    )}
                   </div>
                 )}
               </div>
             </CardContent>
+            <div className="px-6">
+              <Separator />
+            </div>
+            {edit && (
+              <CardContent className="py-2">
+                <div className="text-sm font-bold">
+                  Edit Account Details
+                </div>
+                <div className="py-4" onClick={(e) => e.stopPropagation()}>
+                  <EditProfileCard
+                    initialEmail={user?.email || ''}
+                    initialUsername={user?.username || ''}
+                    initialAddress={user?.address || ''}
+                    currentAvatar={user?.profilePicture}
+                    isUpdating={isUpdating}
+                    onConfirm={handleConfirmProfileEdit}
+                    onCancel={handleCancelProfileEdit}
+                  />
+                </div>
+              </CardContent>
+            )}
             {edit && (
               <div className="px-6">
                 <Separator />
               </div>
             )}
-            <CardContent className="flex flex-col items-center py-4 gap-2">
+            <CardContent className="py-2">
               {edit ? (
-                <div className="flex flex-col items-center gap-2">
+                <div className="flex flex-col items-start gap-2">
                   <DeleteConfirmationDialog
                     trigger={
-                      <Button variant="ghost" disabled={isDeleting}>
+                      <Button variant="ghost" disabled={isDeleting} className="p-0">
                         <div className="flex items-center gap-1 text-primary mt-4">
                           <Trash size={16} />
                           <div className="font-bold text-sm">
@@ -237,7 +227,7 @@ export default function ProfileCard({
                     description="This action is irreversible and will permanently delete all your data including reports and profile information."
                     onConfirm={handleDeleteAccount}
                   />
-                  <Button variant="ghost" onClick={handleLogout}>
+                  <Button variant="ghost" onClick={handleLogout} className="p-0">
                     <div className="flex items-center gap-1 text-accent mt-4">
                       <ArrowLeftFromLine size={16} />
                       <div className="font-bold text-sm">
@@ -247,8 +237,8 @@ export default function ProfileCard({
                   </Button>
                 </div>
               ) : (
-                <Button variant="ghost" onClick={navigateToEditProfile}>
-                  <div className="flex items-center gap-1 text-accent mt-4">
+                <Button variant="ghost" onClick={navigateToEditProfile} className="p-0">
+                  <div className="flex items-center gap-1 text-accent">
                     <Settings2 size={16} />
                     <div className="font-bold text-sm">
                       Account Settings
@@ -261,7 +251,7 @@ export default function ProfileCard({
         </Card>
       </div>
 
-      {isEditingName && (
+      {/* {isEditingName && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="w-full max-w-md p-4" onClick={(e) => e.stopPropagation()}>
             <EditDetailsCard
@@ -289,7 +279,7 @@ export default function ProfileCard({
 
       {isEditingProfile && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="w-full max-w-md p-4" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md py-4" onClick={(e) => e.stopPropagation()}>
             <EditProfileCard
               label="Edit Profile"
               initialEmail={user?.email || ''}
@@ -301,8 +291,8 @@ export default function ProfileCard({
               onCancel={handleCancelProfileEdit}
             />
           </div>
-        </div>
-      )}
+        </div> */}
+      {/* )} */}
 
     </>
   )

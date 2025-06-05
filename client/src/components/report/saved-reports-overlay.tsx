@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 // Remove unused imports
 // import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '../ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 // import { Separator } from '@/components/ui/separator';
 import ReportItem from '@/components/report/report-item';
@@ -22,7 +23,7 @@ export function SavedReportsOverlay({ onClose }: SavedReportsOverlayProps) {
   const { reports: savedReports, isLoading, error, refetch } = useSavedReports();
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center p-4 md:p-6">
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-4 md:p-6 pinter-events-auto">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -30,9 +31,9 @@ export function SavedReportsOverlay({ onClose }: SavedReportsOverlayProps) {
       />
       
       {/* Overlay Content */}
-      <Card className="relative w-full max-w-lg h-[85vh] min-h-[400px] max-h-[800px] bg-white dark:bg-gray-900 shadow-xl flex flex-col">
+      <Card className="relative w-full max-w-lg h-[85vh] min-h-[400px] max-h-[800px]  dark:bg-gray-900 shadow-xl flex flex-col">
         {/* Header with close button */}
-        <CardHeader className="flex flex-row items-center justify-between text-left bg-background z-10 border-b flex-shrink-0">
+        <CardHeader className="flex flex-row items-center justify-between text-left z-10 flex-shrink-0">
           <CardTitle className="text-2xl">Saved Reports</CardTitle>
           <button
             onClick={onClose}
@@ -42,9 +43,9 @@ export function SavedReportsOverlay({ onClose }: SavedReportsOverlayProps) {
             <X className="h-5 w-5" />
           </button>
         </CardHeader>
-
+        <Separator />
         <ScrollArea className="flex-1 min-h-0">
-          <CardContent className="py-4">
+          <CardContent className="p2-4">
             {/* Loading state */}
             {isLoading && (
               <div className="flex flex-col items-center justify-center py-8">
@@ -76,7 +77,7 @@ export function SavedReportsOverlay({ onClose }: SavedReportsOverlayProps) {
             
             {/* Reports list */}
             {!isLoading && savedReports.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {savedReports.map((report: Report, index: number) => (
                   <ReportItem
                     key={report.id || index}

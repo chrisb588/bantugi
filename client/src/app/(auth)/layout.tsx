@@ -1,4 +1,6 @@
 import { AuthContextProvider } from '@/context/auth-context';
+import { toast } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 
 export default function AuthLayout({
   children,
@@ -10,6 +12,7 @@ export default function AuthLayout({
     <div className="nohemi-font">
       <AuthContextProvider>
         {children}
+        <Toaster />
       </AuthContextProvider>
     </div>
   );
