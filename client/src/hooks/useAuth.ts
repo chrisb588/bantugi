@@ -23,7 +23,7 @@ export function useAuth() {
     await contextLogout();
     // Consider if this immediate redirect is always desired or should also be effect-driven
     // For now, keeping it as is, as it's less likely to cause issues than login/signup redirects
-    router.push('/login'); 
+    router.push('/'); 
   };
 
   return {

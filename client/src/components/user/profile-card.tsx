@@ -21,6 +21,7 @@ import EditDetailsCard from "@/components/user/edit-details-card";
 import EditProfileCard from "@/components/user/edit-profile-card";
 import { useUserContext } from "@/context/user-context";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ProfileCardProps extends React.ComponentProps<"div"> {
   edit?: boolean;
@@ -33,6 +34,7 @@ export default function ProfileCard({
 }: ProfileCardProps) {
   const { state: { user }, updateUser } = useUserContext();
   const { updateProfile, deleteProfile, isUpdating, isDeleting, error } = useUserProfile();
+  const { logout } = useAuth();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -93,10 +95,16 @@ export default function ProfileCard({
     }
   };
 
-  const handleLogout = () => {
-    alert('Logout clicked');
-
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      await logout(); // This will clear cookies and redirect to login page
+    } catch (error) {
+      console.error('Failed to logout:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to logout';
+      toast.error(errorMessage);
+      // Fallback to manual redirect if logout fails
+      router.push('/');
+    }
   };
 
   const handleEditAvatar = () => {

@@ -150,7 +150,9 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 export async function signOut() {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut({
+    scope: 'global' // This ensures all devices/tabs are logged out and all cookies are cleared
+  });
   if (error) {
     console.error("Sign-out error:", error.message);
     throw error;
