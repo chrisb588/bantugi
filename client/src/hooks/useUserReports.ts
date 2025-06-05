@@ -126,6 +126,35 @@ export function useUserReports(): UseUserReportsReturn {
     }
   }, [reports]);
 
+  // Listen for new report creation events to refresh the cache
+  useEffect(() => {
+    const handleNewReportCreated = (event: CustomEvent) => {
+      console.log('[useUserReports] New report created event received, refreshing reports');
+      
+      // Invalidate client-side cache for current user
+      if (cacheKey) {
+        reportsCache.delete(cacheKey);
+      }
+      
+      // Refetch reports to include the new one
+      if (user && authState.initialAuthCheckComplete) {
+        fetchReports(true); // Skip cache to get fresh data
+      }
+    };
+
+    // Add event listener
+    if (typeof window !== 'undefined') {
+      window.addEventListener('new-report-created', handleNewReportCreated as EventListener);
+    }
+
+    // Cleanup
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('new-report-created', handleNewReportCreated as EventListener);
+      }
+    };
+  }, [user, authState.initialAuthCheckComplete, fetchReports, cacheKey]);
+
   const refetch = useCallback(() => {
     // Skip both client and server cache on manual refetch
     fetchReports(true);
