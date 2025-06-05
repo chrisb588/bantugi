@@ -308,58 +308,65 @@ function HomePageContent() {
           </div>
         </div>
 
-        {/* Search Screen Overlay (Mobile) */}
+        {/* Search Screen Overlay (Mobile) - FIXED SECTION */}
         {isSearchScreenVisible && (
-          <div className="fixed inset-0 z-40 bg-background flex flex-col md:hidden px-8 pt-4 pointer-events-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl text-primary font-bold">Search Results</h2>
-              <button 
-                onClick={closeSearchScreen}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+          <div className="fixed inset-0 z-40 bg-background flex flex-col md:hidden pointer-events-auto">
+            {/* Fixed Header */}
+            <div className="flex-shrink-0 px-8 pt-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl text-primary font-bold">Search Results</h2>
+                <button 
+                  onClick={closeSearchScreen}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="mb-4 flex gap-2">
+                <SearchBar 
+                  onSearch={handleSearch} 
+                  value={searchQuery}
+                  onFocus={() => {
+                    if (!isSearchScreenVisible) {
+                      setIsSearchScreenVisible(true);
+                    }
+                  }}
+                />
+                <FilterButton 
+                  onClick={handleFilterSearchClick}
+                  className="pointer-events-auto flex-shrink-0"
+                />
+              </div>
+              <Separator className="bg-border/50" />
             </div>
-            <div className="mb-4 flex gap-2">
-              <SearchBar 
-                onSearch={handleSearch} 
-                value={searchQuery}
-                onFocus={() => {
-                  if (!isSearchScreenVisible) {
-                    setIsSearchScreenVisible(true);
-                  }
-                }}
-              />
-              <FilterButton 
-                onClick={handleFilterSearchClick}
-                className="pointer-events-auto flex-shrink-0"
-              />
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <ScrollArea className="flex-1 min-h-0">
-                <Separator className="bg-border/50" />
-                {isLoadingSearch ? (
-                  <div className="flex items-center justify-center h-32 md:h-24">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                  </div>
-                ) : searchResults.length > 0 ? (
-                  <div className="mt-4 space-y-2">
-                    {searchResults.map((result) => (
-                      <ReportItem
-                        key={result.id}
-                        report={result}
-                        onReportClick={handleSearchResultClick}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-32 md:h-24 text-muted-foreground">
-                    <p className="md:text-sm">No results found</p>
-                  </div>
-                )}
-              </ScrollArea> 
+
+            {/* Scrollable Content Area */}
+            <div className="flex-1 min-h-0 px-8">
+              <ScrollArea className="h-full">
+                <div className="py-4">
+                  {isLoadingSearch ? (
+                    <div className="flex items-center justify-center h-32">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    <div className="space-y-2">
+                      {searchResults.map((result) => (
+                        <ReportItem
+                          key={result.id}
+                          report={result}
+                          onReportClick={handleSearchResultClick}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+                      <p>No results found</p>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
             </div>
           </div>
         )}
