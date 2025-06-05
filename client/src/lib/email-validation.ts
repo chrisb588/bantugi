@@ -21,7 +21,7 @@ export function isValidEmailFormat(email: string): boolean {
 
 /**
  * Check if an email is already registered in the system
- * This is a more direct way to check if an email exists
+ * Uses a secure server-side edge function to check auth.users table
  * @param email The email to check
  * @returns Promise resolving to a boolean indicating if the email is already registered
  */
@@ -32,38 +32,14 @@ export async function isEmailRegistered(email: string): Promise<boolean> {
       return false; // Invalid format, so not registered
     }
 
-    // First approach: try to start a password reset for this email
-    // If the email exists, this will succeed; if not, it will fail
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/password-reset`,
-    });
-
-    // If there's no error or the error is about rate limiting,
-    // the email exists (Supabase only allows password resets for existing emails)
-    if (!error || error.message.includes('rate limit')) {
-      logger.auth.info(`Email ${email} is registered (determined by password reset)`);
+    // Use the Edge Function to securely check if the email exists
+    const result = await checkEmailExists(email);
+    
+    if (result && result.exists === true) {
+      logger.auth.info(`Email ${email} is registered (verified by edge function)`);
       return true;
     }
-
-    // Second approach (fallback): try login with a known-wrong password
-    // We use this as a fallback because it may generate auth logs we don't want
-    if (error.message.includes('Email not confirmed') || error.message.includes('User not found')) {
-      return false; // Email definitely doesn't exist
-    } else {
-      // Try the login approach as a fallback
-      const { error: loginError } = await supabase.auth.signInWithPassword({
-        email,
-        password: 'email-check-' + Date.now(), // Definitely wrong password
-      });
-
-      // If we get "invalid credentials", the email exists but password is wrong
-      if (loginError && loginError.message.includes('Invalid login credentials')) {
-        logger.auth.info(`Email ${email} is registered (determined by login attempt)`);
-        return true;
-      }
-    }
-
-    // Default to false - couldn't definitively determine the email exists
+    
     return false;
 
   } catch (error) {
@@ -71,5 +47,61 @@ export async function isEmailRegistered(email: string): Promise<boolean> {
     // In case of error, we default to false to allow the signup attempt
     // The actual signup will still fail if the email is registered
     return false;
+  }
+}
+
+
+/**
+ * Check if an email exists using a Supabase Edge Function
+ * @param email The email to check
+ * @returns Promise resolving to the response data from the edge function
+ */
+export async function checkEmailExists(email: string): Promise<{ exists: boolean }> {
+  try {
+    const { data, error } = await supabase.functions.invoke('check-email-existence', {
+      body: { email }
+    });
+
+    if (error) {
+      logger.auth.error('Error invoking check-email-existence function:', error);
+      throw error;
+    }
+
+    return data as { exists: boolean };
+  } catch (error) {
+    logger.auth.error('Error checking email:', error);
+    throw error;
+  }
+}
+
+/**
+ * Alternative: Direct fetch approach to check if an email exists
+ * @param email The email to check
+ * @returns Promise resolving to the response data from the edge function
+ */
+export async function checkEmailExistsFetch(email: string): Promise<{ exists: boolean }> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/check-email-existence`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey || ''}`,
+        'apikey': supabaseAnonKey || ''
+      },
+      body: JSON.stringify({ email })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data as { exists: boolean };
+  } catch (error) {
+    logger.auth.error('Error checking email:', error);
+    throw error;
   }
 }
