@@ -204,8 +204,9 @@ export function MapContents({
       className={className || "h-full w-full z-0"} // Ensure z-index is managed for layering
       center={center}
       zoom={zoom}
+      zoomControl={false}
       scrollWheelZoom={true}
-      attributionControl={false} // Optional: disable default attribution for a cleaner UI
+      attributionControl={true} // we credit ppl here
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

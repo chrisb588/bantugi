@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from "next/image";
-import { MapPin, MessageSquare, ChevronRight, AlertTriangle, ChevronLeft } from "lucide-react";
+import { MapPin, MessageSquare, ChevronRight, AlertTriangle, ChevronLeft, Bookmark } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,9 @@ import urgencyIcon from '@/constants/urgency-icon';
 import { formatArea } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useComments } from '@/hooks/useComments';
+import useIsReportSaved from '@/hooks/useIsReportSaved';
+import { toast } from 'sonner';
+import { StatusDropdownMenu } from './status-dropdown';
 
 interface ReportCardProps {
   report: Report;
@@ -29,6 +32,8 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
   const [showComments, setShowComments] = useState(true);
   const [commentText, setCommentText] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [status, setStatus] = useState<string>(report.status);
   
   const { user } = useAuth();
   const { 
@@ -40,6 +45,14 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
     reportId: report.id, 
     initialComments: report.comments 
   });
+
+  const { 
+    isSaved,
+    isLoading: isSaveStatusLoading, 
+    refetch: refetchSaveStatus 
+  } = useIsReportSaved(report.id);
+
+  const reportSaved = isSaved;
   
   const toggleComments = () => {
     setShowComments(!showComments);
@@ -73,6 +86,62 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
     }
   };
 
+  const handleSaveToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    
+    if (isSaving) return; // Prevent multiple save requests
+    
+    setIsSaving(true);
+    
+    try {
+      const endpoint = '/api/reports/save';
+      const method = reportSaved ? 'DELETE' : 'POST';
+      
+      console.log(`${reportSaved ? 'Unsaving' : 'Saving'} report:`, report.id);
+      
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ reportId: report.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to ${reportSaved ? 'unsave' : 'save'} report: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`${reportSaved ? 'Unsave' : 'Save'} response:`, result);
+      
+      // Refetch save status to get updated state
+      refetchSaveStatus();
+      
+      // Show success toast
+      toast.success(`Report ${reportSaved ? 'unsaved' : 'saved'} successfully`);
+      
+      // Call the onSaveToggle callback if provided
+      // if (onSaveToggle) {
+      //   onSaveToggle(report.id, !reportSaved);
+      // }
+      
+    } catch (error) {
+      console.error(`Error ${reportSaved ? 'unsaving' : 'saving'} report:`, error);
+      const errorMessage = error instanceof Error ? error.message : `Failed to ${reportSaved ? 'unsave' : 'save'} report`;
+      toast.error(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleStatusChange = (status: string) => {
+    setStatus(status);
+
+    // TODO: update status changes to supabase
+  }
+
   const nextImage = () => {
     setCurrentImageIndex((prevIndex) => 
       prevIndex === report.images!.length - 1 ? 0 : prevIndex + 1
@@ -91,22 +160,41 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
         <ScrollArea className="h-full"> {/* Make ScrollArea full height of card */}
           <CardContent className="flex flex-col items-start py-4">
             {/* Back button */}
-            {onBack && (
-              <div className="flex justify-start w-full">
+            <div className="flex justify-between items-end w-full">
+              {onBack && (
+                  <Button
+                    variant="ghost"
+                    style={{ height: '32px', width: '32px', padding: '0' }}
+                    onClick={onBack}
+                  >
+                    <ChevronLeft 
+                    size={24}
+                    style={{ height: '24px', width: '24px' }}
+                    className="text-foreground hover:text-secondary"
+                    />
+                  </Button>
+              )}
                 <Button
                   variant="ghost"
                   style={{ height: '32px', width: '32px', padding: '0' }}
-                  onClick={onBack}
+                  onClick={handleSaveToggle}
                 >
-                  <ChevronLeft 
-                  size={24}
-                  style={{ height: '24px', width: '24px' }}
-                  className="text-foreground hover:text-secondary"
-                  />
+                  {isSaved ? (
+                    <Bookmark 
+                      size={24}
+                      style={{ height: '24px', width: '24px' }}
+                      className="text-primary hover:text-secondary"
+                      fill="currentColor"
+                    />
+                  ) : (
+                    <Bookmark 
+                      size={24}
+                      style={{ height: '24px', width: '24px' }}
+                      className="text-foreground hover:text-secondary"
+                    />
+                  )}
                 </Button>
-              </div>
-            )}
-            
+            </div>
             <div className="flex items-center">
               <div className={cn(
                 "p-2 rounded-full self-start mt-1", 
@@ -179,7 +267,7 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
               </div>
               
               {/* Location with View in Map button */}
-              <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex w-full items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-1.5">
                   <MapPin className="h-4 w-4 text-gray-500" />
                   <span className="text-sm">
@@ -199,7 +287,7 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
               
               {/* Category */}
               <div className="flex mb-4">
-                <span className="text-xs font-semibold text-slate-700 bg-muted px-3 py-1 rounded-full whitespace-nowrap">
+                <span className="text-xs font-semibold text-foreground bg-muted px-3 py-1 rounded-full whitespace-nowrap">
                   {report.category}
                 </span>
               </div>
@@ -209,10 +297,11 @@ export function ReportCard({ report, className, onViewMap, onBack, onCommentAdde
 
               {/* Status */}
               <div className="flex items-center gap-2 mb-5">
-                <span className="h-2 w-2 rounded-full text-primary"></span>
+                {/* <span className="h-2 w-2 rounded-full text-primary"></span>
                 <span className="text-sm font-medium text-primary">
                   {report.status}
-                </span>
+                </span> */}
+                <StatusDropdownMenu value={status} onValueChange={handleStatusChange} />
               </div>
               
               {/* Description */}

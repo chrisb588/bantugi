@@ -8,7 +8,10 @@ import {
   userSignUp as supabaseSignUp,
   signOut as supabaseSignOut // Import signOut
 } from '@/lib/supabase/user.client'; 
-import UserAuthDetails from '@/interfaces/user-auth'; 
+import UserAuthDetails from '@/interfaces/user-auth';
+import { formatAuthError } from '@/lib/auth-error-utils';
+import { syncUserProfile } from '@/lib/user-profile-sync';
+import { logger } from '@/lib/logger'; 
 
 // --- Start: Moved from types/actions/auth.ts ---
 type AuthAction = 
@@ -97,52 +100,76 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   }, []); // Empty dependency array to run only once
 
   const login = async (credentials: UserAuthDetails): Promise<User | null> => {
-    console.log('[AuthContextProvider] login function called'); // ADDED THIS LOG
     dispatch({ type: "AUTH/LOGIN_REQUEST" });
     try {
       const user = await supabaseSignIn(credentials);
       if (user) {
+        // Ensure user profile is synchronized
+        if (user.id) {
+          await syncUserProfile(user);
+        }
+        
         dispatch({ type: "AUTH/LOGIN_SUCCESS", payload: user });
+        logger.auth.info("Login successful");
         return user;
       }
       // This path might not be hit if supabaseSignIn always throws on error
       dispatch({ type: "AUTH/LOGIN_FAILURE", payload: "Login failed. Please check credentials." });
       return null;
     } catch (error: any) {
-      console.error("Login failed:", error);
-      const errorMessage = error.message || "An error occurred during login.";
+      logger.auth.error("Login failed:", error);
+      // Standardize error messages from Supabase
+      const errorMessage = formatAuthError(error, "Invalid email or password. Please try again.");
       dispatch({ type: "AUTH/LOGIN_FAILURE", payload: errorMessage });
       return null;
     }
   };
 
   const signup = async (credentials: UserAuthDetails): Promise<User | null> => {
-    console.log('[AuthContextProvider] signup function called'); // ADDED THIS LOG
     dispatch({ type: "AUTH/SIGNUP_REQUEST" });
     try {
       const user = await supabaseSignUp(credentials);
       if (user) {
+        // Ensure user profile is created after signup
+        if (user.id) {
+          await syncUserProfile(user);
+        }
+        
         dispatch({ type: "AUTH/SIGNUP_SUCCESS", payload: user });
+        logger.auth.info("Signup successful");
         return user;
       }
       // This path might not be hit if supabaseSignUp always throws on error
       dispatch({ type: "AUTH/SIGNUP_FAILURE", payload: "Signup failed." });
       return null;
     } catch (error: any) {
-      console.error("Signup failed:", error);
-      const errorMessage = error.message || "An error occurred during signup.";
+      logger.auth.error("Signup failed:", error);
+      
+      // Handle specific case of email already in use
+      if (error.message && (
+        error.message.toLowerCase().includes('email already registered') ||
+        error.message.toLowerCase().includes('already in use') ||
+        error.message.toLowerCase().includes('already exists')
+      )) {
+        const errorMessage = "This email is already registered. Please use a different email or try logging in.";
+        dispatch({ type: "AUTH/SIGNUP_FAILURE", payload: errorMessage });
+        return null;
+      }
+      
+      // Standardize other error messages from Supabase
+      const errorMessage = formatAuthError(error, "Failed to create account. Please try again.");
       dispatch({ type: "AUTH/SIGNUP_FAILURE", payload: errorMessage });
       return null;
     }
   };
 
   const logout = async () => {
-    console.log('[AuthContextProvider] logout function called'); // ADDED THIS LOG
     try {
       await supabaseSignOut();
       dispatch({ type: "AUTH/LOGOUT_SUCCESS" });
+      logger.auth.info('User logged out successfully');
     } catch (error: any) {
-      console.error('Logout error', error);
+      logger.auth.error('Logout error', error);
       // Even if logout fails, clear the local state to prevent stuck state
       dispatch({ type: "AUTH/LOGOUT_SUCCESS" });
     }

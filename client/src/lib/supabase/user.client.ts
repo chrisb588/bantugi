@@ -2,6 +2,9 @@ import { createClient } from './client';
 import type { User as SupabaseUser, SupabaseClient } from '@supabase/supabase-js';
 import UserAuthDetails from '@/interfaces/user-auth';
 import type User from '@/interfaces/user';
+import { logger } from '@/lib/logger';
+import { withRetry, isRetryableError } from '@/lib/retry-utils';
+import { isEmailRegistered, isValidEmailFormat } from '@/lib/email-validation';
 
 // Create a single instance of the Supabase client
 const supabase: SupabaseClient = createClient();
@@ -38,6 +41,35 @@ async function getCompleteUserProfile(supabaseUser: SupabaseUser): Promise<User 
       .single();
 
     if (error) {
+      // If the error is "no rows returned", this might be a new user
+      if (error.code === 'PGRST116') {
+        // Create a new profile for this user
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert([
+            { 
+              user_id: supabaseUser.id,
+              username: baseUser.email || '',
+              avatar_url: supabaseUser.user_metadata?.avatar_url || "https://placehold.co/40x40.png?text=Avatar"
+            }
+          ])
+          .select('username, address, avatar_url')
+          .single();
+          
+        if (insertError) {
+          console.error('[getCompleteUserProfile] Error creating profile:', insertError.message);
+          return baseUser; // Return base user if profile creation fails
+        }
+        
+        // Return merged data with the newly created profile
+        return {
+          ...baseUser,
+          username: newProfile.username || baseUser.email || '',
+          address: newProfile.address || undefined,
+          profilePicture: newProfile.avatar_url || baseUser.profilePicture,
+        };
+      }
+      
       console.warn('[getCompleteUserProfile] Could not fetch profile data:', error.message);
       // Return base user data if profile fetch fails
       return baseUser;
@@ -58,95 +90,122 @@ async function getCompleteUserProfile(supabaseUser: SupabaseUser): Promise<User 
 }
 
 export async function signInWithPassword(payload: UserAuthDetails): Promise<User | null> {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: payload.username, // Assuming payload.username is the email
-    password: payload.password,
-  });
+  try {
+    return await withRetry(
+      async () => {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: payload.email,
+          password: payload.password,
+        });
 
-  if (error) {
-    console.error("Sign-in error:", error.message);
+        if (error) {
+          logger.auth.error("Sign-in error:", error.message);
+          throw error;
+        }
+
+        // Get complete user profile including database data
+        return data.user ? await getCompleteUserProfile(data.user) : null;
+      },
+      {
+        maxRetries: 2,
+        delayMs: 500,
+        shouldRetry: (error) => isRetryableError(error),
+        onRetry: (attempt, error) => {
+          logger.auth.warn(`Retrying login (attempt ${attempt}) after error:`, error.message);
+        }
+      }
+    );
+  } catch (error) {
+    // Just rethrow the error after retries have been exhausted
     throw error;
   }
+}
 
-  // Get complete user profile including database data
-  return data.user ? await getCompleteUserProfile(data.user) : null;
+/**
+ * Check if a user with the provided email already exists
+ * @param email The email to check
+ * @returns Boolean indicating if the email is already in use
+ */
+async function checkEmailExists(email: string): Promise<boolean> {
+  // First, validate email format
+  if (!isValidEmailFormat(email)) {
+    throw new Error('Invalid email format. Please enter a valid email address.');
+  }
+  
+  // Use our dedicated function to check if email is registered
+  return await isEmailRegistered(email);
 }
 
 export async function userSignUp(payload: UserAuthDetails): Promise<User | null> {
-  const { data, error } = await supabase.auth.signUp({
-    email: payload.username, // Assuming payload.username is the email
-    password: payload.password,
-  });
+  try {
+    // First check if the email already exists
+    const emailExists = await checkEmailExists(payload.email);
+    
+    if (emailExists) {
+      // Throw a standardized error that can be handled by the auth context
+      throw new Error('Email already registered. Please use a different email or try logging in.');
+    }
+    
+    // Proceed with signup since email doesn't exist
+    const { data, error } = await supabase.auth.signUp({
+      email: payload.email,
+      password: payload.password,
+      options: {
+        data: { // This data goes into user_metadata
+          avatar_url: "https://placehold.co/40x40.png?text=Avatar", // Placeholder avatar
+        }
+      }
+    });
 
-  if (error) {
-    console.error("Signup error:", error.message);
+    if (error) {
+      logger.auth.error("Signup error:", error.message);
+      throw error;
+    }
+    
+    // Get complete user profile including database data (though for new signups, profile might not exist yet)
+    return data.user ? await getCompleteUserProfile(data.user) : null;
+  } catch (error) {
+    // Rethrow any errors to be handled by the calling function
     throw error;
   }
-  // Get complete user profile including database data (though for new signups, profile might not exist yet)
-  return data.user ? await getCompleteUserProfile(data.user) : null;
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  console.log("[SupabaseClient] Attempting to get current user session...");
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  try {
+    // First attempt to get the session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-  if (sessionError) {
-    console.error("[SupabaseClient] Error getting session:", sessionError.message, sessionError);
-    // It's possible getSession fails but getUser might still work with a persisted token,
-    // or if the error is transient. So, we'll still proceed to getUser.
-  }
-
-  if (!session) {
-    console.log("[SupabaseClient] No active session found by getSession().");
-    // This is a common scenario if the user is not logged in or session expired and couldn't be refreshed.
-  } else {
-    console.log("[SupabaseClient] Active session found by getSession():", {
-      accessToken: session.access_token.substring(0, 20) + "...", // Log a snippet
-      refreshToken: session.refresh_token ? session.refresh_token.substring(0, 20) + "..." : "N/A",
-      user: session.user ? { id: session.user.id, email: session.user.email, aud: session.user.aud } : null,
-      expiresAt: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
-      expiresIn: session.expires_in
-    });
-  }
-
-  console.log("[SupabaseClient] Calling supabase.auth.getUser()...");
-  // No explicit token is passed to supabase.auth.getUser() here.
-  // The Supabase client library will use the token from its internal storage (managed via getSession/setSession and cookies/localStorage).
-  const { data: { user: userFromGetUser }, error: getUserError } = await supabase.auth.getUser();
-
-  if (getUserError) {
-    console.error("[SupabaseClient] Error from supabase.auth.getUser():", getUserError.message, getUserError);
-    if (session && session.user) {
-      console.warn("[SupabaseClient] supabase.auth.getUser() failed. User from getSession() was:", {
-         id: session.user.id, email: session.user.email, aud: session.user.aud 
-      });
-    } else if (session) {
-      console.warn("[SupabaseClient] supabase.auth.getUser() failed. Session existed but had no user object. Session data:", {
-        accessToken: session.access_token.substring(0, 20) + "...",
-        expiresAt: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
-      });
-    } else {
-      console.warn("[SupabaseClient] supabase.auth.getUser() failed, and no session was found by getSession() either.");
+    if (sessionError) {
+      logger.auth.error("Error getting session:", sessionError.message);
+      return null;
     }
-    return null; 
+
+    // If no session exists, return null immediately - no need to make the getUser call
+    if (!session) {
+      logger.auth.info("No active session found");
+      return null;
+    }
+
+    // We have a session, now get the user
+    const { data: { user: userFromGetUser }, error: getUserError } = await supabase.auth.getUser();
+
+    if (getUserError) {
+      logger.auth.error("Error getting user:", getUserError.message);
+      return null;
+    }
+
+    // No user found despite having a session - this is unexpected but possible
+    if (!userFromGetUser) {
+      logger.auth.warn("Session exists but no user found");
+      return null;
+    }
+
+    // Get complete user profile including database data
+    return await getCompleteUserProfile(userFromGetUser);
+  } catch (error) {
+    logger.auth.error("Unexpected error in getCurrentUser:", error);
+    return null;
   }
-  
-  if (userFromGetUser) {
-    console.log("[SupabaseClient] User successfully retrieved by supabase.auth.getUser():", { 
-      id: userFromGetUser.id, 
-      email: userFromGetUser.email, 
-      aud: userFromGetUser.aud,
-      // You can add more fields from userFromGetUser if needed for debugging
-      // For example: userFromGetUser.email_confirmed_at, userFromGetUser.created_at
-    });
-  } else {
-    console.log("[SupabaseClient] supabase.auth.getUser() returned no user, but also no error.");
-    // This case might happen if the session from getSession() was null or invalid,
-    // and getUser() confirmed there's no authenticated user.
-  }
-  
-  // Get complete user profile including database data
-  return userFromGetUser ? await getCompleteUserProfile(userFromGetUser) : null;
 }
 
 export async function signOut() {

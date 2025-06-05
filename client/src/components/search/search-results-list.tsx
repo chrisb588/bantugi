@@ -15,6 +15,7 @@ interface SearchResultsListProps {
   results?: Report[];
   isLoading?: boolean;
   onReportClick?: (report: Report) => void;
+  ignoreClickRef?: React.RefObject<HTMLElement | null>;
 }
 
 const SearchResultsList: React.FC<SearchResultsListProps> = ({ 
@@ -24,6 +25,7 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
   results = [],
   isLoading = false,
   onReportClick,
+  ignoreClickRef,
   ...props 
 }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -31,25 +33,7 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
 
   useEffect(() => {
     setIsVisible(true);
-    function handleClickOutside(event: MouseEvent) {
-      if (resultsContainerRef.current && !resultsContainerRef.current.contains(event.target as Node)) {
-        handleClose();
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
   }, []);
-
-  const handleClose = () => {
-    if (!parentOnClose) return;
-    
-    setIsVisible(false);
-    setTimeout(() => {
-      parentOnClose();
-    }, 300);
-  };
 
   return (
     <div ref={resultsContainerRef} className={cn(
@@ -58,35 +42,28 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
       isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-8",
       className
     )} {...props}>
-      <Card className="h-[80vh] md:h-auto md:max-h-[400px] min-h-[400px] md:min-h-[200px] max-h-[800px] bg-transparent border-none shadow-none">
-        <ScrollArea className="h-full">
-          <CardHeader className="text-left sticky top-0 bg-background/80 backdrop-blur-sm z-10 rounded-t-lg">
-            <CardTitle className="text-2xl md:text-xl">{title}</CardTitle>
-          </CardHeader>
-          <div className="px-6 md:px-4">
-            <Separator className="bg-border/50" />
-          </div>
-          <CardContent className="flex flex-col items-center py-4 md:py-3 bg-background/60 backdrop-blur-sm rounded-b-lg">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-32 md:h-24">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-              </div>
-            ) : results.length > 0 ? (
-              results.map((result) => (
+        <ScrollArea className="flex-1 min-h-0">
+          <Separator className="bg-border/50" />
+          {isLoading ? (
+            <div className="flex items-center justify-center h-32 md:h-24">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            </div>
+          ) : results.length > 0 ? (
+            <div className="mt-4 space-y-2">
+              {results.map((result) => (
                 <ReportItem
                   key={result.id}
                   report={result}
                   onReportClick={onReportClick}
                 />
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center h-32 md:h-24 text-muted-foreground">
-                <p className="md:text-sm">No results found</p>
-              </div>
-            )}
-          </CardContent>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-32 md:h-24 text-muted-foreground">
+              <p className="md:text-sm">No results found</p>
+            </div>
+          )}
         </ScrollArea> 
-      </Card>
     </div>
   );
 };

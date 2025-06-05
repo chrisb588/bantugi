@@ -22,7 +22,7 @@ import ImageUploader from "@/components/report/report-form/image-uploader";
 import { Separator } from "@/components/ui/separator";
 import Report from "@/interfaces/report";
 import Pin from "@/interfaces/pin"; // Import Pin interface
-import { Locate } from "lucide-react";
+import { Locate, Loader2 } from "lucide-react";
 import { useMapContext } from "@/context/map-context";
 // Removed useMapMarker as its direct marker manipulation functions for this pin are replaced by useDrawPins
 import { useDrawPins } from "@/hooks/useDrawPins"; // Import useDrawPins
@@ -50,6 +50,7 @@ export function ReportForm({
 }: ReportFormProps) {
   const [choosingLocation, setChoosingLocation] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<LatLng | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add loading state
   const [formData, setFormData] = useState<Partial<Report>>({
     title: report?.title || '',
     description: report?.description || '',
@@ -59,6 +60,7 @@ export function ReportForm({
     images: report?.images || [],
     location: report?.location || undefined,
   });
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
 
   const { mapInstanceRef, isMapReady, L } = useMapContext();
   const router = useRouter();
@@ -167,12 +169,8 @@ export function ReportForm({
   };
 
   const handleImagesChange = (images: string[]) => {
-    console.log('ReportForm - handleImagesChange received images:', JSON.stringify(images, null, 2)); // Log received images
-    setFormData(prev => {
-      const updatedFormData = { ...prev, images };
-      console.log('ReportForm - formData after images update:', JSON.stringify(updatedFormData, null, 2)); // Log formData after update
-      return updatedFormData;
-    });
+    setFormData(prev => ({ ...prev, images }));
+    setIsUploadingImages(false);
   };
 
   const handleSetLocation = () => {
@@ -286,6 +284,8 @@ export function ReportForm({
       return;
     }
 
+    setIsSubmitting(true); // Set loading state
+
     console.log('ReportForm - handleSubmit - formData.images before API call:', JSON.stringify(formData.images, null, 2)); // Log images before sending
 
     // Prepare the data for the API endpoint
@@ -357,6 +357,8 @@ export function ReportForm({
     } catch (error) {
       console.error(`Error ${isEditing ? 'updating' : 'submitting'} report:`, error);
       toast.error(`An unexpected error occurred while ${isEditing ? 'updating' : 'submitting'} the report.`);
+    } finally {
+      setIsSubmitting(false); // Reset loading state
     }
   };
 
@@ -371,39 +373,48 @@ export function ReportForm({
   };
 
   return (
-    <div className={cn("w-full max-w-lg flex flex-col gap-4 -mt-12", className)} {...props}>
+    <div className={cn(
+      "w-full max-w-lg flex flex-col",
+      // "-mt-12",
+      className
+    )} {...props}>
       <Card className={cn(
-        "h-[85vh] min-h-[400px] max-h-[800px] transition-all duration-300 ease-in-out",
-        "px-4 py-4 md:px-6 md:py-6", // Moderate padding - not too excessive, not too narrow
+        // "h-[85vh] min-h-[400px] max-h-[800px]",
+        "h-[95vh] transition-all duration-300 ease-in-out",
+        "px-4 py-8 md:px-6 md:py-6", // Moderate padding - not too excessive, not too narrow
         choosingLocation ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto",
       )}>
-        <CardHeader>
-          <CardTitle>
+        <CardHeader className="sticky top-0 bg-background z-10">
+          <CardTitle className="text-xl">
             {report ? "Edit Report" : "Create New Report"}
           </CardTitle>
         </CardHeader>
-        <ScrollArea className="h-[calc(85vh-150px)]">
+        <ScrollArea className={cn(
+          // "h-[calc(85vh-150px)]",
+          "h-full overflow-y-hidden",
+        )}>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
+            <Separator className="mb-6" />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1">
                 <Label htmlFor="title">Title*</Label>
                 <Input id="title" value={formData.title} onChange={handleInputChange} required />
               </div>
-              <div>
+              <div className="space-y-1">
                 <Label htmlFor="description">Description</Label>
                 <Textarea id="description" value={formData.description || ''} onChange={handleInputChange} />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-1">
                   <Label htmlFor="category">Category</Label>
                   <CategoryDropdownMenu value={formData.category as any} onValueChange={handleCategoryChange} />
                 </div>
-                <div>
+                <div className="space-y-1">
                   <Label htmlFor="urgency">Urgency</Label>
                   <UrgencyDropdownMenu value={formData.urgency} onValueChange={handleUrgencyChange} />
                 </div>
               </div>
-              <div>
+              <div className="space-y-1">
                 <Label>Location*</Label>
                 <Button
                   type="button"
@@ -424,15 +435,35 @@ export function ReportForm({
                 {(selectedLocation && !formData.location?.address && !choosingLocation) && <div className="text-xs text-muted-foreground mt-1">Location selected, needs confirmation. Click "Mark Location" then "Confirm".</div>}
                 {choosingLocation && <div className="text-xs text-muted-foreground mt-1">Click on the map to set location.</div>}
               </div>
-              <div>
+              <div className="space-y-1">
                 <Label>Images</Label>
-                <ImageUploader images={formData.images || []} onChange={handleImagesChange} />
+                <ImageUploader 
+                  images={formData.images || []} 
+                  onChange={handleImagesChange}
+                />
+                {isUploadingImages && (
+                  <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Uploading images...</span>
+                  </div>
+                )}
               </div>
               <Separator />
-              <Button type="submit" className="w-full" disabled={!formData.title || !formData.location?.coordinates}>
-                {report ? "Save Changes" : "Submit Report"}
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={!formData.title || !formData.location?.coordinates || isSubmitting}
+              >
+                {isSubmitting || isUploadingImages ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  report ? "Save Changes" : "Submit Report"
+                )}
               </Button>
-              <Button type="button" variant="outline" onClick={handleCancel} className="w-full">
+              <Button type="button" variant="outline" onClick={handleCancel} className="w-full" disabled={isSubmitting}>
                 Cancel
               </Button>
             </form>

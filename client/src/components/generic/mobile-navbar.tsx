@@ -89,7 +89,7 @@ export function MobileNavbar({ onCreateReport, onSavedReports, onMyReports }: Na
 
   return (
     <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-35 w-full max-w-md md:max-w-lg px-4"> {/* Increased max-width for desktop */}
-      <div className="relative flex items-center justify-between h-14 md:h-16 bg-white dark:bg-gray-900 rounded-full shadow-lg border border-gray-100 dark:border-gray-800"> {/* Slightly taller on desktop */}
+      <div className="relative flex items-center justify-between h-14 md:h-16 bg-background dark:bg-gray-900 rounded-full shadow-lg border border-gray-100 dark:border-gray-800"> {/* Slightly taller on desktop */}
         {/* Map/Home button - always available */}
         <button
           className="flex-1 flex justify-center p-2 md:p-3 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors"
@@ -124,11 +124,11 @@ export function MobileNavbar({ onCreateReport, onSavedReports, onMyReports }: Na
           title={!user ? "Login to view your reports" : "My Reports"}
         >
           <CopyCheck className="w-5 h-5 md:w-6 md:h-6" />
-          {user && reportCount > 0 && (
+          {/* {user && reportCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full h-5 w-5 md:h-6 md:w-6 flex items-center justify-center min-w-[20px] md:min-w-[24px] font-medium">
               {reportCount > 99 ? '99+' : reportCount}
             </span>
-          )}
+          )} */}
         </button>
         
         {/* Account/Login button */}
