@@ -77,8 +77,8 @@ export async function getReport(server: SupabaseClient, reportId: string) {
       
     if (locationError) {
       console.error('Error fetching fresh location data:', locationError);
-    } else if (locationData) {
-      freshLocationData = locationData;
+    } else if (freshLocation) {
+      freshLocationData = freshLocation;
     }
   }
 
@@ -962,108 +962,285 @@ export async function updateReport(
             }
         }
         let newLocationId = reportData.location_id;
-        if (updateData.latitude && updateData.longitude && updateData.areaProvince && updateData.areaBarangay) {
+        
+        // Enhanced location and area update logic
+        if (updateData.latitude && updateData.longitude) {
             try {
-                // Check if report already has a location
-                if (reportData.location_id) {
-                    console.log(`[updateReport] Updating existing location ${reportData.location_id}`);
+                console.log(`[updateReport] Processing location update for coordinates: ${updateData.latitude}, ${updateData.longitude}`);
+                
+                // Always ensure we have the most current location ID from the report
+                let currentLocationId = reportData.location_id;
+                
+                // If report doesn't have a location_id, try to find one by querying the location table
+                if (!currentLocationId) {
+                    console.log('[updateReport] Report has no location_id, searching for existing location by report_id');
+                    const { data: existingLocationByReport, error: locationSearchError } = await supabase
+                        .from('location')
+                        .select('location_id, area_id')
+                        .eq('report_id', reportId)
+                        .maybeSingle();
+                        
+                    if (locationSearchError) {
+                        console.warn('[updateReport] Error searching for existing location:', locationSearchError);
+                    } else if (existingLocationByReport) {
+                        currentLocationId = existingLocationByReport.location_id;
+                        console.log(`[updateReport] Found existing location by report_id: ${currentLocationId}`);
+                    }
+                }
+
+                if (currentLocationId) {
+                    console.log(`[updateReport] Updating existing location ${currentLocationId} with new coordinates and spatial index`);
                     
-                    // Get existing location data to find area_id
+                    // Get complete existing location data including area_id and current coordinates
                     const { data: existingLocation, error: locationFetchError } = await supabase
                         .from('location')
-                        .select('area_id')
-                        .eq('location_id', reportData.location_id)
+                        .select(`
+                            location_id,
+                            latitude,
+                            longitude,
+                            area_id,
+                            spatial_index,
+                            report_id
+                        `)
+                        .eq('location_id', currentLocationId)
                         .single();
 
                     if (locationFetchError) {
-                        console.error('[updateReport] Error fetching existing location:', locationFetchError);
-                        return { success: false, error: 'Failed to fetch existing location' };
+                        console.error('[updateReport] Error fetching existing location details:', locationFetchError);
+                        return { success: false, error: 'Failed to fetch existing location details' };
                     }
 
-                    // Update existing area record
-                    if (existingLocation?.area_id) {
-                        console.log(`[updateReport] Updating area record ${existingLocation.area_id} with new data`);
+                    if (!existingLocation) {
+                        console.error('[updateReport] Location not found despite having location_id');
+                        return { success: false, error: 'Location record not found' };
+                    }
+
+                    console.log(`[updateReport] Current location data:`, existingLocation);
+
+                    // Update the area record if we have both area_id and area data
+                    if (existingLocation.area_id && (updateData.areaProvince || updateData.areaBarangay || updateData.areaCity !== undefined)) {
+                        console.log(`[updateReport] Updating area record ${existingLocation.area_id} with new area data`);
                         
-                        // Prepare area update object with proper null handling
-                        const areaUpdateData: any = {
-                            province: updateData.areaProvince,
-                            barangay: updateData.areaBarangay
-                        };
+                        // Prepare area update object with comprehensive data handling
+                        const areaUpdateData: any = {};
                         
-                        // Only set city if it's defined, otherwise let DB handle it
+                        // Only update fields that are provided
+                        if (updateData.areaProvince !== undefined) {
+                            areaUpdateData.province = updateData.areaProvince;
+                        }
+                        if (updateData.areaBarangay !== undefined) {
+                            areaUpdateData.barangay = updateData.areaBarangay;
+                        }
                         if (updateData.areaCity !== undefined) {
-                            areaUpdateData.city = updateData.areaCity || null; // Convert empty string to null
+                            areaUpdateData.city = updateData.areaCity && updateData.areaCity.trim() !== '' 
+                                ? updateData.areaCity 
+                                : null;
                         }
                         
-                        const { error: areaUpdateError } = await supabase
-                            .from('area')
-                            .update(areaUpdateData)
-                            .eq('id', existingLocation.area_id);
+                        // Only proceed if we have at least one field to update
+                        if (Object.keys(areaUpdateData).length > 0) {
+                            console.log(`[updateReport] Area update data:`, areaUpdateData);
+                            
+                            const { error: areaUpdateError } = await supabase
+                                .from('area')
+                                .update(areaUpdateData)
+                                .eq('id', existingLocation.area_id);
 
-                        if (areaUpdateError) {
-                            console.error('[updateReport] Error updating existing area:', areaUpdateError);
-                            return { success: false, error: 'Failed to update area' };
+                            if (areaUpdateError) {
+                                console.error('[updateReport] Error updating existing area:', areaUpdateError);
+                                return { success: false, error: 'Failed to update area information' };
+                            }
+
+                            // Verify area update with detailed logging
+                            const { data: updatedArea, error: areaVerifyError } = await supabase
+                                .from('area')
+                                .select('*')
+                                .eq('id', existingLocation.area_id)
+                                .single();
+                                
+                            if (areaVerifyError) {
+                                console.warn('[updateReport] Could not verify area update:', areaVerifyError);
+                            } else {
+                                console.log(`[updateReport] Successfully updated and verified area ${existingLocation.area_id}:`, updatedArea);
+                            }
+                        } else {
+                            console.log('[updateReport] No area fields to update, skipping area update');
                         }
-
-                        // Verify area update by fetching the updated record
-                        const { data: updatedArea, error: areaFetchError } = await supabase
+                    } else if (!existingLocation.area_id && updateData.areaProvince && updateData.areaBarangay) {
+                        console.log('[updateReport] Location exists but no area_id found. Creating new area record.');
+                        
+                        // Create new area record only if we have the required area data
+                        const { data: newArea, error: areaCreateError } = await supabase
                             .from('area')
-                            .select('*')
-                            .eq('id', existingLocation.area_id)
+                            .insert({
+                                province: updateData.areaProvince,
+                                city: updateData.areaCity && updateData.areaCity.trim() !== '' ? updateData.areaCity : null,
+                                barangay: updateData.areaBarangay,
+                                report_id: reportId
+                            })
+                            .select('id')
                             .single();
                             
-                        if (areaFetchError) {
-                            console.warn('[updateReport] Could not verify area update:', areaFetchError);
-                        } else {
-                            console.log(`[updateReport] Successfully updated and verified area ${existingLocation.area_id}:`, updatedArea);
+                        if (areaCreateError || !newArea) {
+                            console.error('[updateReport] Error creating new area:', areaCreateError);
+                            return { success: false, error: 'Failed to create area information' };
                         }
+                        
+                        console.log(`[updateReport] Created new area record ${newArea.id}`);
+                        
+                        // Update the existing location's area_id reference
+                        existingLocation.area_id = newArea.id;
                     } else {
-                        console.warn('[updateReport] Location exists but no area_id found. This is unexpected.');
+                        console.log('[updateReport] Skipping area update - no area_id or insufficient area data provided');
                     }
 
-                    // Update existing location record using RPC function for spatial index update
+                    // Update location with new coordinates and spatial index using RPC function
+                    console.log(`[updateReport] Calling RPC to update location ${currentLocationId} with spatial index generation`);
+                    
                     const { data: updatedLocationData, error: locationUpdateError } = await supabase
                         .rpc('update_location_with_spatial_index', {
-                            location_id_param: reportData.location_id,
+                            location_id_param: currentLocationId,
                             lat: updateData.latitude,
                             lon: updateData.longitude,
-                            area_id_param: existingLocation?.area_id || null
+                            area_id_param: existingLocation.area_id
                         });
 
                     if (locationUpdateError) {
-                        console.error('[updateReport] Error updating existing location:', locationUpdateError);
-                        return { success: false, error: 'Failed to update location' };
+                        console.error('[updateReport] Error updating location with spatial index:', locationUpdateError);
+                        return { success: false, error: 'Failed to update location coordinates and spatial index' };
                     }
 
-                    // Force a DB refresh of the location cache to ensure latest data is used
-                    await supabase
-                        .from('location')
-                        .select('*')
-                        .eq('location_id', reportData.location_id)
-                        .single();
+                    if (!updatedLocationData || updatedLocationData.length === 0) {
+                        console.error('[updateReport] No data returned from location update RPC');
+                        return { success: false, error: 'Location update did not return expected data' };
+                    }
 
-                    console.log(`[updateReport] Successfully updated location ${reportData.location_id} with spatial index`);
-                    newLocationId = reportData.location_id;
+                    console.log(`[updateReport] RPC returned updated location data:`, updatedLocationData);
+
+                    // Verify the location update by fetching the complete updated record
+                    const { data: verifyLocation, error: verifyError } = await supabase
+                        .from('location')
+                        .select(`
+                            location_id,
+                            latitude,
+                            longitude,
+                            spatial_index,
+                            area_id,
+                            report_id
+                        `)
+                        .eq('location_id', currentLocationId)
+                        .single();
+                        
+                    if (verifyError) {
+                        console.warn('[updateReport] Could not verify location update:', verifyError);
+                    } else {
+                        console.log(`[updateReport] Successfully verified updated location ${currentLocationId}:`, verifyLocation);
+                        console.log(`[updateReport] Spatial index generated: ${verifyLocation.spatial_index ? 'YES' : 'NO'}`);
+                    }
+
+                    newLocationId = currentLocationId;
 
                 } else {
-                    // Per requirement, do not create new location records
-                    console.log('[updateReport] No existing location found, skipping location creation as per requirements');
+                    // No existing location found - create new location record
+                    console.log('[updateReport] No existing location found, creating new location record');
                     
-                    // Store the location data directly in the report update log for reference
-                    console.log('[updateReport] Location data provided but not used:', {
-                        latitude: updateData.latitude,
-                        longitude: updateData.longitude,
-                        province: updateData.areaProvince,
-                        city: updateData.areaCity,
-                        barangay: updateData.areaBarangay
-                    });
+                    let newAreaId = null;
                     
-                    // No new location ID since we're not creating a location
-                    newLocationId = null;
+                    // Create new area record only if we have the required area data
+                    if (updateData.areaProvince && updateData.areaBarangay) {
+                        console.log('[updateReport] Creating new area record with provided area data');
+                        
+                        const { data: newArea, error: areaCreateError } = await supabase
+                            .from('area')
+                            .insert({
+                                province: updateData.areaProvince,
+                                city: updateData.areaCity && updateData.areaCity.trim() !== '' ? updateData.areaCity : null,
+                                barangay: updateData.areaBarangay,
+                                report_id: reportId
+                            })
+                            .select('id')
+                            .single();
+                            
+                        if (areaCreateError || !newArea) {
+                            console.error('[updateReport] Error creating new area:', areaCreateError);
+                            return { success: false, error: 'Failed to create area information' };
+                        }
+                        
+                        newAreaId = newArea.id;
+                        console.log(`[updateReport] Created new area record ${newAreaId}`);
+                    } else {
+                        console.log('[updateReport] No area data provided, creating location without area reference');
+                    }
+                    
+                    // Create new location record with coordinates and optional area reference
+                    if (newAreaId) {
+                        // Use RPC function if we have area data
+                        const { data: newLocationData, error: locationCreateError } = await supabase
+                            .rpc('insert_location_with_point', {
+                                lat: updateData.latitude,
+                                lon: updateData.longitude,
+                                area_id: newAreaId,
+                            });
+                            
+                        if (locationCreateError || !newLocationData) {
+                            console.error('[updateReport] Error creating new location with area:', locationCreateError);
+                            return { success: false, error: 'Failed to create location with spatial index' };
+                        }
+                        
+                        const createdLocationId = Array.isArray(newLocationData) 
+                            ? newLocationData[0]?.location_id 
+                            : newLocationData?.location_id;
+                            
+                        if (!createdLocationId) {
+                            console.error('[updateReport] Could not extract location_id from creation response:', newLocationData);
+                            return { success: false, error: 'Failed to get location_id from created location' };
+                        }
+                        
+                        console.log(`[updateReport] Created new location record ${createdLocationId} with area reference`);
+                        newLocationId = createdLocationId;
+                    } else {
+                        // Create location without area reference using direct insert
+                        const { data: newLocationData, error: locationCreateError } = await supabase
+                            .from('location')
+                            .insert({
+                                latitude: updateData.latitude,
+                                longitude: updateData.longitude,
+                                spatial_index: `ST_SetSRID(ST_MakePoint(${updateData.longitude}, ${updateData.latitude}), 4326)`,
+                                report_id: reportId,
+                                area_id: null
+                            })
+                            .select('location_id')
+                            .single();
+                            
+                        if (locationCreateError || !newLocationData) {
+                            console.error('[updateReport] Error creating new location without area:', locationCreateError);
+                            return { success: false, error: 'Failed to create location record' };
+                        }
+                        
+                        console.log(`[updateReport] Created new location record ${newLocationData.location_id} without area reference`);
+                        newLocationId = newLocationData.location_id;
+                    }
+                    
+                    // Update the location with the report_id to complete the relationship (if needed)
+                    if (newLocationId) {
+                        const { error: locationLinkError } = await supabase
+                            .from('location')
+                            .update({ report_id: reportId })
+                            .eq('location_id', newLocationId);
+                            
+                        if (locationLinkError) {
+                            console.warn('[updateReport] Could not link location to report:', locationLinkError);
+                        } else {
+                            console.log(`[updateReport] Successfully linked location ${newLocationId} to report ${reportId}`);
+                        }
+                    }
                 }
+                
+                console.log(`[updateReport] Location update completed successfully. Final location_id: ${newLocationId}`);
+                
             } catch (locationError) {
-                console.error('[updateReport] Error handling location update:', locationError);
-                return { success: false, error: 'Failed to update location information' };
+                console.error('[updateReport] Unexpected error during location update:', locationError);
+                return { success: false, error: 'Unexpected error during location update' };
             }
         }
 
@@ -1076,16 +1253,19 @@ export async function updateReport(
         if (updateData.status !== undefined) reportUpdateData.status = updateData.status;
         if (updateData.images !== undefined) reportUpdateData.images = updateData.images;
         
-        // Handle location_id update
+        // Handle location_id update with enhanced logic
         if (updateData.latitude && updateData.longitude && updateData.areaProvince && updateData.areaBarangay) {
-            // Always update location_id even if it's the same, to ensure database reflects the update correctly
-            if (newLocationId !== null) {
+            // Always update location_id in the report to ensure consistency
+            if (newLocationId !== null && newLocationId !== undefined) {
                 reportUpdateData.location_id = newLocationId;
                 console.log(`[updateReport] Setting report.location_id to ${newLocationId}`);
-            } else if (reportData.location_id) {
-                // If we had a location ID but didn't create a new one, keep the original
-                console.log('[updateReport] Preserving existing location_id as no new location was created');
+            } else {
+                console.warn('[updateReport] No valid location_id available for report update');
             }
+        } else if (newLocationId !== reportData.location_id) {
+            // If location_id changed but no location data provided, update it anyway
+            reportUpdateData.location_id = newLocationId;
+            console.log(`[updateReport] Updating report.location_id to ${newLocationId} (changed from ${reportData.location_id})`);
         }
 
         // Update the report
@@ -1109,8 +1289,15 @@ export async function updateReport(
 
         console.log(`[updateReport] Successfully updated report ${reportId}`);
 
-        // Clear any query cache before fetching the complete updated report
-        await supabase.from('reports').select('id').eq('id', reportId).single();
+        // Clear any query cache and ensure we get fresh data
+        console.log('[updateReport] Clearing cache and fetching updated report with fresh location data');
+        
+        // Multiple cache-busting queries to ensure fresh data
+        await Promise.all([
+            supabase.from('reports').select('id').eq('id', reportId).single(),
+            newLocationId ? supabase.from('location').select('location_id').eq('location_id', newLocationId).single() : Promise.resolve(),
+            supabase.from('area').select('id').limit(1).single()
+        ]);
         
         // Fetch the complete updated report to return
         const completeReport = await getReport(supabase, reportId);
