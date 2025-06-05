@@ -41,12 +41,24 @@ export function CreatedReportsOverlay({ isVisible, onClose }: CreatedReportsOver
 
   if (!isVisible) return null;
 
+  // State to track whether we're choosing a location
+  const [isChoosingLocation, setIsChoosingLocation] = useState(false);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 pointer-event-auto">
+    <div className={cn(
+      "fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300",
+      isChoosingLocation 
+        ? "pointer-events-none bg-transparent backdrop-blur-0" 
+        : "pointer-events-auto bg-black/50 backdrop-blur-sm"
+    )}>
       <div className="relative w-full max-w-md max-h-[90vh] flex flex-col">
         <Card className={cn(
-          "flex flex-col w-full max-w-lg h-[85vh] min-h-[400px] max-h-[800px] overflow-hidden transition-opacity duration-300",
-          editingReport ? "opacity-30 pointer-events-none" : "opacity-100 pointer-events-auto"
+          "flex flex-col w-full max-w-lg h-[85vh] min-h-[400px] max-h-[800px] overflow-hidden transition-all duration-300",
+          editingReport 
+            ? isChoosingLocation 
+              ? "opacity-0 pointer-events-none" 
+              : "opacity-30 pointer-events-none" 
+            : "opacity-100 pointer-events-auto"
         )}>
           <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
             <CardTitle className="text-xl">My Reports</CardTitle>
@@ -122,16 +134,29 @@ export function CreatedReportsOverlay({ isVisible, onClose }: CreatedReportsOver
 
         {/* Edit overlay */}
         {editingReport && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="w-full max-w-lg max-h-[90vh] overflow-hidden">
+          <div className={cn(
+            "absolute inset-0 z-10 flex items-center justify-center transition-all duration-300 edit-overlay-container",
+            isChoosingLocation 
+              ? "bg-transparent backdrop-blur-0 pointer-events-none" 
+              : "bg-black/50 backdrop-blur-sm pointer-events-auto"
+          )}>
+            <div className={cn(
+              "w-full max-w-lg max-h-[90vh] overflow-hidden transition-opacity duration-300",
+              isChoosingLocation ? "opacity-0" : "opacity-100"
+            )}>
               <ReportForm
                 report={editingReport}
                 onClose={handleCloseEdit}
-                onSuccess={() => {
+                onSuccess={(updatedReport) => {
                   refetch();
+                  handleReportUpdate(editingReport.id, updatedReport);
                   setEditingReport(null);
                 }}
                 className="max-h-[90vh]"
+                onLocationModeChange={(isChoosing) => {
+                  // Update our local state to pass to the main container
+                  setIsChoosingLocation(isChoosing);
+                }}
               />
             </div>
           </div>

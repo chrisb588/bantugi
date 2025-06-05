@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Portal } from "@/components/ui/portal"; // Import Portal component
 import { CategoryDropdownMenu } from "@/components/report/report-form/category-dropdown";
 import { UrgencyDropdownMenu } from "@/components/report/report-form/urgency-dropdown";
 import ImageUploader from "@/components/report/report-form/image-uploader";
@@ -472,14 +473,16 @@ export function ReportForm({
       </Card>
 
       {choosingLocation && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[1001] flex gap-4 p-4 bg-background shadow-lg rounded-lg pointer-events-auto">
-          <Button onClick={handleConfirmLocation} disabled={!selectedLocation} className="pointer-events-auto">
-            Confirm Location
-          </Button>
-          <Button variant="outline" onClick={handleCancelSetLocation} className="pointer-events-auto">
-            Cancel
-          </Button>
-        </div>
+        <Portal>
+          <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-4 p-6 bg-white shadow-2xl rounded-lg pointer-events-auto">
+            <Button onClick={handleConfirmLocation} disabled={!selectedLocation} className="w-full pointer-events-auto">
+              Confirm Location
+            </Button>
+            <Button variant="outline" onClick={handleCancelSetLocation} className="w-full pointer-events-auto">
+              Cancel
+            </Button>
+          </div>
+        </Portal>
       )}
     </div>
   );
