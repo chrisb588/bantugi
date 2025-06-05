@@ -32,7 +32,12 @@ function HomePageContent() {
   const [searchQuery, setSearchQuery] = useState("");
   
   // Filter state
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    urgency: string;
+    category: string;
+    status: string;
+    _timestamp?: number;
+  }>({
     urgency: "",
     category: "",
     status: ""
@@ -168,37 +173,29 @@ function HomePageContent() {
 
   // Handle filter changes
   const handleFiltersChange = useCallback((newFilters: { urgency: string; category: string; status: string }) => {
-    setFilters(newFilters);
+    // Force new reference to trigger the useEffect even if values are the same
+    setFilters(prevFilters => ({
+      ...prevFilters,
+      ...newFilters,
+      // Add a timestamp to force re-execution even if the filter values are the same
+      _timestamp: Date.now()
+    }));
     console.log("Filters updated:", newFilters);
   }, []);
 
   // Re-run search when filters change (if there's an active search)
   useEffect(() => {
-    const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
-    const currentQuery = searchInput?.value?.trim();
+    const currentQuery = searchQuery.trim();
     
     if (currentQuery && isSearchScreenVisible) {
-      console.log("Re-running search due to filter change");
+      console.log("Re-running search due to filter change:", { 
+        filters, 
+        timestamp: filters._timestamp,
+        query: currentQuery 
+      });
       performSearch(currentQuery);
     }
-  }, [filters, isSearchScreenVisible, performSearch]);
-
-  // // Handle filter changes
-  // const handleFiltersChange = useCallback((newFilters: { urgency: string; category: string; status: string }) => {
-  //   setFilters(newFilters);
-  //   console.log("Filters updated:", newFilters);
-  // }, []);
-
-  // Re-run search when filters change (if there's an active search)
-  useEffect(() => {
-    const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
-    const currentQuery = searchInput?.value?.trim();
-    
-    if (currentQuery && isSearchScreenVisible) {
-      console.log("Re-running search due to filter change");
-      performSearch(currentQuery);
-    }
-  }, [filters, isSearchScreenVisible, performSearch]);
+  }, [filters, isSearchScreenVisible, performSearch, searchQuery]);
 
   const handlePinClick = useCallback((reportId: string) => {
     setSelectedReportIdForCard(reportId);

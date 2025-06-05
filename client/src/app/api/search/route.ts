@@ -30,13 +30,14 @@ interface OptimizedSearchResult {
 function transformOptimizedSearchToReport(searchResult: OptimizedSearchResult): Report {
   const data = searchResult.result_json;
   
+  // Create a safer transformation that checks if fields exist
   return {
     id: data.id,
-    title: data.title,
-    description: data.description,
-    category: data.category,
-    urgency: data.urgency,
-    status: data.status || "Unresolved", // Use actual status from search result
+    title: data.title || "",
+    description: data.description || "",
+    category: data.category || "",
+    urgency: data.urgency || "Medium",
+    status: data.status || "Unresolved", // Use actual status from search result or default to "Unresolved"
     location: data.location ? {
       coordinates: {
         lat: data.location.coordinates.lat,
@@ -77,11 +78,14 @@ export async function GET(req: NextRequest) {
 
     console.log(`[API/search] Performing search with query: "${query}" and filters:`, { urgency, category, status });
 
-    // Call the optimized fuzzy_search_reports RPC function
+    // Call the optimized fuzzy_search_reports RPC function with filters
     const { data, error, status: rpcStatus, statusText } = await supabase
       .rpc('fuzzy_search_reports_optimized', {
         search_term: query.trim(),
-        similarity_threshold: 0.1
+        similarity_threshold: 0.1,
+        filter_urgency: urgency || null,
+        filter_category: category || null,
+        filter_status: status || null
       });
 
     console.log("[API/search] RPC Response Status:", status, statusText);
@@ -131,20 +135,23 @@ export async function GET(req: NextRequest) {
     
     if (urgency || category || status) {
       console.log(`[API/search] Applying filters to ${reports.length} search results`);
+      console.log('[API/search] Filter values:', { urgency, category, status });
       
       filteredReports = reports.filter(report => {
-        // Apply urgency filter
-        if (urgency && report.urgency !== urgency) {
+        // Apply urgency filter if not empty
+        if (urgency && urgency !== "" && report.urgency !== urgency) {
           return false;
         }
         
-        // Apply category filter
-        if (category && report.category !== category) {
+        // Apply category filter if not empty
+        if (category && category !== "" && report.category !== category) {
           return false;
         }
         
-        // Apply status filter
-        if (status && report.status !== status) {
+        // Apply status filter if not empty
+        // Skip status filtering if the report doesn't have a status field
+        // This handles the case where the SQL function doesn't return a status field
+        if (status && status !== "" && report.status && report.status !== status) {
           return false;
         }
         
@@ -152,6 +159,14 @@ export async function GET(req: NextRequest) {
       });
       
       console.log(`[API/search] Filtered results: ${filteredReports.length} out of ${reports.length} reports`);
+      // Log which filter(s) actually made a difference
+      if (filteredReports.length < reports.length) {
+        console.log('[API/search] Filters reduced results - filters applied:', {
+          urgencyApplied: !!urgency && urgency !== "",
+          categoryApplied: !!category && category !== "",
+          statusApplied: !!status && status !== ""
+        });
+      }
     }
 
     console.log(`[API/search] Successfully processed ${filteredReports.length} search results`);

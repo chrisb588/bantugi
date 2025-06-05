@@ -50,7 +50,7 @@ async function getCompleteUserProfile(supabaseUser: SupabaseUser): Promise<User 
             { 
               user_id: supabaseUser.id,
               username: baseUser.email || '',
-              avatar_url: supabaseUser.user_metadata?.avatar_url || "https://placehold.co/40x40.png?text=Avatar"
+              avatar_url: supabaseUser.user_metadata?.avatar_url || "https://placehold.co/400x400.png?text=Avatar"
             }
           ])
           .select('username, address, avatar_url')
